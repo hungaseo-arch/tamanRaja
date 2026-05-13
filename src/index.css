@@ -1,0 +1,210 @@
+@import url("https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+==========================================================================
+【AI HANDOVER NOTE】
+1. DESIGN PHILOSOPHY:
+   - Golf Club Dashboard Aesthetic: Professional sports club management interface with data-driven clarity
+   - Korean Typography Excellence: Optimized for Hangul readability with Noto Sans KR as primary typeface
+   - Tabular Data Hierarchy: Spreadsheet-inspired layout with color-coded columns for quick data scanning
+   - Green-White Golf Theme: Natural golf course palette with fresh greens, crisp whites, and accent colors for rankings
+
+2. TYPOGRAPHY:
+   - Noto Sans KR: Chosen for superior Korean character rendering, excellent readability in dense tables, and professional tone suitable for club management
+   - JetBrains Mono: Used for numeric data (scores, handicaps, rankings) to ensure alignment and clarity in tabular formats
+
+3. COLOR SYSTEM:
+   - Brand Primary (Golf Green): Hue 145 (fresh grass green) represents golf course vitality and club identity
+   - --brand maps to --primary for main actions, --accent for highlights, --ring for focus states
+   - Orange (Hue 30): Used for 기준HC column headers, representing baseline/standard data
+   - Blue (Hue 210): Used for 당월HC/차월HC/Net Score columns, representing calculated/dynamic data
+   - Semantic colors: success (green for Winner badges), warning (gold for Medalist), destructive (red for penalties)
+   - Badge system: Gold (#FFD700 equivalent), Silver (#C0C0C0), Green (success tone) for Winner/Medalist/Host
+
+4. USAGE GUIDE:
+   - Layout: Full-width dashboard with centered content container (max-width: 1400px)
+   - Table Design: Alternating row colors (muted background), sticky headers, color-coded column headers
+   - Special Effects: Subtle shadows on cards, hover states on table rows, badge highlights with gentle glow
+   - Responsive Strategy: Horizontal scroll for tables on mobile, collapsible columns for secondary data
+   - Korean UI Patterns: Proper spacing for Hangul characters (1.5-1.6 line-height), clear hierarchy for dense information
+   - Color-coded columns: Orange headers for baseline data, Blue headers for calculated metrics, White for raw scores
+==========================================================================
+*/
+
+:root {
+  /* Typography */
+  --font-sans: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+  
+  /* Radius */
+  --radius: 0.5rem;
+
+  /* Core UI Tokens */
+  --background: oklch(0.99 0.005 145);
+  --foreground: oklch(0.15 0.01 145);
+  --card: oklch(0.98 0.008 145);
+  --card-foreground: oklch(0.18 0.01 145);
+  --popover: oklch(0.99 0.005 145);
+  --popover-foreground: oklch(0.15 0.01 145);
+  --primary: oklch(0.52 0.15 145);
+  --primary-foreground: oklch(0.98 0.005 145);
+  --secondary: oklch(0.92 0.02 145);
+  --secondary-foreground: oklch(0.22 0.01 145);
+  --muted: oklch(0.95 0.01 145);
+  --muted-foreground: oklch(0.48 0.015 145);
+  --accent: oklch(0.88 0.03 145);
+  --accent-foreground: oklch(0.22 0.01 145);
+  --destructive: oklch(0.55 0.22 25);
+  --destructive-foreground: oklch(0.98 0.005 25);
+  --border: oklch(0.88 0.015 145);
+  --input: oklch(0.88 0.015 145);
+  --ring: oklch(0.52 0.15 145);
+  
+  /* Chart Tokens */
+  --chart-1: oklch(0.58 0.18 145);
+  --chart-2: oklch(0.62 0.2 210);
+  --chart-3: oklch(0.65 0.18 30);
+  --chart-4: oklch(0.55 0.16 280);
+  --chart-5: oklch(0.6 0.19 340);
+  
+  /* Sidebar Tokens */
+  --sidebar: oklch(0.97 0.008 145);
+  --sidebar-foreground: oklch(0.25 0.01 145);
+  --sidebar-primary: oklch(0.52 0.15 145);
+  --sidebar-primary-foreground: oklch(0.98 0.005 145);
+  --sidebar-accent: oklch(0.88 0.03 145);
+  --sidebar-accent-foreground: oklch(0.22 0.01 145);
+  --sidebar-border: oklch(0.88 0.015 145);
+  --sidebar-ring: oklch(0.52 0.15 145);
+}
+
+.dark {
+  --background: oklch(0.14 0.015 145);
+  --foreground: oklch(0.92 0.01 145);
+  --card: oklch(0.16 0.018 145);
+  --card-foreground: oklch(0.92 0.01 145);
+  --popover: oklch(0.14 0.015 145);
+  --popover-foreground: oklch(0.92 0.01 145);
+  --primary: oklch(0.62 0.18 145);
+  --primary-foreground: oklch(0.12 0.015 145);
+  --secondary: oklch(0.22 0.025 145);
+  --secondary-foreground: oklch(0.88 0.01 145);
+  --muted: oklch(0.2 0.02 145);
+  --muted-foreground: oklch(0.62 0.015 145);
+  --accent: oklch(0.28 0.04 145);
+  --accent-foreground: oklch(0.92 0.01 145);
+  --destructive: oklch(0.58 0.24 25);
+  --destructive-foreground: oklch(0.95 0.01 25);
+  --border: oklch(0.28 0.025 145);
+  --input: oklch(0.28 0.025 145);
+  --ring: oklch(0.62 0.18 145);
+  
+  /* Chart Tokens */
+  --chart-1: oklch(0.65 0.2 145);
+  --chart-2: oklch(0.68 0.22 210);
+  --chart-3: oklch(0.7 0.2 30);
+  --chart-4: oklch(0.62 0.18 280);
+  --chart-5: oklch(0.66 0.21 340);
+  
+  /* Sidebar Tokens */
+  --sidebar: oklch(0.12 0.018 145);
+  --sidebar-foreground: oklch(0.88 0.01 145);
+  --sidebar-primary: oklch(0.62 0.18 145);
+  --sidebar-primary-foreground: oklch(0.12 0.015 145);
+  --sidebar-accent: oklch(0.28 0.04 145);
+  --sidebar-accent-foreground: oklch(0.92 0.01 145);
+  --sidebar-border: oklch(0.28 0.025 145);
+  --sidebar-ring: oklch(0.62 0.18 145);
+}
+
+@theme inline {
+  /* Shadcn Core Mapping */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Charts Mapping */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sidebar Mapping */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Typography */
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+
+  /* Radius */
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply scroll-smooth antialiased;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans min-h-screen;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  code, pre {
+    @apply font-mono;
+  }
+
+  ::selection {
+    @apply bg-primary/20 text-primary;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-muted-foreground/20 rounded-full hover:bg-muted-foreground/40;
+  }
+}
