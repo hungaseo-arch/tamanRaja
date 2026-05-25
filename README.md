@@ -1,6 +1,6 @@
 # 따만라자 골프모임 — Vue 3
 
-React + shadcn-ui 원본을 **Vue 3 + Composition API + TypeScript + TailwindCSS v4 + VueUse** 로 마이그레이션한 프로젝트.
+React + shadcn-ui 원본을 **Vue 3 + Composition API + TypeScript + TailwindCSS v4 + VueUse*
 
 ## 빠르게 시작 / Quick Start
 
