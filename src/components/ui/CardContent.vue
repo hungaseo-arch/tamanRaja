@@ -4,5 +4,5 @@ interface Props { class?: string }
 const props = defineProps<Props>();
 </script>
 <template>
-  <div :class="cn('p-6 pt-0', props.class)"><slot /></div>
+  <div :class="cn('px-4 pb-4 pt-0 sm:px-6 sm:pb-6', props.class)"><slot /></div>
 </template>

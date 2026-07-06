@@ -1,6 +1,9 @@
 // Route paths
+export const ADMIN_NAMES = new Set(['서종환', '조학영']);
+
 export const ROUTE_PATHS = {
   HOME: '/',
+  MONTHLY: '/monthlyRecord/',
   RANKING: '/ranking',
   PROFILE: '/profile',
 } as const;
@@ -43,7 +46,7 @@ export interface MeetingResult {
   result_rank: ResultRank;
 }
 
-export interface DashboardRow {
+export interface MonthlyRow {
   member_id: string;
   member_name: string;
   display_order: number;
@@ -58,12 +61,15 @@ export interface DashboardRow {
   result_rank: ResultRank;
   yearly_net: number | null;
   yearly_rank: number | null;
+  // 기준핸디 재적용(리셋) 월 여부 — 이 달은 조 변경 리셋 없이 ±1만 적용
+  is_reset_month: boolean;
 }
 
 export interface YearlySummary {
   member_id: string;
   member_name: string;
   avg_net_score: number;
+  avg_score: number | null;
   attended_count: number;
   winner_count: number;
   medalist_count: number;

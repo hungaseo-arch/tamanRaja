@@ -6,7 +6,7 @@ const props = defineProps<Props>();
 <template>
   <th
     :class="cn(
-      'h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0',
+      'px-2 py-2.5 text-left align-middle font-medium text-muted-foreground has-[[role=checkbox]]:pr-0',
       props.class
     )"
   ><slot /></th>

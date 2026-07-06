@@ -1,27 +1,9 @@
 import { computed, ref, type ComputedRef, type Ref } from 'vue';
 import type { Member } from '@/lib';
 import { MEMBERS } from '@/data';
-
-/**
- * useAuth (Vue 3 Composable)
- *
- * React 원본(`src/hooks/useAuth.ts`)을 1:1 변환한 버전.
- * - useState → 모듈 단위 ref(전역 상태 공유)
- * - useEffect (storage listener) → 모듈 초기화 시 1회 등록
- *
- * `useAuth()` 를 호출하는 모든 컴포넌트가 같은 reactive 상태를 공유합니다.
- */
+import { supabase } from '@/lib/supabase';
 
 const SESSION_KEY = 'golf_auth_member';
-const PIN_STORAGE_PREFIX = 'golf_pin_';
-
-function getStoredPin(memberId: string): string {
-  return localStorage.getItem(PIN_STORAGE_PREFIX + memberId) ?? '0000';
-}
-
-function setStoredPin(memberId: string, pin: string): void {
-  localStorage.setItem(PIN_STORAGE_PREFIX + memberId, pin);
-}
 
 function getSessionMember(): Member | null {
   const stored = sessionStorage.getItem(SESSION_KEY);
@@ -44,7 +26,6 @@ function setSessionMember(member: Member | null): void {
 // 모듈 전역 reactive 상태 — 모든 컴포넌트가 공유
 const currentMember: Ref<Member | null> = ref<Member | null>(getSessionMember());
 
-// 다른 탭에서 storage 변경 시 동기화 (React 원본의 useEffect와 동일)
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', () => {
     currentMember.value = getSessionMember();
@@ -56,16 +37,14 @@ export interface UseAuthReturn {
   currentMember: Ref<Member | null>;
   login: (name: string, pin: string) => boolean;
   logout: () => void;
-  changePin: (oldPin: string, newPin: string) => boolean;
+  changePin: (oldPin: string, newPin: string) => Promise<boolean>;
 }
 
 export function useAuth(): UseAuthReturn {
   const login = (name: string, pin: string): boolean => {
     const member = MEMBERS.find((m) => m.name === name);
     if (!member) return false;
-
-    const storedPin = getStoredPin(member.id);
-    if (storedPin !== pin) return false;
+    if (member.pin !== pin) return false;
 
     setSessionMember(member);
     currentMember.value = member;
@@ -77,14 +56,24 @@ export function useAuth(): UseAuthReturn {
     currentMember.value = null;
   };
 
-  const changePin = (oldPin: string, newPin: string): boolean => {
+  const changePin = async (oldPin: string, newPin: string): Promise<boolean> => {
     const member = currentMember.value;
     if (!member) return false;
 
-    const storedPin = getStoredPin(member.id);
-    if (storedPin !== oldPin) return false;
+    const livePin = MEMBERS.find((m) => m.id === member.id)?.pin ?? '2322';
+    if (livePin !== oldPin) return false;
 
-    setStoredPin(member.id, newPin);
+    const { error } = await supabase
+      .from('member_pins')
+      .update({ pin: newPin })
+      .eq('member_id', parseInt(member.id));
+
+    if (error) throw new Error(error.message);
+
+    // 인메모리 MEMBERS 업데이트
+    const target = MEMBERS.find((m) => m.id === member.id);
+    if (target) target.pin = newPin;
+
     return true;
   };
 

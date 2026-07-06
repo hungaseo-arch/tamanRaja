@@ -73,7 +73,7 @@ function close(): void {
             role="dialog"
             aria-modal="true"
             :class="cn(
-              'relative w-full max-w-lg rounded-lg border bg-background p-6 shadow-lg sm:max-w-md',
+              'relative w-full max-w-lg rounded-lg border bg-background p-4 sm:p-6 shadow-lg sm:max-w-md overflow-y-auto max-h-[90vh]',
               contentClass
             )"
             @click.stop

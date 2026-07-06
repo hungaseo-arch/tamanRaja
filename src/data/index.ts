@@ -1,23 +1,30 @@
 import { reactive, ref } from 'vue';
 import { supabase } from '@/lib/supabase';
+import { syncAttendanceFromDB } from '@/composables/useAttendance';
 import type {
   Member,
   Meeting,
   MonthlyHandicap,
   MeetingResult,
-  DashboardRow,
+  MonthlyRow,
   YearlySummary,
 } from '@/lib/index';
 
 // ── 휴면 회원: 해당 year_month 이후 대시보드·랭킹에서 제외 ──────────────────
 const DORMANT: { name: string; from: string }[] = [
   { name: '이성남', from: '2026-04' },
-  { name: '박재현', from: '2026-04' },
 ];
 
 function isActive(memberName: string, yearMonth: string): boolean {
   const d = DORMANT.find((x) => x.name === memberName);
   return !d || yearMonth < d.from;
+}
+
+// 현재(오늘 기준) 휴면 여부 — 로그인 목록 등에서 제외 판단에 사용
+export function isDormantNow(memberName: string): boolean {
+  const now = new Date();
+  const ym = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  return !isActive(memberName, ym);
 }
 
 // ── Reactive arrays (Supabase에서 로드 후 채워짐) ────────────────────────────
@@ -28,24 +35,47 @@ export const MONTHLY_HANDICAPS: MonthlyHandicap[] = reactive([]);
 export const MEETING_RESULTS: MeetingResult[] = reactive([]);
 
 export const dataLoading = ref(false);
+export const dataInitialized = ref(false);
 export const dataError = ref<string | null>(null);
 
 function fill<T>(arr: T[], items: T[]): void {
   arr.splice(0, arr.length, ...items);
 }
 
-export async function loadData(): Promise<void> {
+const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+export async function loadData(retries = 3): Promise<void> {
   if (dataLoading.value) return;
   dataLoading.value = true;
   dataError.value = null;
 
-  try {
-    const [
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await _fetchAll();
+      dataLoading.value = false;
+      dataInitialized.value = true;
+      return;
+    } catch (err) {
+      if (attempt < retries) {
+        await delay(1500 * attempt);
+      } else {
+        dataError.value =
+          err instanceof Error ? err.message : '데이터를 불러오는 중 오류가 발생했습니다.';
+      }
+    }
+  }
+  dataLoading.value = false;
+}
+
+async function _fetchAll(): Promise<void> {
+  const [
       { data: courses, error: e1 },
       { data: meetings, error: e2 },
       // members 테이블 직접 접근 불가(RLS) → monthly_handicaps 조인으로 우회
       { data: handicaps, error: e3 },
       { data: results, error: e4 },
+      { data: pins },
+      { data: attendances },
     ] = await Promise.all([
       supabase.from('golf_courses').select('id, name'),
       supabase.from('meetings').select('id, year_month, meeting_date, course_id, host_member_id'),
@@ -55,10 +85,20 @@ export async function loadData(): Promise<void> {
       supabase
         .from('meeting_results')
         .select('id, meeting_id, member_id, attended, score, result_group, result_rank'),
+      supabase.from('member_pins').select('member_id, pin'),
+      supabase.from('attendance_confirmations').select('year_month, member_id, attending'),
     ]);
 
     const firstError = e1 ?? e2 ?? e3 ?? e4;
     if (firstError) throw new Error(firstError.message);
+
+    const DEFAULT_PIN = '2322';
+    const pinMap = new Map<string, string>(
+      (pins ?? []).map((p) => {
+        const pin = (p as { pin: string }).pin;
+        return [String((p as { member_id: number }).member_id), pin === '0000' ? DEFAULT_PIN : pin];
+      })
+    );
 
     // golf_courses
     fill(GOLF_COURSES, (courses ?? []).map((c) => ({
@@ -87,7 +127,7 @@ export async function loadData(): Promise<void> {
       const m = Array.isArray(raw) ? raw[0] : raw;
       const id = String(m.id);
       if (!memberMap.has(id)) {
-        memberMap.set(id, { id, name: m.name, pin: '0000', display_order: m.id });
+        memberMap.set(id, { id, name: m.name, pin: pinMap.get(id) ?? '2322', display_order: m.id });
       }
     }
     fill(MEMBERS, [...memberMap.values()].sort((a, b) => a.display_order - b.display_order));
@@ -118,16 +158,38 @@ export async function loadData(): Promise<void> {
         result_rank: (r.result_rank ?? null) as MeetingResult['result_rank'],
       }))
     );
-  } catch (err) {
-    dataError.value =
-      err instanceof Error ? err.message : '데이터를 불러오는 중 오류가 발생했습니다.';
-  } finally {
-    dataLoading.value = false;
-  }
+
+    syncAttendanceFromDB(
+      (attendances ?? []).map((a) => ({
+        year_month: a.year_month as string,
+        member_id: (a as { member_id: number }).member_id,
+        attending: a.attending as boolean,
+      }))
+    );
+}
+
+// ── 핸디캡 해석 ───────────────────────────────────────────────────────────────
+// 해당 월 핸디 레코드가 없으면 직전 달의 next_hc를 당월 핸디로 사용한다.
+// (월간/연간/나의기록 모두 동일 규칙을 쓰기 위한 단일 소스)
+export function resolveHandicap(
+  memberId: string,
+  yearMonth: string
+): { std_hc: number; app_hc: number; next_hc: number | null } | null {
+  const exact = MONTHLY_HANDICAPS.find(
+    (h) => h.member_id === memberId && h.year_month === yearMonth
+  );
+  if (exact) return { std_hc: exact.std_hc, app_hc: exact.app_hc, next_hc: exact.next_hc };
+
+  const prev = [...MONTHLY_HANDICAPS]
+    .filter((h) => h.member_id === memberId && h.year_month < yearMonth)
+    .sort((a, b) => (a.year_month > b.year_month ? -1 : 1))[0];
+  if (!prev) return null;
+
+  return { std_hc: prev.std_hc, app_hc: prev.next_hc, next_hc: null };
 }
 
 // ── 대시보드 데이터 ───────────────────────────────────────────────────────────
-export function getDashboardData(yearMonth: string): DashboardRow[] {
+export function getMonthlyData(yearMonth: string): MonthlyRow[] {
   const meeting = MEETINGS.find((m) => m.year_month === yearMonth);
 
   const [yr, mo] = yearMonth.split('-');
@@ -138,33 +200,36 @@ export function getDashboardData(yearMonth: string): DashboardRow[] {
       : `${yr}-${String(prevMonthNum).padStart(2, '0')}`;
   const prevMeeting = MEETINGS.find((m) => m.year_month === prevYM);
 
-  const rows: DashboardRow[] = [];
+  // 기준핸디 재적용(리셋) 월: 1월이거나, 직전 달 대비 std_hc가 바뀐 회원이 있으면 리셋 월.
+  // 이 달은 직전 달과 조를 비교할 수 없어 조 변경 리셋 없이 ±1만 적용한다.
+  const isResetMonth =
+    yearMonth.endsWith('-01') ||
+    MONTHLY_HANDICAPS.some((cur) => {
+      if (cur.year_month !== yearMonth) return false;
+      const prv = MONTHLY_HANDICAPS.find(
+        (h) => h.member_id === cur.member_id && h.year_month === prevYM
+      );
+      return prv !== undefined && prv.std_hc !== cur.std_hc;
+    });
+
+  const rows: MonthlyRow[] = [];
 
   for (const member of MEMBERS) {
     if (!isActive(member.name, yearMonth)) continue;
 
-    // 해당 월 핸디캡 레코드 탐색
-    const exactHandicap = MONTHLY_HANDICAPS.find(
-      (h) => h.member_id === member.id && h.year_month === yearMonth
-    );
-    const prevHandicap = [...MONTHLY_HANDICAPS]
-      .filter((h) => h.member_id === member.id && h.year_month < yearMonth)
-      .sort((a, b) => (a.year_month > b.year_month ? -1 : 1))[0];
-
-    // 해당 월 레코드가 없으면 직전 달의 next_hc를 당월HC로 사용
-    const baseHandicap = exactHandicap ?? prevHandicap;
+    // 해당 월 핸디캡(없으면 직전 달 next_hc로 폴백)
+    const baseHandicap = resolveHandicap(member.id, yearMonth);
     if (!baseHandicap) continue;
 
     const stdHc = baseHandicap.std_hc;
-    const appHc = exactHandicap ? exactHandicap.app_hc : prevHandicap!.next_hc;
+    const appHc = baseHandicap.app_hc;
 
     const result = meeting
       ? MEETING_RESULTS.find((r) => r.meeting_id === meeting.id && r.member_id === member.id)
       : undefined;
 
-    // 미팅 없는 달: 핸디캡이라도 있으면 행 표시
-    // 미팅 있는 달: result도 필요
-    if (meeting && !result) continue;
+    // 핸디캡이 있는 활성 회원은 항상 행 표시. 미팅이 있는데 result 행이 없는 경우
+    // (예: 휴면 중 미팅이 생성된 뒤 활성 전환된 회원)에도 미참석(-)으로 노출한다.
 
     const netScore =
       result?.attended && result.score !== null ? result.score - appHc : null;
@@ -178,9 +243,7 @@ export function getDashboardData(yearMonth: string): DashboardRow[] {
       const ymResult = MEETING_RESULTS.find(
         (r) => r.meeting_id === ym.id && r.member_id === member.id
       );
-      const ymHandicap = MONTHLY_HANDICAPS.find(
-        (h) => h.member_id === member.id && h.year_month === ym.year_month
-      );
+      const ymHandicap = resolveHandicap(member.id, ym.year_month);
       if (ymResult && ymResult.attended && ymResult.score !== null && ymResult.score > 0 && ymHandicap) {
         yearlyNetScores.push(ymResult.score - ymHandicap.app_hc);
       }
@@ -201,7 +264,7 @@ export function getDashboardData(yearMonth: string): DashboardRow[] {
       display_order: member.display_order,
       std_hc: stdHc,
       app_hc: appHc,
-      next_hc: exactHandicap?.next_hc ?? null,
+      next_hc: baseHandicap.next_hc,
       prev_result_group: prevResult?.result_group ?? null,
       attended: result?.attended ?? false,
       score: result?.score ?? null,
@@ -210,6 +273,7 @@ export function getDashboardData(yearMonth: string): DashboardRow[] {
       result_rank: result?.result_rank ?? null,
       yearly_net: yearlyNet,
       yearly_rank: null,
+      is_reset_month: isResetMonth,
     });
   }
 
@@ -229,7 +293,12 @@ export function getYearlySummary(year: string): YearlySummary[] {
   const summaries: YearlySummary[] = [];
 
   for (const member of MEMBERS) {
+    // 해당 연도 중 휴면 전환된 회원은 제외 (예: from='2026-04' → 2026·2027 랭킹에서 제외)
+    const dormant = DORMANT.find((d) => d.name === member.name);
+    if (dormant && dormant.from <= `${year}-12`) continue;
+
     const netScores: number[] = [];
+    const rawScores: number[] = [];
     let winnerCount = 0;
     let medalistCount = 0;
     let hostCount = 0;
@@ -240,9 +309,7 @@ export function getYearlySummary(year: string): YearlySummary[] {
       const result = MEETING_RESULTS.find(
         (r) => r.meeting_id === meeting.id && r.member_id === member.id
       );
-      const handicap = MONTHLY_HANDICAPS.find(
-        (h) => h.member_id === member.id && h.year_month === meeting.year_month
-      );
+      const handicap = resolveHandicap(member.id, meeting.year_month);
 
       if (result) {
         if (result.result_rank === 'Winner') winnerCount++;
@@ -250,8 +317,9 @@ export function getYearlySummary(year: string): YearlySummary[] {
         if (result.result_rank === 'Host') hostCount++;
       }
 
-      if (result && result.attended && result.score !== null && result.score > 0 && handicap) {
-        netScores.push(result.score - handicap.app_hc);
+      if (result && result.attended && result.score !== null && result.score > 0) {
+        rawScores.push(result.score);
+        if (handicap) netScores.push(result.score - handicap.app_hc);
       }
     }
 
@@ -260,6 +328,9 @@ export function getYearlySummary(year: string): YearlySummary[] {
         member_id: member.id,
         member_name: member.name,
         avg_net_score: netScores.reduce((a, b) => a + b, 0) / netScores.length,
+        avg_score: rawScores.length > 0
+          ? rawScores.reduce((a, b) => a + b, 0) / rawScores.length
+          : null,
         attended_count: netScores.length,
         winner_count: winnerCount,
         medalist_count: medalistCount,

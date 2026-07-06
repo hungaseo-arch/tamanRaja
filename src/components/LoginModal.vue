@@ -2,16 +2,12 @@
 import { computed, ref, watch } from 'vue';
 import { AlertCircle, CheckCircle2 } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
-import { MEMBERS } from '@/data';
+import { MEMBERS, isDormantNow } from '@/data';
 import Dialog from '@/components/ui/Dialog.vue';
 import Button from '@/components/ui/Button.vue';
 import Select from '@/components/ui/Select.vue';
 import Input from '@/components/ui/Input.vue';
 import Label from '@/components/ui/Label.vue';
-import Tabs from '@/components/ui/Tabs.vue';
-import TabsList from '@/components/ui/TabsList.vue';
-import TabsTrigger from '@/components/ui/TabsTrigger.vue';
-import TabsContent from '@/components/ui/TabsContent.vue';
 import Alert from '@/components/ui/Alert.vue';
 import AlertDescription from '@/components/ui/AlertDescription.vue';
 
@@ -24,19 +20,20 @@ const emit = defineEmits<{
   (e: 'update:open', value: boolean): void;
 }>();
 
-const { login, changePin, isLoggedIn, currentMember } = useAuth();
+const { login, changePin, isLoggedIn } = useAuth();
 
-// Login form state
+// 로그인 폼 상태
 const selectedMember = ref<string>('');
 const pin = ref<string>('');
 const loginError = ref<string>('');
 
-// Change PIN form state
+// PIN 변경 폼 상태
 const oldPin = ref<string>('');
 const newPin = ref<string>('');
 const confirmPin = ref<string>('');
 const changePinError = ref<string>('');
 const changePinSuccess = ref<boolean>(false);
+const changePinLoading = ref<boolean>(false);
 
 const isOpen = computed({
   get: () => props.open,
@@ -44,7 +41,10 @@ const isOpen = computed({
 });
 
 const memberOptions = computed(() =>
-  MEMBERS.map((m) => ({ value: m.name, label: m.name }))
+  [...MEMBERS]
+    .filter((m) => !isDormantNow(m.name))
+    .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
+    .map((m) => ({ value: m.name, label: m.name }))
 );
 
 function resetState(): void {
@@ -56,6 +56,7 @@ function resetState(): void {
   confirmPin.value = '';
   changePinError.value = '';
   changePinSuccess.value = false;
+  changePinLoading.value = false;
 }
 
 watch(isOpen, (v) => {
@@ -88,7 +89,7 @@ function handleLogin(e: Event): void {
   }
 }
 
-function handleChangePin(e: Event): void {
+async function handleChangePin(e: Event): Promise<void> {
   e.preventDefault();
   changePinError.value = '';
   changePinSuccess.value = false;
@@ -106,77 +107,66 @@ function handleChangePin(e: Event): void {
     return;
   }
 
-  const ok = changePin(oldPin.value, newPin.value);
-  if (ok) {
-    changePinSuccess.value = true;
-    oldPin.value = '';
-    newPin.value = '';
-    confirmPin.value = '';
-    window.setTimeout(() => { changePinSuccess.value = false; }, 3000);
-  } else {
-    changePinError.value = '기존 PIN이 올바르지 않습니다.';
+  changePinLoading.value = true;
+  try {
+    const ok = await changePin(oldPin.value, newPin.value);
+    if (ok) {
+      changePinSuccess.value = true;
+      oldPin.value = '';
+      newPin.value = '';
+      confirmPin.value = '';
+      setTimeout(() => { changePinSuccess.value = false; }, 3000);
+    } else {
+      changePinError.value = '기존 PIN이 올바르지 않습니다.';
+    }
+  } catch {
+    changePinError.value = '저장 중 오류가 발생했습니다.';
+  } finally {
+    changePinLoading.value = false;
   }
 }
 </script>
 
 <template>
-  <Dialog v-model:open="isOpen" content-class="sm:max-w-md">
-    <div class="space-y-1.5 text-left mb-4">
-      <h2 class="text-lg font-semibold">회원 인증</h2>
-      <p class="text-sm text-muted-foreground">
-        <template v-if="isLoggedIn">PIN을 변경하거나 로그아웃할 수 있습니다.</template>
-        <template v-else>회원 선택 후 PIN을 입력하여 로그인하세요.</template>
-      </p>
-    </div>
-
-    <!-- 로그인 상태 → PIN 변경 탭 -->
-    <Tabs v-if="isLoggedIn" default-value="change-pin" class="w-full">
-      <TabsList class="grid w-full grid-cols-1">
-        <TabsTrigger value="change-pin">PIN 변경</TabsTrigger>
-      </TabsList>
-      <TabsContent value="change-pin" class="space-y-4">
-        <div class="space-y-2">
-          <p class="text-sm text-muted-foreground">
-            현재 로그인: <span class="font-semibold text-foreground">{{ currentMember?.name }}</span>
-          </p>
-        </div>
-
-        <form class="space-y-4" @submit="handleChangePin">
-          <div class="space-y-2">
-            <Label for="old-pin">기존 PIN</Label>
+  <Dialog v-model:open="isOpen" content-class="sm:max-w-sm">
+    <!-- 로그인 상태 → PIN 변경 -->
+    <div v-if="isLoggedIn" class="w-full px-5 pt-4 space-y-4">
+      <form class="space-y-6" @submit="handleChangePin">
+          <div class="flex items-center gap-3">
+            <Label for="old-pin" class="w-20 shrink-0 text-right">기존 PIN</Label>
             <Input
               id="old-pin"
               type="password"
               inputmode="numeric"
               :maxlength="4"
               :model-value="oldPin"
-              placeholder="기존 PIN 4자리"
+              class="w-40" placeholder="4자리 숫자"
               @update:model-value="(v: string) => (oldPin = onlyDigits(v))"
             />
           </div>
 
-          <div class="space-y-2">
-            <Label for="new-pin">새 PIN</Label>
+          <div class="flex items-center gap-3">
+            <Label for="new-pin" class="w-20 shrink-0 text-right">새 PIN</Label>
             <Input
               id="new-pin"
               type="password"
               inputmode="numeric"
               :maxlength="4"
               :model-value="newPin"
-              placeholder="새 PIN 4자리"
+              class="w-40" placeholder="4자리 숫자"
               @update:model-value="(v: string) => (newPin = onlyDigits(v))"
             />
           </div>
 
-          <div class="space-y-2">
-            <Label for="confirm-pin">새 PIN 확인</Label>
+          <div class="flex items-center gap-3">
+            <Label for="confirm-pin" class="w-20 shrink-0 text-right">새 PIN 확인</Label>
             <Input
               id="confirm-pin"
               type="password"
               inputmode="numeric"
               :maxlength="4"
               :model-value="confirmPin"
-              placeholder="새 PIN 4자리 확인"
+              class="w-40" placeholder="4자리 숫자 확인"
               @update:model-value="(v: string) => (confirmPin = onlyDigits(v))"
             />
           </div>
@@ -188,15 +178,14 @@ function handleChangePin(e: Event): void {
 
           <Alert v-if="changePinSuccess" class="border-primary bg-primary/10">
             <CheckCircle2 class="h-4 w-4 text-primary" />
-            <AlertDescription class="text-primary">
-              PIN이 성공적으로 변경되었습니다.
-            </AlertDescription>
+            <AlertDescription class="text-primary">PIN이 성공적으로 변경되었습니다.</AlertDescription>
           </Alert>
 
-          <Button type="submit" class="w-full">PIN 변경</Button>
-        </form>
-      </TabsContent>
-    </Tabs>
+          <Button type="submit" class="w-full" :disabled="changePinLoading">
+            {{ changePinLoading ? '저장 중...' : 'PIN 변경' }}
+          </Button>
+      </form>
+    </div>
 
     <!-- 비로그인 → 로그인 폼 -->
     <form v-else class="space-y-4" @submit="handleLogin">

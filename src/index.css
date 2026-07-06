@@ -8,7 +8,7 @@
 ==========================================================================
 【AI HANDOVER NOTE】
 1. DESIGN PHILOSOPHY:
-   - Golf Club Dashboard Aesthetic: Professional sports club management interface with data-driven clarity
+   - Golf Club Monthly Aesthetic: Professional sports club management interface with data-driven clarity
    - Korean Typography Excellence: Optimized for Hangul readability with Noto Sans KR as primary typeface
    - Tabular Data Hierarchy: Spreadsheet-inspired layout with color-coded columns for quick data scanning
    - Green-White Golf Theme: Natural golf course palette with fresh greens, crisp whites, and accent colors for rankings
@@ -20,13 +20,13 @@
 3. COLOR SYSTEM:
    - Brand Primary (Golf Green): Hue 145 (fresh grass green) represents golf course vitality and club identity
    - --brand maps to --primary for main actions, --accent for highlights, --ring for focus states
-   - Orange (Hue 30): Used for 기준HC column headers, representing baseline/standard data
-   - Blue (Hue 210): Used for 당월HC/차월HC/Net Score columns, representing calculated/dynamic data
+   - Orange (Hue 30): Used for 기준 핸디 column headers, representing baseline/standard data
+   - Blue (Hue 210): Used for 당월 핸디/차월 핸디/Net Score columns, representing calculated/dynamic data
    - Semantic colors: success (green for Winner badges), warning (gold for Medalist), destructive (red for penalties)
    - Badge system: Gold (#FFD700 equivalent), Silver (#C0C0C0), Green (success tone) for Winner/Medalist/Host
 
 4. USAGE GUIDE:
-   - Layout: Full-width dashboard with centered content container (max-width: 1400px)
+   - Layout: Full-width monthly with centered content container (max-width: 1400px)
    - Table Design: Alternating row colors (muted background), sticky headers, color-coded column headers
    - Special Effects: Subtle shadows on cards, hover states on table rows, badge highlights with gentle glow
    - Responsive Strategy: Horizontal scroll for tables on mobile, collapsible columns for secondary data
@@ -169,6 +169,24 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* iOS Safe Area & Scroll Utilities */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
+
+/* FAB: 모바일 safe area 대응 */
+.fab-position {
+  bottom: max(1rem, calc(0.5rem + env(safe-area-inset-bottom, 0px)));
+  right: max(1rem, calc(0.5rem + env(safe-area-inset-right, 0px)));
+}
+@media (min-width: 640px) {
+  .fab-position {
+    bottom: 2rem;
+    right: 2rem;
+  }
 }
 
 @layer base {

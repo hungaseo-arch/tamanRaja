@@ -4,8 +4,8 @@ interface Props { class?: string }
 const props = defineProps<Props>();
 </script>
 <template>
-  <div class="relative w-full overflow-auto">
-    <table :class="cn('w-full caption-bottom text-sm', props.class)">
+  <div class="relative w-full h-full overflow-auto">
+    <table :class="cn('w-full h-full caption-bottom text-sm', props.class)">
       <slot />
     </table>
   </div>
