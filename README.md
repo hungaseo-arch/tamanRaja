@@ -183,6 +183,23 @@ Net Score = 스코어(score) − 당월 핸디(app_hc)   (낮을수록 우수)
 
 ---
 
+## 배포 / Deployment
+
+GitHub Pages(브랜치 `gh-pages`)로 정적 배포한다.
+
+```bash
+git add -A
+git commit -m "커밋 메시지"
+git push origin main      # 소스 커밋
+
+npm run deploy            # = npm run build && gh-pages -d dist
+```
+
+- `gh-pages` 브랜치에는 **dist 산출물 + `.nojekyll`만** 두고, 불필요한 파일은 넣지 않는다.
+- 핸디캡 트리거(`recompute_next_hc`)와 `monthly_handicaps`는 **Supabase**에 있으며 git에 포함되지 않는다.
+
+---
+
 ## 알려진 제한 / Known Limitations
 
 - 미래월 저장 시 기존 `meeting_results`를 삭제 후 재삽입하는 구간이 트랜잭션으로 묶여 있지 않아, 네트워크 오류 시 결과 유실 가능성이 있다.
