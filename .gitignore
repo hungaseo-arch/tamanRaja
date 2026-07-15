@@ -11,3 +11,4 @@ dist-ssr
 .env.local
 .env.*.local
 .claude/
+.node_modules_broken/
