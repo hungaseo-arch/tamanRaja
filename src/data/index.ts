@@ -37,12 +37,65 @@ export const MEETING_RESULTS: MeetingResult[] = reactive([]);
 export const dataLoading = ref(false);
 export const dataInitialized = ref(false);
 export const dataError = ref<string | null>(null);
+export const membersLoading = ref(false);
 
 function fill<T>(arr: T[], items: T[]): void {
   arr.splice(0, arr.length, ...items);
 }
 
 const delay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+/**
+ * 조회 하한 (P1-2). 지금은 2026년 데이터뿐이라 실질적으로 전량이지만,
+ * 해가 쌓여도 전송량이 무한정 늘지 않게 막아둔다. 2년 치를 가져오는 이유:
+ * resolveHandicap() 이 "직전 기록"으로 폴백하고, 나의 기록/연간 랭킹이
+ * 이전 연도를 참조할 수 있기 때문에 선택 월만 가져오면 계산이 깨진다.
+ */
+function defaultFromYearMonth(): string {
+  return `${new Date().getFullYear() - 2}-01`;
+}
+
+/**
+ * 로그인 화면용 최소 조회. 회원 목록(id, name) 외에는 아무것도 요청하지 않는다.
+ * 나머지 테이블은 세션이 생긴 뒤 loadData() 가 가져온다.
+ */
+export async function loadMembers(): Promise<void> {
+  if (MEMBERS.length > 0 || membersLoading.value) return;
+  membersLoading.value = true;
+  try {
+    const { data, error } = await supabase.from('members').select('id, name');
+    if (error) throw new Error(error.message);
+    fillMembers(data ?? []);
+  } catch (err) {
+    dataError.value =
+      err instanceof Error ? err.message : '회원 목록을 불러오는 중 오류가 발생했습니다.';
+  } finally {
+    membersLoading.value = false;
+  }
+}
+
+/** 로그아웃 시 캐시를 비운다. 다음 로그인 때 다시 채워진다. */
+export function clearData(): void {
+  fill(GOLF_COURSES, []);
+  fill(MEETINGS, []);
+  fill(MONTHLY_HANDICAPS, []);
+  fill(MEETING_RESULTS, []);
+  dataInitialized.value = false;
+  dataError.value = null;
+}
+
+function fillMembers(rows: { id: unknown; name: unknown }[]): void {
+  fill(
+    MEMBERS,
+    rows
+      .map((m) => ({
+        id: String(m.id),
+        name: m.name as string,
+        display_order: m.id as number,
+      }))
+      .sort((a, b) => a.display_order - b.display_order)
+  );
+}
 
 export async function loadData(retries = 3): Promise<void> {
   if (dataLoading.value) return;
@@ -68,6 +121,8 @@ export async function loadData(retries = 3): Promise<void> {
 }
 
 async function _fetchAll(): Promise<void> {
+  const from = defaultFromYearMonth();
+
   const [
       { data: courses, error: e1 },
       { data: meetings, error: e2 },
@@ -77,15 +132,25 @@ async function _fetchAll(): Promise<void> {
       { data: attendances },
     ] = await Promise.all([
       supabase.from('golf_courses').select('id, name'),
-      supabase.from('meetings').select('id, year_month, meeting_date, course_id, host_member_id'),
+      supabase
+        .from('meetings')
+        .select('id, year_month, meeting_date, course_id, host_member_id')
+        .gte('year_month', from),
       supabase
         .from('monthly_handicaps')
-        .select('id, member_id, year_month, std_hc, app_hc, next_hc'),
+        .select('id, member_id, year_month, std_hc, app_hc, next_hc')
+        .gte('year_month', from),
+      // meeting_results 에는 year_month 가 없어 meetings 를 통해 범위를 건다
+      // (meeting_results_meeting_id_fkey 로 임베드 필터가 가능).
       supabase
         .from('meeting_results')
-        .select('id, meeting_id, member_id, attended, score, result_group, result_rank'),
+        .select('id, meeting_id, member_id, attended, score, result_group, result_rank, meetings!inner(year_month)')
+        .gte('meetings.year_month', from),
       supabase.from('members').select('id, name'),
-      supabase.from('attendance_confirmations').select('year_month, member_id, attending'),
+      supabase
+        .from('attendance_confirmations')
+        .select('year_month, member_id, attending')
+        .gte('year_month', from),
     ]);
 
     const firstError = e1 ?? e2 ?? e3 ?? e4 ?? e5;
@@ -112,16 +177,7 @@ async function _fetchAll(): Promise<void> {
     );
 
     // members — PIN 은 어디에서도 프런트엔드로 내려오지 않는다.
-    fill(
-      MEMBERS,
-      (members ?? [])
-        .map((m) => ({
-          id: String(m.id),
-          name: m.name as string,
-          display_order: m.id as number,
-        }))
-        .sort((a, b) => a.display_order - b.display_order)
-    );
+    fillMembers(members ?? []);
 
     // monthly_handicaps
     fill(

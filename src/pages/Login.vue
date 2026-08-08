@@ -3,7 +3,7 @@ import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { AlertCircle } from 'lucide-vue-next';
 import { describeLoginError, useAuth } from '@/composables/useAuth';
-import { MEMBERS, isDormantNow } from '@/data';
+import { MEMBERS, isDormantNow, loadMembers } from '@/data';
 import { ROUTE_PATHS } from '@/lib';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
@@ -19,6 +19,8 @@ const { login, isLoggedIn } = useAuth();
 
 onMounted(() => {
   if (isLoggedIn.value) router.replace(ROUTE_PATHS.MONTHLY);
+  // 로그인 화면이 필요로 하는 유일한 조회. 이미 채워져 있으면 아무것도 안 한다.
+  else loadMembers();
 });
 
 const selectedMember = ref('');
