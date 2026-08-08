@@ -346,9 +346,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
 
 <template>
   <div class="space-y-4">
-    <!-- 안쪽에서 text-muted-foreground 를 쓰므로 배경도 테마를 따라가야 한다.
-         밝은 초록 그대로 두면 어두운 화면에서 옅은 회색 글씨가 얹혀 안 읽힌다. -->
-    <Card class="sticky top-20 z-20 py-0 bg-linear-to-r from-green-200 to-green-100 text-gray-900 dark:from-green-900 dark:to-green-950 dark:text-gray-100 border-0 text-xs">
+    <Card class="sticky top-20 z-20 py-0 bg-linear-to-r from-green-200 to-green-100 text-gray-900 border-0 text-xs">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2 py-2 px-3 sm:px-4">
         <!-- 1. 연월 (제목) — 이 화면의 h1 이다. 사이트 이름은 헤더의 일반 텍스트다. -->
         <CardTitle as="h1" class="px-0 text-sm font-bold text-primary truncate shrink-0">

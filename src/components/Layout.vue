@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
-import { LogOut, User, CalendarDays, Trophy, UserRound, ClipboardCheck, Sun, Moon } from 'lucide-vue-next';
+import { LogOut, User, CalendarDays, Trophy, UserRound, ClipboardCheck } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
 import { useAuth } from '@/composables/useAuth';
-import { useTheme } from '@/composables/useTheme';
 import { ROUTE_PATHS } from '@/lib';
 import { cn } from '@/lib/utils';
 
@@ -15,7 +14,6 @@ interface Props {
 defineProps<Props>();
 
 const { isLoggedIn, currentMember, logout } = useAuth();
-const { isDark, toggleTheme } = useTheme();
 const route = useRoute();
 const router = useRouter();
 
@@ -86,19 +84,6 @@ function isActive(path: string): boolean {
 
           <!-- 로그인/회원정보 -->
           <div class="flex items-center gap-1 sm:gap-2 shrink-0">
-            <!-- 지금 상태가 아니라 누르면 어떻게 되는지를 이름으로 준다.
-                 "다크 모드" 만으로는 켜는 건지 켜져 있다는 건지 알 수 없다. -->
-            <Button
-              variant="ghost"
-              size="sm"
-              class="px-2"
-              :aria-label="isDark ? '밝은 화면으로 전환' : '어두운 화면으로 전환'"
-              @click="toggleTheme"
-            >
-              <Sun v-if="isDark" class="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-              <Moon v-else class="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-            </Button>
-
             <!-- 좁은 폭에서는 글자가 숨겨져 아이콘만 남으므로 이름을 aria-label 로
                  따로 준다. 그림만 있는 버튼은 화면 낭독기에서 "버튼"으로만 읽힌다. -->
             <template v-if="isLoggedIn && currentMember">

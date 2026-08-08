@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { AlertCircle, Sun, Moon } from 'lucide-vue-next';
+import { AlertCircle } from 'lucide-vue-next';
 import { describeLoginError, useAuth } from '@/composables/useAuth';
-import { useTheme } from '@/composables/useTheme';
 import { MEMBERS, isDormantNow, loadMembers } from '@/data';
 import { ROUTE_PATHS } from '@/lib';
 import Card from '@/components/ui/Card.vue';
@@ -18,8 +17,6 @@ import AlertDescription from '@/components/ui/AlertDescription.vue';
 
 const router = useRouter();
 const { login, isLoggedIn } = useAuth();
-// 이 화면은 Layout 을 거치지 않아 헤더가 없다. 토글을 따로 둔다.
-const { isDark, toggleTheme } = useTheme();
 
 onMounted(() => {
   if (isLoggedIn.value) router.replace(ROUTE_PATHS.MONTHLY);
@@ -77,18 +74,7 @@ async function handleLogin(e: Event): Promise<void> {
 <template>
   <!-- 이 화면은 Layout 을 거치지 않고 그려지므로 main 랜드마크를 여기서 준다.
        없으면 화면 낭독기가 "본문으로 건너뛰기"를 할 곳이 없다. (P2-1) -->
-  <main class="relative flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] px-4 py-10">
-    <Button
-      variant="ghost"
-      size="sm"
-      class="absolute top-4 right-4 px-2"
-      :aria-label="isDark ? '밝은 화면으로 전환' : '어두운 화면으로 전환'"
-      @click="toggleTheme"
-    >
-      <Sun v-if="isDark" class="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-      <Moon v-else class="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-    </Button>
-
+  <main class="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] px-4 py-10">
     <div class="w-full max-w-sm space-y-6">
       <div class="text-center space-y-2">
         <span class="text-5xl">🏌️</span>

@@ -4,27 +4,12 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- 브라우저 UI(안드로이드 주소창 등) 색. media 로 나누지 않고 하나만 두고
-         아래 스크립트와 useTheme 이 값을 갈아끼운다 — OS 는 밝은데 앱만 어둡게
-         쓰는 경우에도 주소창이 따라오게 하려면 media 쿼리로는 안 된다.
-         반드시 스크립트보다 위에 있어야 한다. 아래에 두면 스크립트가 돌 때
-         아직 이 태그가 없어서 첫 화면의 주소창만 흰색으로 남는다. -->
+    <!-- 브라우저 UI(안드로이드 주소창 등) 색. 이 앱은 밝은 화면만 쓰므로
+         prefers-color-scheme 로 나누지 않고 흰색 하나로 고정한다. -->
     <meta name="theme-color" content="#ffffff" />
-
-    <!-- 테마를 그리기 전에 적용한다. 스크립트가 아래에 있으면 첫 프레임이 밝은
-         화면으로 한 번 번쩍인 뒤 어두워진다. defer/모듈이 아닌 이유도 같다. -->
-    <script>
-      (function () {
-        try {
-          var saved = localStorage.getItem('taman:theme');
-          var dark = saved === 'dark' ||
-            (saved !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          if (dark) document.documentElement.classList.add('dark');
-          var meta = document.querySelector('meta[name="theme-color"]');
-          if (meta) meta.setAttribute('content', dark ? '#0b1410' : '#ffffff');
-        } catch (e) { /* 저장소를 못 쓰면 밝은 화면으로 둔다 */ }
-      })();
-    </script>
+    <!-- OS 가 어둡더라도 폼 컨트롤·스크롤바까지 밝게 그리게 한다. 이걸 빼면
+         입력창과 셀렉트만 검게 나와 화면이 반쯤 어두워진 것처럼 보인다. -->
+    <meta name="color-scheme" content="light" />
 
     <title>따만라자 모임</title>
     <meta name="description" content="따만라자 골프모임 대시보드" />
