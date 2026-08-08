@@ -3,6 +3,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { Trophy, Medal, Home } from 'lucide-vue-next';
 import type { MonthlyRow, ResultRank, ResultGroup } from '@/lib';
 import { formatMeetingHeading } from '@/lib/format';
+import { cn } from '@/lib/utils';
 import { GOLF_COURSES } from '@/data';
 import { useAttendance } from '@/composables/useAttendance';
 import Select from '@/components/ui/Select.vue';
@@ -314,11 +315,13 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
     <!-- 월별 기록 테이블 -->
     <Card>
       <CardContent>
-        <div class="overflow-x-auto mt-4">
+        <!-- Table 컴포넌트가 이미 스크롤 컨테이너다. 여기서 또 감싸면 이중 스크롤. -->
+        <div class="mt-4">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead class="font-bold text-foreground whitespace-nowrap">회원</TableHead>
+                <!-- 가로 스크롤에도 회원명은 남는다 — 어느 행인지 잃지 않도록 -->
+                <TableHead class="font-bold text-foreground whitespace-nowrap sticky left-0 z-30 bg-card">회원</TableHead>
                 <TableHead v-if="isFutureMonth" class="font-bold text-center whitespace-nowrap">참석</TableHead>
                 <TableHead class="font-bold text-center hidden sm:table-cell">기준 핸디</TableHead>
                 <TableHead class="font-bold text-center whitespace-nowrap">당월 핸디</TableHead>
@@ -333,11 +336,21 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
               <TableRow
                 v-for="row in sortedMonthlyData"
                 :key="row.member_id"
-                :class="row.member_id === winnerRow?.member_id
+                :class="cn('group', row.member_id === winnerRow?.member_id
                   ? 'bg-primary/5 hover:bg-primary/10 transition-colors'
-                  : 'hover:bg-muted/50 transition-colors'"
+                  : 'hover:bg-muted/50 transition-colors')"
               >
-                <TableCell class="font-medium whitespace-nowrap">{{ row.member_name }}</TableCell>
+                <!-- 고정 열은 밑을 지나가는 셀을 가리려 불투명 bg-card 를 깐다.
+                     그러면 tr 의 반투명 강조·hover 틴트가 이 열에서만 사라지므로
+                     isolate + 음수 z-index ::before 로 다시 얹는다.
+                     relative 는 넣지 말 것 — cn 이 sticky 와 같은 그룹으로 보고 덮어쓴다. -->
+                <TableCell
+                  :class="cn('font-medium whitespace-nowrap sticky left-0 z-10 bg-card isolate',
+                    'before:absolute before:inset-0 before:-z-10 before:transition-colors',
+                    row.member_id === winnerRow?.member_id
+                      ? 'before:bg-primary/5 group-hover:before:bg-primary/10'
+                      : 'group-hover:before:bg-muted/50')"
+                >{{ row.member_name }}</TableCell>
 
                 <!-- 참석여부 (미래월만) -->
                 <TableCell v-if="isFutureMonth" class="text-center">

@@ -6,7 +6,8 @@ const props = defineProps<Props>();
 <template>
   <tr
     :class="cn(
-      'border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
+      // 행 구분선은 셀(TableCell/TableHead)의 border-b 가 그린다.
+      'transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted',
       props.class
     )"
   ><slot /></tr>

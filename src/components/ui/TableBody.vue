@@ -4,5 +4,5 @@ interface Props { class?: string }
 const props = defineProps<Props>();
 </script>
 <template>
-  <tbody :class="cn('[&_tr:last-child]:border-0', props.class)"><slot /></tbody>
+  <tbody :class="cn('[&_tr:last-child>td]:border-0', props.class)"><slot /></tbody>
 </template>

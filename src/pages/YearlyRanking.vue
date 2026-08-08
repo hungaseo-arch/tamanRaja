@@ -3,6 +3,7 @@ import { computed, ref, watch } from 'vue';
 import { Trophy, Medal, Home, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-vue-next';
 import { getYearlySummary, MEETINGS, MONTHLY_HANDICAPS } from '@/data';
 import type { YearlySummary } from '@/lib';
+import { cn } from '@/lib/utils';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -157,6 +158,19 @@ function rankLabel(rank: number): string {
   if (rank === 4) return '🏅';
   return `${rank}위`;
 }
+
+// 고정(sticky) 열은 밑으로 지나가는 셀을 가려야 하므로 불투명한 bg-card 를 깐다.
+// 그러면 tr 에 걸린 반투명 강조·hover 틴트가 이 두 열에서만 사라져 왼쪽에 흰
+// 홈이 생긴다. isolate + 음수 z-index ::before 로 셀 배경 위·글자 아래에 같은
+// 틴트를 다시 얹어 맞춘다. (tr 쪽 클래스와 색을 함께 유지할 것)
+// relative 는 넣지 말 것 — cn(tailwind-merge)이 sticky 와 같은 그룹으로 보고
+// 뒤엣것만 남겨 고정이 통째로 풀린다. isolate 만으로 ::before 의 -z-10 이 먹는다.
+const STICKY_BASE = 'sticky z-10 bg-card isolate before:absolute before:inset-0 before:-z-10 before:transition-colors';
+function stickyTint(rank: number | null): string {
+  if (rank === null) return 'group-hover:before:bg-muted/50';
+  if (rank <= 4) return 'before:bg-primary/5 group-hover:before:bg-primary/10';
+  return 'group-hover:before:bg-muted/50';
+}
 </script>
 
 <template>
@@ -254,12 +268,20 @@ function rankLabel(rank: number): string {
       <!-- 전체 랭킹 테이블 -->
       <Card class="flex flex-col flex-1 min-h-0">
         <CardContent class="flex-1 overflow-hidden min-h-0">
-          <div class="overflow-x-auto overflow-y-auto h-full min-h-0 mt-4">
+          <!-- Table 컴포넌트가 이미 스크롤 컨테이너다 (이중 스크롤 방지) -->
+          <div class="h-full min-h-0 mt-4">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead class="font-bold text-foreground whitespace-nowrap" scope="col">순위</TableHead>
-                  <TableHead class="font-bold text-foreground whitespace-nowrap" scope="col">회원</TableHead>
+                  <!-- 가로 스크롤에도 순위·회원은 남는다.
+                       순위 열 폭은 내부 w-10 + 좌우 px-2 로 정확히 56px 고정이고,
+                       회원 열의 left-14(=56px)가 거기에 맞춰져 있다. 표 셀의
+                       width/min-width 는 auto 레이아웃에서 무시될 수 있어(실측 45px)
+                       내용 폭으로 못박았다. 셋 중 하나를 바꾸면 나머지도 바꿀 것. -->
+                  <TableHead class="font-bold text-foreground whitespace-nowrap sticky left-0 z-30 bg-card px-2" scope="col">
+                    <div class="w-10">순위</div>
+                  </TableHead>
+                  <TableHead class="font-bold text-foreground whitespace-nowrap sticky left-14 z-30 bg-card" scope="col">회원</TableHead>
                   <TableHead
                     class="font-bold text-center whitespace-nowrap cursor-pointer select-none hover:text-primary"
                     scope="col"
@@ -335,17 +357,20 @@ function rankLabel(rank: number): string {
                   </TableRow>
                   <TableRow
                     v-else-if="entry.row"
-                    :class="entry.rank === null
+                    :class="cn('group', entry.rank === null
                       ? 'text-muted-foreground opacity-70 hover:bg-muted/50 transition-colors'
                       : entry.rank <= 4
                         ? 'bg-primary/5 hover:bg-primary/10 transition-colors font-semibold'
-                        : 'hover:bg-muted/50 transition-colors'"
+                        : 'hover:bg-muted/50 transition-colors')"
                   >
-                    <TableCell class="font-medium whitespace-nowrap pl-7">
-                      <template v-if="entry.rank !== null">{{ rankLabel(entry.rank) }}</template>
-                      <span v-else aria-label="순위 없음">-</span>
+                    <TableCell :class="cn('font-medium whitespace-nowrap px-2 left-0', STICKY_BASE, stickyTint(entry.rank))">
+                      <!-- w-10 + 좌우 px-2 = 56px. 회원 열의 left-14 가 여기에 맞춰져 있다. -->
+                      <div class="w-10">
+                        <template v-if="entry.rank !== null">{{ rankLabel(entry.rank) }}</template>
+                        <span v-else aria-label="순위 없음">-</span>
+                      </div>
                     </TableCell>
-                    <TableCell class="font-medium whitespace-nowrap">{{ entry.row.member_name }}</TableCell>
+                    <TableCell :class="cn('font-medium whitespace-nowrap left-14', STICKY_BASE, stickyTint(entry.rank))">{{ entry.row.member_name }}</TableCell>
                     <TableCell class="text-center whitespace-nowrap">{{ entry.row.attended_count }}회</TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell">{{ stdHcMap.get(entry.row.member_id) ?? '-' }}</TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap">
