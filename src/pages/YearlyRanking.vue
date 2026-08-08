@@ -72,20 +72,12 @@ const rankingPending = computed(
 // ── 최소 참석 기준 (P1-3) ────────────────────────────────────────────────────
 // 3회 참석자가 8회 참석자와 같은 표에서 나란히 순위를 받던 문제. 기준 미달
 // 회원도 화면에서 사라지지 않고 별도 구역에 남되, 순위는 받지 않는다.
-const MIN_ROUNDS_DEFAULT = '4';
-const minRoundsOptions = [1, 2, 3, 4, 5, 6].map((n) => ({
-  value: String(n),
-  label: `최소 ${n}회`,
-}));
-const minRounds = ref(MIN_ROUNDS_DEFAULT);
-const minRoundsNum = computed(() => Number(minRounds.value));
+// 기준을 화면에서 고르게 두면 같은 연도를 두고도 사람마다 다른 순위를 보게
+// 된다. 4회로 못박고, 그 숫자는 안내 문구에 그대로 적어 둔다.
+const minRoundsNum = 4;
 
-const qualified = computed(() =>
-  summary.value.filter((r) => r.attended_count >= minRoundsNum.value)
-);
-const unqualified = computed(() =>
-  summary.value.filter((r) => r.attended_count < minRoundsNum.value)
-);
+const qualified = computed(() => summary.value.filter((r) => r.attended_count >= minRoundsNum));
+const unqualified = computed(() => summary.value.filter((r) => r.attended_count < minRoundsNum));
 
 // ── 랭킹 기준 ────────────────────────────────────────────────────────────────
 // 평균 Net 과 평균 스코어는 서로 다른 이야기를 한다. 핸디를 뺀 실력 대비
@@ -246,7 +238,7 @@ function handleExport(): void {
       medalist_count: e.row!.medalist_count,
       host_count: e.row!.host_count,
     }));
-  exportYearlyRanking(selectedYear.value, rows, minRoundsNum.value);
+  exportYearlyRanking(selectedYear.value, rows, minRoundsNum);
 }
 
 function rankLabel(rank: number): string {
@@ -277,24 +269,22 @@ function stickyTint(rank: number | null): string {
       <!-- 연도·기준 선택 -->
       <div class="flex flex-wrap items-center gap-2">
         <h1 class="text-lg font-bold text-foreground mr-auto">연간 랭킹</h1>
-        <label for="ranking-year" class="sr-only">연도 선택</label>
-        <Select
-          id="ranking-year"
-          v-model="selectedYear"
-          :options="yearOptions"
-          placeholder=""
-          class="w-24 shrink-0"
-          select-class="h-8 text-xs"
-        />
-        <label for="ranking-min-rounds" class="sr-only">최소 참석 횟수</label>
-        <Select
-          id="ranking-min-rounds"
-          v-model="minRounds"
-          :options="minRoundsOptions"
-          placeholder=""
-          class="w-28 shrink-0"
-          select-class="h-8 text-xs"
-        />
+        <!-- 고를 연도가 하나뿐이면 드롭다운이 아니라 그냥 그 연도다.
+             기록이 다음 해로 넘어가면 자동으로 선택 상자가 나타난다. -->
+        <template v-if="yearOptions.length > 1">
+          <label for="ranking-year" class="sr-only">연도 선택</label>
+          <Select
+            id="ranking-year"
+            v-model="selectedYear"
+            :options="yearOptions"
+            placeholder=""
+            class="w-24 shrink-0"
+            select-class="h-8 text-xs"
+          />
+        </template>
+        <span v-else-if="selectedYear" class="text-sm font-semibold text-foreground shrink-0">
+          {{ selectedYear }}년
+        </span>
         <!-- 좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->
         <Button
           variant="outline"
