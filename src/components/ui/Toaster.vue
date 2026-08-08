@@ -37,6 +37,14 @@ const { toasts, dismiss } = useToast();
             <div class="space-y-1">
               <div v-if="t.title" class="text-sm font-semibold">{{ t.title }}</div>
               <div v-if="t.description" class="text-sm opacity-90">{{ t.description }}</div>
+              <button
+                v-if="t.action"
+                type="button"
+                class="mt-2 rounded-md border border-current px-2.5 py-1 text-xs font-medium hover:bg-foreground/10"
+                @click="t.action.onClick(); dismiss(t.id);"
+              >
+                {{ t.action.label }}
+              </button>
             </div>
             <button
               type="button"

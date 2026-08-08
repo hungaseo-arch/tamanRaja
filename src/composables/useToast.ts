@@ -9,17 +9,26 @@ import { ref, type Ref } from 'vue';
 
 export type ToastVariant = 'default' | 'destructive';
 
+/** 토스트 안의 버튼 하나. 누르면 토스트는 닫힌다. */
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface ToastItem {
   id: string;
   title?: string;
   description?: string;
   variant?: ToastVariant;
+  action?: ToastAction;
 }
 
 export interface ToastInput {
   title?: string;
   description?: string;
   variant?: ToastVariant;
+  action?: ToastAction;
+  /** 0 이면 사용자가 닫을 때까지 남는다. 기본 3초. */
   duration?: number;
 }
 
@@ -41,6 +50,7 @@ export function useToast() {
       title: input.title,
       description: input.description,
       variant: input.variant ?? 'default',
+      action: input.action,
     };
 
     toasts.value = [item, ...toasts.value].slice(0, TOAST_LIMIT);
