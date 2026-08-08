@@ -2,6 +2,7 @@
 import { computed, reactive, ref, watch } from 'vue';
 import { Trophy, Medal, Home } from 'lucide-vue-next';
 import type { MonthlyRow, ResultRank, ResultGroup } from '@/lib';
+import { formatMeetingHeading } from '@/lib/format';
 import { GOLF_COURSES } from '@/data';
 import { useAttendance } from '@/composables/useAttendance';
 import Select from '@/components/ui/Select.vue';
@@ -187,16 +188,11 @@ function handleSave(): void {
   isEditing.value = false;
 }
 
-function formatDate(dateStr: string): string {
-  if (!dateStr) return '';
-  const d = new Date(dateStr);
-  return `${d.getFullYear()}년 ${d.getMonth() + 1}월 ${d.getDate()}일`;
-}
-
-function formatYearMonth(ym: string): string {
-  const [year, month] = ym.split('-');
-  return `${year}년 ${parseInt(month, 10)}월`;
-}
+// 골프장이 아직 없으면 구분자('-')를 아예 붙이지 않는다 — "2026년 8월 1일 - "
+// 처럼 구분자만 남는 문제 (P1-1)
+const heading = computed(() =>
+  formatMeetingHeading(props.selectedMonth, props.meetingDate, props.courseName),
+);
 
 const sortedMonthlyData = computed(() =>
   [...props.monthlyData].sort((a, b) => a.member_name.localeCompare(b.member_name, 'ko'))
@@ -253,7 +249,7 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2 py-2 px-3 sm:px-4">
         <!-- 1. 연월 (제목) -->
         <CardTitle class="px-0 text-sm font-bold text-primary truncate shrink-0">
-          {{ meetingDate ? `${formatDate(meetingDate)} - ${courseName}` : formatYearMonth(selectedMonth) }}
+          {{ heading }}
         </CardTitle>
 
         <!-- 2. 참석 예정 인원 (미래월) -->

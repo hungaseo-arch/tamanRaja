@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import type { Member } from '@/lib';
+import { formatValue } from '@/lib/format';
 import { MONTHLY_HANDICAPS } from '@/data';
 import { useToast } from '@/composables/useToast';
 import Dialog from '@/components/ui/Dialog.vue';
@@ -76,11 +77,11 @@ function handleSubmit(e: Event): void {
         <div class="grid grid-cols-2 gap-4 text-sm">
           <div class="text-center">
             <div class="text-muted-foreground text-xs mb-1">기준 핸디</div>
-            <div class="font-mono font-bold text-2xl">{{ handicap.std_hc }}</div>
+            <div class="font-mono font-bold text-2xl">{{ formatValue(handicap.std_hc) }}</div>
           </div>
           <div class="text-center">
             <div class="text-muted-foreground text-xs mb-1">차월 핸디</div>
-            <div class="font-mono font-bold text-2xl text-primary">{{ handicap.next_hc }}</div>
+            <div class="font-mono font-bold text-2xl text-primary">{{ formatValue(handicap.next_hc) }}</div>
           </div>
         </div>
       </div>

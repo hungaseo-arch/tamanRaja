@@ -5,6 +5,7 @@ import { Trophy, Medal, Home } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { MEETINGS, MEETING_RESULTS, MONTHLY_HANDICAPS, GOLF_COURSES, resolveHandicap } from '@/data';
 import { ROUTE_PATHS } from '@/lib';
+import { formatPending, formatValue } from '@/lib/format';
 import type { ResultRank } from '@/lib';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
@@ -33,10 +34,12 @@ const RANK_META: Record<NonNullable<ResultRank>, RankMeta> = {
 
 interface HistoryRow {
   year_month: string;
-  course_name: string;
-  std_hc: number;
-  app_hc: number;
-  next_hc: number;
+  // 아직 정해지지 않은 값은 null 로 둔다. `?? 0` 으로 채우면 확정된 핸디 0 과
+  // 구분되지 않아 미래 달이 "차월 핸디 0" 으로 보인다. (P1-1)
+  course_name: string | null;
+  std_hc: number | null;
+  app_hc: number | null;
+  next_hc: number | null;
   attended: boolean;
   score: number | null;
   net_score: number | null;
@@ -69,10 +72,10 @@ const history = computed<HistoryRow[]>(() => {
 
       return {
         year_month:   ym,
-        course_name:  course?.name ?? '',
-        std_hc:       handicap?.std_hc ?? 0,
-        app_hc:       handicap?.app_hc ?? 0,
-        next_hc:      handicap?.next_hc ?? 0,
+        course_name:  course?.name ?? null,
+        std_hc:       handicap?.std_hc ?? null,
+        app_hc:       handicap?.app_hc ?? null,
+        next_hc:      handicap?.next_hc ?? null,
         attended,
         score,
         net_score,
@@ -111,6 +114,16 @@ const derived = computed(() => {
 
 function formatMonth(ym: string): string {
   return `${parseInt(ym.slice(5), 10)}월`;
+}
+
+const nowYM = (() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+})();
+
+// 아직 오지 않은 달은 `미정`(앞으로 정해짐), 지난 달은 `-`(기록 없음).
+function formatCourse(row: HistoryRow): string {
+  return row.year_month >= nowYM ? formatPending(row.course_name) : formatValue(row.course_name);
 }
 </script>
 
@@ -185,13 +198,16 @@ function formatMonth(ym: string): string {
                     class="hover:bg-muted/50 transition-colors h-14"
                   >
                     <TableCell class="font-medium whitespace-nowrap pl-7">{{ formatMonth(row.year_month) }}</TableCell>
-                    <TableCell class="whitespace-nowrap">{{ row.course_name }}</TableCell>
-                    <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell">{{ row.std_hc }}</TableCell>
-                    <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell">{{ row.app_hc }}</TableCell>
-                    <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell">{{ row.next_hc }}</TableCell>
+                    <TableCell
+                      class="whitespace-nowrap"
+                      :class="row.course_name ? '' : 'text-muted-foreground text-sm'"
+                    >{{ formatCourse(row) }}</TableCell>
+                    <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell">{{ formatValue(row.std_hc) }}</TableCell>
+                    <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell">{{ formatValue(row.app_hc) }}</TableCell>
+                    <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell">{{ formatValue(row.next_hc) }}</TableCell>
 
                     <TableCell class="text-center font-mono whitespace-nowrap">
-                      <template v-if="row.attended">{{ row.score }}</template>
+                      <template v-if="row.attended && row.score !== null">{{ row.score }}</template>
                       <span v-else class="text-muted-foreground text-sm">-</span>
                     </TableCell>
 
