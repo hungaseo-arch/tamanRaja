@@ -2,7 +2,7 @@
 import { computed, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { AlertCircle } from 'lucide-vue-next';
-import { useAuth } from '@/composables/useAuth';
+import { describeLoginError, useAuth } from '@/composables/useAuth';
 import { MEMBERS, isDormantNow } from '@/data';
 import { ROUTE_PATHS } from '@/lib';
 import Card from '@/components/ui/Card.vue';
@@ -24,19 +24,21 @@ onMounted(() => {
 const selectedMember = ref('');
 const pin = ref('');
 const loginError = ref('');
+const submitting = ref(false);
 
+// 회원 목록은 members(id, name) 만 사용한다. PIN 은 어떤 형태로도 내려오지 않는다.
 const memberOptions = computed(() =>
   [...MEMBERS]
     .filter((m) => !isDormantNow(m.name))
     .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
-    .map((m) => ({ value: m.name, label: m.name }))
+    .map((m) => ({ value: m.id, label: m.name }))
 );
 
 function onlyDigits(v: string): string {
   return v.replace(/\D/g, '').slice(0, 4);
 }
 
-function handleLogin(e: Event): void {
+async function handleLogin(e: Event): Promise<void> {
   e.preventDefault();
   loginError.value = '';
   if (!selectedMember.value) {
@@ -47,11 +49,18 @@ function handleLogin(e: Event): void {
     loginError.value = 'PIN은 4자리 숫자여야 합니다.';
     return;
   }
-  const ok = login(selectedMember.value, pin.value);
-  if (ok) {
-    router.push(ROUTE_PATHS.MONTHLY);
-  } else {
-    loginError.value = '회원명 또는 PIN이 올바르지 않습니다.';
+
+  submitting.value = true;
+  try {
+    const result = await login(selectedMember.value, pin.value);
+    if (result.ok) {
+      router.push(ROUTE_PATHS.MONTHLY);
+      return;
+    }
+    loginError.value = describeLoginError(result);
+    pin.value = '';
+  } finally {
+    submitting.value = false;
   }
 }
 </script>
@@ -93,7 +102,9 @@ function handleLogin(e: Event): void {
               <AlertCircle class="h-4 w-4" />
               <AlertDescription>{{ loginError }}</AlertDescription>
             </Alert>
-            <Button type="submit" class="w-full">로그인</Button>
+                  <Button type="submit" class="w-full" :disabled="submitting">
+              {{ submitting ? '확인 중...' : '로그인' }}
+            </Button>
           </form>
         </CardContent>
       </Card>

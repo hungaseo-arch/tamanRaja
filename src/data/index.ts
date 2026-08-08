@@ -71,34 +71,25 @@ async function _fetchAll(): Promise<void> {
   const [
       { data: courses, error: e1 },
       { data: meetings, error: e2 },
-      // members 테이블 직접 접근 불가(RLS) → monthly_handicaps 조인으로 우회
       { data: handicaps, error: e3 },
       { data: results, error: e4 },
-      { data: pins },
+      { data: members, error: e5 },
       { data: attendances },
     ] = await Promise.all([
       supabase.from('golf_courses').select('id, name'),
       supabase.from('meetings').select('id, year_month, meeting_date, course_id, host_member_id'),
       supabase
         .from('monthly_handicaps')
-        .select('id, member_id, year_month, std_hc, app_hc, next_hc, members!inner(id, name)'),
+        .select('id, member_id, year_month, std_hc, app_hc, next_hc'),
       supabase
         .from('meeting_results')
         .select('id, meeting_id, member_id, attended, score, result_group, result_rank'),
-      supabase.from('member_pins').select('member_id, pin'),
+      supabase.from('members').select('id, name'),
       supabase.from('attendance_confirmations').select('year_month, member_id, attending'),
     ]);
 
-    const firstError = e1 ?? e2 ?? e3 ?? e4;
+    const firstError = e1 ?? e2 ?? e3 ?? e4 ?? e5;
     if (firstError) throw new Error(firstError.message);
-
-    const DEFAULT_PIN = '2322';
-    const pinMap = new Map<string, string>(
-      (pins ?? []).map((p) => {
-        const pin = (p as { pin: string }).pin;
-        return [String((p as { member_id: number }).member_id), pin === '0000' ? DEFAULT_PIN : pin];
-      })
-    );
 
     // golf_courses
     fill(GOLF_COURSES, (courses ?? []).map((c) => ({
@@ -120,17 +111,17 @@ async function _fetchAll(): Promise<void> {
         .sort((a, b) => new Date(a.meeting_date).getTime() - new Date(b.meeting_date).getTime())
     );
 
-    // members: monthly_handicaps 조인에서 추출 후 중복 제거
-    const memberMap = new Map<string, Member>();
-    for (const h of handicaps ?? []) {
-      const raw = (h as { members: { id: number; name: string } | { id: number; name: string }[] }).members;
-      const m = Array.isArray(raw) ? raw[0] : raw;
-      const id = String(m.id);
-      if (!memberMap.has(id)) {
-        memberMap.set(id, { id, name: m.name, pin: pinMap.get(id) ?? '2322', display_order: m.id });
-      }
-    }
-    fill(MEMBERS, [...memberMap.values()].sort((a, b) => a.display_order - b.display_order));
+    // members — PIN 은 어디에서도 프런트엔드로 내려오지 않는다.
+    fill(
+      MEMBERS,
+      (members ?? [])
+        .map((m) => ({
+          id: String(m.id),
+          name: m.name as string,
+          display_order: m.id as number,
+        }))
+        .sort((a, b) => a.display_order - b.display_order)
+    );
 
     // monthly_handicaps
     fill(
@@ -346,6 +337,95 @@ export function getYearlySummary(year: string): YearlySummary[] {
   });
 
   return summaries;
+}
+
+// ── 연간 기록 내보내기(CSV) ───────────────────────────────────────────────────
+// 데이터 검증·개인 분석용. 해당 연도의 모든 미팅 × 전회원을 한 행씩 펼친 형태로,
+// 월간 화면과 동일한 규칙(휴면 제외·핸디 폴백)을 그대로 따른다.
+export interface YearlyExportRow {
+  year_month: string;
+  meeting_date: string;
+  course_name: string;
+  member_name: string;
+  attended: boolean;
+  std_hc: number;
+  app_hc: number;
+  next_hc: number | null;
+  score: number | null;
+  net_score: number | null;
+  monthly_rank: number | null;
+  result_group: MeetingResult['result_group'];
+  result_rank: MeetingResult['result_rank'];
+  yearly_avg_net: number | null;
+  yearly_rank: number | null;
+}
+
+export function getYearlyExportRows(year: string): YearlyExportRow[] {
+  const yearMeetings = MEETINGS.filter((m) => m.year_month.startsWith(year)).sort((a, b) =>
+    a.year_month < b.year_month ? -1 : a.year_month > b.year_month ? 1 : 0
+  );
+  // 연간 평균·순위는 랭킹 페이지와 동일한 집계를 재사용한다
+  const summaryByMember = new Map(getYearlySummary(year).map((s) => [s.member_id, s]));
+
+  const rows: YearlyExportRow[] = [];
+
+  for (const meeting of yearMeetings) {
+    const courseName = GOLF_COURSES.find((c) => c.id === meeting.golf_course_id)?.name ?? '';
+    const monthRows: YearlyExportRow[] = [];
+
+    for (const member of MEMBERS) {
+      if (!isActive(member.name, meeting.year_month)) continue;
+
+      const handicap = resolveHandicap(member.id, meeting.year_month);
+      if (!handicap) continue;
+
+      const result = MEETING_RESULTS.find(
+        (r) => r.meeting_id === meeting.id && r.member_id === member.id
+      );
+      const attended = result?.attended ?? false;
+      const score = attended ? result?.score ?? null : null;
+      const scored = score !== null && score > 0;
+      const summary = summaryByMember.get(member.id);
+
+      monthRows.push({
+        year_month: meeting.year_month,
+        meeting_date: meeting.meeting_date ?? '',
+        course_name: courseName,
+        member_name: member.name,
+        attended,
+        std_hc: handicap.std_hc,
+        app_hc: handicap.app_hc,
+        // 차월 핸디는 스코어가 기록된 경우에만 확정값 (월간 화면과 동일)
+        next_hc: scored ? handicap.next_hc : null,
+        score,
+        net_score: scored ? score - handicap.app_hc : null,
+        monthly_rank: null,
+        result_group: result?.result_group ?? null,
+        result_rank: result?.result_rank ?? null,
+        yearly_avg_net: summary?.avg_net_score ?? null,
+        yearly_rank: summary?.rank ?? null,
+      });
+    }
+
+    // 해당 월 Net 스코어 기준 순위 부여 (미참석·미기록은 순위 없음)
+    [...monthRows]
+      .filter((r) => r.net_score !== null)
+      .sort((a, b) => (a.net_score ?? 0) - (b.net_score ?? 0))
+      .forEach((r, idx) => {
+        r.monthly_rank = idx + 1;
+      });
+
+    monthRows.sort((a, b) => {
+      if (a.monthly_rank !== null && b.monthly_rank !== null) return a.monthly_rank - b.monthly_rank;
+      if (a.monthly_rank !== null) return -1;
+      if (b.monthly_rank !== null) return 1;
+      return a.member_name.localeCompare(b.member_name, 'ko');
+    });
+
+    rows.push(...monthRows);
+  }
+
+  return rows;
 }
 
 // ── 월 목록 ───────────────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
-// Route paths
-export const ADMIN_NAMES = new Set(['서종환', '조학영']);
+// 관리자 판정은 더 이상 프런트엔드 하드코딩이 아니라 members.role 이 소스다.
+// 세션 회원의 role 은 session_member() RPC 가 알려주며(useAuth 의 isAdmin),
+// 최종 강제는 서버 RLS 가 한다. 화면 조건은 편의일 뿐 권한 경계가 아니다.
 
 export const ROUTE_PATHS = {
   HOME: '/',
@@ -12,7 +13,6 @@ export const ROUTE_PATHS = {
 export interface Member {
   id: string;
   name: string;
-  pin: string;
   display_order: number;
 }
 

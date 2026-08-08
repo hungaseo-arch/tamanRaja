@@ -18,8 +18,8 @@ const { isLoggedIn, currentMember, logout } = useAuth();
 const route = useRoute();
 const router = useRouter();
 
-function handleLogout(): void {
-  logout();
+async function handleLogout(): Promise<void> {
+  await logout();
   router.push(ROUTE_PATHS.HOME);
 }
 

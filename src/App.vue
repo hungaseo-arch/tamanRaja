@@ -12,7 +12,7 @@ import { ROUTE_PATHS } from '@/lib';
 
 const router = useRouter();
 const route = useRoute();
-const { currentMember } = useAuth();
+const { currentMember, isAdmin, revalidate } = useAuth();
 const { setAttendance, getAttendance } = useAttendance();
 
 const loginModalOpen = ref(false);
@@ -49,7 +49,7 @@ const nextAttended = computed((): boolean | null => {
 });
 
 const isManager = computed(() =>
-  currentMember.value?.display_order === 1 || nextMemberData.value?.result_rank === 'Host'
+  isAdmin.value || nextMemberData.value?.result_rank === 'Host'
 );
 
 async function handleSaveScore(_score: number | null, attended: boolean | null): Promise<void> {
@@ -64,6 +64,9 @@ async function handleSaveScore(_score: number | null, attended: boolean | null):
 }
 
 onMounted(() => {
+  // 저장된 토큰이 서버에서도 유효한지 먼저 확인한다. 만료·폐기된 세션으로
+  // 로그인된 것처럼 보이는 상태를 막는다.
+  revalidate();
   loadData();
 });
 </script>

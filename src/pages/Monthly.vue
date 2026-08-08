@@ -4,7 +4,6 @@ import { useRoute } from 'vue-router';
 import { getMonthlyData, getAvailableMonths, GOLF_COURSES, MEETINGS, MEETING_RESULTS, MEMBERS, loadData } from '@/data';
 import { useAuth } from '@/composables/useAuth';
 import { supabase } from '@/lib/supabase';
-import { ADMIN_NAMES } from '@/lib';
 import type { SavePayload } from '@/components/MonthlyTable.vue';
 import MonthlyTable from '@/components/MonthlyTable.vue';
 
@@ -85,11 +84,13 @@ const isFutureMonth = computed(() => {
   return !hasScores;
 });
 
-const { currentMember } = useAuth();
+const { currentMember, isAdmin } = useAuth();
 
+// 화면 노출 조건일 뿐 권한 경계가 아니다. 실제 쓰기 허용 여부는 서버 RLS 가
+// app.can_manage_month() 로 동일한 규칙(관리자 또는 전월 Host)을 재검증한다.
 const isManager = computed(() => {
   if (!currentMember.value) return false;
-  if (ADMIN_NAMES.has(currentMember.value.name)) return true;
+  if (isAdmin.value) return true;
   // 전월 Host 확인 (선택된 미래월 기준 전월 → 새 미래월 추가 시 자동 갱신)
   const prevMonthNum = parseInt(selectedMonth.value.slice(5)) - 1;
   const prevYM = prevMonthNum === 0

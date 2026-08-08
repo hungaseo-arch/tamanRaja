@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { AlertCircle, CheckCircle2 } from 'lucide-vue-next';
-import { useAuth } from '@/composables/useAuth';
+import { describeChangePinError, describeLoginError, useAuth } from '@/composables/useAuth';
 import { MEMBERS, isDormantNow } from '@/data';
 import Dialog from '@/components/ui/Dialog.vue';
 import Button from '@/components/ui/Button.vue';
@@ -26,6 +26,7 @@ const { login, changePin, isLoggedIn } = useAuth();
 const selectedMember = ref<string>('');
 const pin = ref<string>('');
 const loginError = ref<string>('');
+const loginLoading = ref<boolean>(false);
 
 // PIN 변경 폼 상태
 const oldPin = ref<string>('');
@@ -40,17 +41,19 @@ const isOpen = computed({
   set: (v: boolean) => emit('update:open', v),
 });
 
+// 회원 목록은 members(id, name) 만 사용한다. PIN 은 어떤 형태로도 내려오지 않는다.
 const memberOptions = computed(() =>
   [...MEMBERS]
     .filter((m) => !isDormantNow(m.name))
     .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
-    .map((m) => ({ value: m.name, label: m.name }))
+    .map((m) => ({ value: m.id, label: m.name }))
 );
 
 function resetState(): void {
   selectedMember.value = '';
   pin.value = '';
   loginError.value = '';
+  loginLoading.value = false;
   oldPin.value = '';
   newPin.value = '';
   confirmPin.value = '';
@@ -67,7 +70,7 @@ function onlyDigits(v: string): string {
   return v.replace(/\D/g, '').slice(0, 4);
 }
 
-function handleLogin(e: Event): void {
+async function handleLogin(e: Event): Promise<void> {
   e.preventDefault();
   loginError.value = '';
 
@@ -80,12 +83,18 @@ function handleLogin(e: Event): void {
     return;
   }
 
-  const ok = login(selectedMember.value, pin.value);
-  if (ok) {
-    resetState();
-    isOpen.value = false;
-  } else {
-    loginError.value = '회원명 또는 PIN이 올바르지 않습니다.';
+  loginLoading.value = true;
+  try {
+    const result = await login(selectedMember.value, pin.value);
+    if (result.ok) {
+      resetState();
+      isOpen.value = false;
+      return;
+    }
+    loginError.value = describeLoginError(result);
+    pin.value = '';
+  } finally {
+    loginLoading.value = false;
   }
 }
 
@@ -102,22 +111,19 @@ async function handleChangePin(e: Event): Promise<void> {
     changePinError.value = '새 PIN이 일치하지 않습니다.';
     return;
   }
-  if (oldPin.value === newPin.value) {
-    changePinError.value = '새 PIN은 기존 PIN과 달라야 합니다.';
-    return;
-  }
 
   changePinLoading.value = true;
   try {
-    const ok = await changePin(oldPin.value, newPin.value);
-    if (ok) {
+    // 기존 PIN 대조와 동일성 검사 모두 서버(change_pin RPC)가 판정한다.
+    const result = await changePin(oldPin.value, newPin.value);
+    if (result.ok) {
       changePinSuccess.value = true;
       oldPin.value = '';
       newPin.value = '';
       confirmPin.value = '';
       setTimeout(() => { changePinSuccess.value = false; }, 3000);
     } else {
-      changePinError.value = '기존 PIN이 올바르지 않습니다.';
+      changePinError.value = describeChangePinError(result);
     }
   } catch {
     changePinError.value = '저장 중 오류가 발생했습니다.';
@@ -217,7 +223,9 @@ async function handleChangePin(e: Event): Promise<void> {
         <AlertDescription>{{ loginError }}</AlertDescription>
       </Alert>
 
-      <Button type="submit" class="w-full">로그인</Button>
+      <Button type="submit" class="w-full" :disabled="loginLoading">
+        {{ loginLoading ? '확인 중...' : '로그인' }}
+      </Button>
     </form>
   </Dialog>
 </template>
