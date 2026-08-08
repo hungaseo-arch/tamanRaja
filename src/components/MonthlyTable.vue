@@ -4,7 +4,7 @@ import { Trophy, Medal, Home, Download } from 'lucide-vue-next';
 import type { MonthlyRow, ResultRank, ResultGroup } from '@/lib';
 import { formatMeetingHeading } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { GOLF_COURSES } from '@/data';
+import { GOLF_COURSES, setting } from '@/data';
 import { useAttendance } from '@/composables/useAttendance';
 import { useRecordExport } from '@/composables/useRecordExport';
 import Select from '@/components/ui/Select.vue';
@@ -618,8 +618,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
               </TableRow>
             </TableBody>
           </Table>
-          <p class="text-xs text-muted-foreground mt-2 px-2">
-            * 기준 핸디는 2026년 7월 부터 신규 적용
+          <p v-if="setting('handicap_notice')" class="text-xs text-muted-foreground mt-2 px-2">
+            {{ setting('handicap_notice') }}
           </p>
           </AsyncState>
         </div>

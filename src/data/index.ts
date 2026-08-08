@@ -35,6 +35,17 @@ export const MEETINGS: Meeting[] = reactive([]);
 export const MONTHLY_HANDICAPS: MonthlyHandicap[] = reactive([]);
 export const MEETING_RESULTS: MeetingResult[] = reactive([]);
 
+/**
+ * 코드 배포 없이 바꿔야 하는 화면 문구 (public.app_settings).
+ * 값이 없으면 빈 문자열이라 화면에서 v-if 로 그냥 사라진다 — 테이블이
+ * 아직 없는 서버에 새 프런트를 먼저 올려도 깨지지 않게 하려는 것이다.
+ */
+export const SETTINGS: Record<string, string> = reactive({});
+
+export function setting(key: string): string {
+  return SETTINGS[key] ?? '';
+}
+
 export const dataLoading = ref(false);
 export const dataInitialized = ref(false);
 export const dataError = ref<string | null>(null);
@@ -80,6 +91,7 @@ export function clearData(): void {
   fill(MEETINGS, []);
   fill(MONTHLY_HANDICAPS, []);
   fill(MEETING_RESULTS, []);
+  for (const key of Object.keys(SETTINGS)) delete SETTINGS[key];
   dataInitialized.value = false;
   dataError.value = null;
 }
@@ -135,6 +147,7 @@ async function _fetchAll(): Promise<void> {
       { data: results, error: e4 },
       { data: members, error: e5 },
       { data: attendances },
+      { data: settings },
     ] = await Promise.all([
       supabase.from('golf_courses').select('id, name'),
       supabase
@@ -156,6 +169,10 @@ async function _fetchAll(): Promise<void> {
         .from('attendance_confirmations')
         .select('year_month, member_id, attending')
         .gte('year_month', from),
+      // 오류를 받지 않는다. 테이블이 아직 없는 서버(프런트 선배포)에서도
+      // 나머지 화면이 그대로 떠야 한다 — 문구 하나 때문에 기록이 안 보이면
+      // 바꾼 보람이 없다.
+      supabase.from('app_settings').select('key, value'),
     ]);
 
     const firstError = e1 ?? e2 ?? e3 ?? e4 ?? e5;
@@ -210,6 +227,9 @@ async function _fetchAll(): Promise<void> {
         result_rank: (r.result_rank ?? null) as MeetingResult['result_rank'],
       }))
     );
+
+    for (const key of Object.keys(SETTINGS)) delete SETTINGS[key];
+    for (const s of settings ?? []) SETTINGS[s.key as string] = String(s.value ?? '');
 
     syncAttendanceFromDB(
       (attendances ?? []).map((a) => ({

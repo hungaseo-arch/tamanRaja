@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router';
 import { Trophy, Medal, Home, Download } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { useRecordExport } from '@/composables/useRecordExport';
-import { MEETINGS, MEETING_RESULTS, MONTHLY_HANDICAPS, GOLF_COURSES, resolveHandicap } from '@/data';
+import { MEETINGS, MEETING_RESULTS, MONTHLY_HANDICAPS, GOLF_COURSES, resolveHandicap, setting } from '@/data';
 import { ROUTE_PATHS } from '@/lib';
 import { formatPending, formatValue } from '@/lib/format';
 import type { ResultRank } from '@/lib';
@@ -310,8 +310,8 @@ function handleExport(): void {
                   </TableRow>
                 </TableBody>
               </Table>
-              <p class="text-xs text-muted-foreground mt-2 px-4">
-                * 기준 핸디는 2026년 7월 부터 신규 적용
+              <p v-if="setting('handicap_notice')" class="text-xs text-muted-foreground mt-2 px-4">
+                {{ setting('handicap_notice') }}
               </p>
             </div>
             </AsyncState>
