@@ -59,10 +59,18 @@ const unqualified = computed(() =>
 );
 
 // 순위는 정렬과 분리한다. 어떤 열로 정렬하든 순위는 항상 랭킹 기준
-// (평균 Net 낮은 순, 기준 참석 충족자 한정)을 따른다.
-const rankedQualified = computed(() =>
-  [...qualified.value].sort((a, b) => a.avg_net_score - b.avg_net_score)
-);
+// (평균 스코어 낮은 순, 기준 참석 충족자 한정)을 따른다.
+// 비교 규칙은 getYearlySummary 의 정렬과 같아야 한다 — 한쪽만 바꾸면
+// 표의 순위와 상단 카드 순서가 어긋난다.
+function byRankingRule(a: YearlySummary, b: YearlySummary): number {
+  if (a.avg_score === null && b.avg_score === null) return a.avg_net_score - b.avg_net_score;
+  if (a.avg_score === null) return 1;
+  if (b.avg_score === null) return -1;
+  if (a.avg_score !== b.avg_score) return a.avg_score - b.avg_score;
+  return a.avg_net_score - b.avg_net_score;
+}
+
+const rankedQualified = computed(() => [...qualified.value].sort(byRankingRule));
 
 const rankByMember = computed(() => {
   const map = new Map<string, number>();
@@ -72,7 +80,9 @@ const rankByMember = computed(() => {
 
 // ── 정렬 ─────────────────────────────────────────────────────────────────────
 type SortKey = 'attended_count' | 'std_hc' | 'avg_net_score' | 'avg_score';
-const sortKey = ref<SortKey>('avg_net_score');
+// 첫 화면은 랭킹 기준과 같은 열로 정렬해 둔다. 순위 열이 1,2,3… 으로
+// 내려가야 "이 기준으로 매긴 순위"가 한눈에 읽힌다.
+const sortKey = ref<SortKey>('avg_score');
 const sortAsc = ref(true);
 
 function setSort(key: SortKey): void {
@@ -238,7 +248,7 @@ function stickyTint(rank: number | null): string {
 
       <!-- 랭킹 기준을 화면에 명시한다 (P1-3 완료 조건) -->
       <p class="text-xs text-muted-foreground leading-relaxed">
-        <strong class="text-foreground">랭킹 기준</strong> — 평균 Net(스코어 − 적용 핸디)이 낮은 순.
+        <strong class="text-foreground">랭킹 기준</strong> — 평균 스코어가 낮은 순.
         {{ selectedYear }}년에 <strong class="text-foreground">{{ minRoundsNum }}회 이상</strong> 참석한
         회원에게만 순위를 부여합니다. 표의 열 제목을 눌러 정렬해도 순위는 이 기준을 따릅니다.
       </p>
@@ -259,7 +269,9 @@ function stickyTint(rank: number | null): string {
           <CardContent class="pt-2 text-center space-y-1">
             <p class="text-xl">{{ rankLabel(idx + 1) }}</p>
             <p class="text-shadow-md font-bold">{{ row.member_name }}</p>
-            <p v-if="sortKey === 'avg_score'" class="text-sm text-muted-foreground">
+            <!-- 기본은 랭킹 기준인 평균 스코어. 평균 Net 으로 정렬 중일 때만
+                 그 값을 보여준다 — 카드와 표가 다른 숫자를 말하면 헷갈린다. -->
+            <p v-if="sortKey !== 'avg_net_score'" class="text-sm text-muted-foreground">
               평균 스코어
               <span class="font-mono font-semibold ml-1 text-purple-600 dark:text-purple-400">
                 <template v-if="row.avg_score !== null">{{ row.avg_score.toFixed(1) }}</template>
@@ -314,7 +326,7 @@ function stickyTint(rank: number | null): string {
             empty-hint="경기 결과가 저장되면 이 표에 순위가 나타납니다."
           >
           <div class="h-full min-h-0 mt-4">
-            <Table :caption="`${selectedYear}년 연간 랭킹 — 평균 Net 낮은 순, ${minRoundsNum}회 이상 참석자 대상`">
+            <Table :caption="`${selectedYear}년 연간 랭킹 — 평균 스코어 낮은 순, ${minRoundsNum}회 이상 참석자 대상`">
               <TableHeader>
                 <TableRow>
                   <!-- 가로 스크롤에도 순위·회원은 남는다.

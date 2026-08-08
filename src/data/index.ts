@@ -412,7 +412,18 @@ export function getYearlySummary(year: string): YearlySummary[] {
     }
   }
 
-  summaries.sort((a, b) => a.avg_net_score - b.avg_net_score);
+  // 순위 기준은 평균 스코어(낮을수록 좋다). 평균 Net 은 표에 함께 보여주되
+  // 순위에는 쓰지 않는다 — 같은 스코어면 Net 이 낮은 쪽을 앞에 둬서 순서가
+  // 매번 흔들리지 않게만 한다.
+  // avg_score 는 타입상 null 이 될 수 있어(집계 대상이 없는 경우) 뒤로 보낸다.
+  // 지금 규칙에서는 netScores > 0 이면 rawScores 도 > 0 이라 실제로는 안 걸린다.
+  summaries.sort((a, b) => {
+    if (a.avg_score === null && b.avg_score === null) return a.avg_net_score - b.avg_net_score;
+    if (a.avg_score === null) return 1;
+    if (b.avg_score === null) return -1;
+    if (a.avg_score !== b.avg_score) return a.avg_score - b.avg_score;
+    return a.avg_net_score - b.avg_net_score;
+  });
   summaries.forEach((s, index) => {
     s.rank = index + 1;
   });
