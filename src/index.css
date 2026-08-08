@@ -198,6 +198,16 @@
     @apply scroll-smooth antialiased;
   }
 
+  /* 키보드로 이동할 때 지금 어디에 있는지 보이게 한다. (P2-1)
+     Button/Input 등은 자체적으로 focus-visible:ring-* 을 쓰므로 그쪽이 이기고,
+     그런 처리가 없는 링크·정렬 버튼·표 안의 요소들을 이 규칙이 받쳐준다.
+     :focus 가 아니라 :focus-visible 이라 마우스 클릭에는 나타나지 않는다. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+  }
+
   body {
     @apply bg-background text-foreground font-sans min-h-screen;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";

@@ -134,7 +134,7 @@ async function handleChangePin(e: Event): Promise<void> {
 </script>
 
 <template>
-  <Dialog v-model:open="isOpen" content-class="sm:max-w-sm">
+  <Dialog v-model:open="isOpen" content-class="sm:max-w-sm" :label="isLoggedIn ? 'PIN 변경' : '로그인'">
     <!-- 로그인 상태 → PIN 변경 -->
     <div v-if="isLoggedIn" class="w-full px-5 pt-4 space-y-4">
       <form class="space-y-6" @submit="handleChangePin">

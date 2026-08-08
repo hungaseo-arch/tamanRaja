@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils';
-interface Props { class?: string }
+// caption: 표가 무엇을 담은 표인지. 화면에는 안 보이지만 화면 낭독기가 표에
+// 들어설 때 읽어준다. 없으면 "표, 9열 15행"까지만 읽히고 무슨 표인지 알 수 없다.
+interface Props { class?: string; caption?: string }
 const props = defineProps<Props>();
 </script>
 <template>
@@ -8,8 +10,17 @@ const props = defineProps<Props>();
        스크롤바가 두 개 생기므로 감싸지 말 것. (P1-4)
        border-separate: sticky 셀에서도 테두리가 함께 고정되도록. collapse 상태의
        테두리는 셀이 아니라 표에 그려져 스크롤 시 떨어져 나간다. -->
-  <div class="relative w-full h-full overflow-auto">
+  <!-- tabindex=0: 가로로 스크롤되는 영역은 키보드로도 밀 수 있어야 한다.
+       마우스 휠·터치만 되면 키보드 사용자는 오른쪽 열에 닿지 못한다. (P2-1)
+       role=region + 이름을 붙여야 포커스가 왔을 때 어디인지 알 수 있다. -->
+  <div
+    class="relative w-full h-full overflow-auto focus-visible:outline-2 focus-visible:outline-ring"
+    tabindex="0"
+    :role="props.caption ? 'region' : undefined"
+    :aria-label="props.caption"
+  >
     <table :class="cn('w-full h-full caption-bottom text-sm border-separate border-spacing-0', props.class)">
+      <caption v-if="props.caption" class="sr-only">{{ props.caption }}</caption>
       <slot />
     </table>
   </div>

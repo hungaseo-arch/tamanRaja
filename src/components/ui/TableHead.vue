@@ -1,10 +1,13 @@
 <script setup lang="ts">
 import { cn } from '@/lib/utils';
-interface Props { class?: string }
+interface Props { class?: string; scope?: 'col' | 'row' }
 const props = defineProps<Props>();
 </script>
 <template>
+  <!-- scope 기본값 col: 이 컴포넌트는 헤더 행에서만 쓰인다. 없으면 화면 낭독기가
+       어느 열의 제목인지 스스로 추측해야 한다. -->
   <th
+    :scope="props.scope ?? 'col'"
     :class="cn(
       // sticky top-0: 표가 세로 스크롤 컨테이너일 때 헤더 행이 남는다.
       // 세로 스크롤이 없는 표에서는 아무 영향이 없다.

@@ -131,6 +131,10 @@ function formatCourse(row: HistoryRow): string {
   <div class="w-full h-full min-h-full bg-background">
     <div class="container mx-auto px-4 py-2 max-w-7xl space-y-2 h-full flex flex-col flex-1">
       <template v-if="currentMember">
+        <h1 class="text-lg font-bold text-foreground pt-1">
+          나의 기록 <span class="text-muted-foreground font-medium text-sm">— {{ currentMember.name }} 님</span>
+        </h1>
+
         <!-- 통계 카드 -->
         <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4">
           <Card>
@@ -144,7 +148,7 @@ function formatCourse(row: HistoryRow): string {
               <p class="text-xs sm:text-sm text-muted-foreground mb-1">평균 Net</p>
               <p class="text-xl font-bold font-mono">
                 <template v-if="derived.avgNet !== null">
-                  <span :class="derived.avgNet >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400'">
+                  <span :class="derived.avgNet >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-700 dark:text-orange-400'">
                     {{ derived.avgNet >= 0 ? '+' : '' }}{{ derived.avgNet.toFixed(1) }}
                   </span>
                 </template>
@@ -155,7 +159,7 @@ function formatCourse(row: HistoryRow): string {
           <Card>
             <CardContent class="flex flex-col items-center justify-center h-full py-3 px-2 sm:px-4">
               <p class="text-xs sm:text-sm text-muted-foreground mb-1">Winner</p>
-              <p class="text-xl font-bold text-yellow-600">{{ derived.winnerCount }}회</p>
+              <p class="text-xl font-bold text-yellow-700">{{ derived.winnerCount }}회</p>
             </CardContent>
           </Card>
           <Card>
@@ -176,7 +180,7 @@ function formatCourse(row: HistoryRow): string {
         <Card class="flex flex-col flex-1 min-h-0">
           <CardContent class="flex-1 overflow-hidden min-h-0">
             <div class="overflow-x-auto overflow-y-auto h-full min-h-0 mt-4">
-              <Table>
+              <Table caption="월별 참석·핸디·스코어 기록">
                 <TableHeader>
                   <TableRow>
                     <TableHead class="font-bold text-foreground whitespace-nowrap">
@@ -215,7 +219,7 @@ function formatCourse(row: HistoryRow): string {
                       <template v-if="row.attended && row.net_score !== null">
                         <span :class="row.net_score >= 0
                           ? 'text-blue-600 dark:text-blue-400 font-semibold'
-                          : 'text-orange-600 dark:text-orange-400'"
+                          : 'text-orange-700 dark:text-orange-400'"
                         >
                           {{ row.net_score >= 0 ? '+' : '' }}{{ row.net_score }}
                         </span>
@@ -250,7 +254,7 @@ function formatCourse(row: HistoryRow): string {
                         v-if="derived.netAvg !== '-'"
                         :class="parseFloat(derived.netAvg) >= 0
                           ? 'text-blue-600 dark:text-blue-400'
-                          : 'text-orange-600 dark:text-orange-400'"
+                          : 'text-orange-700 dark:text-orange-400'"
                       >
                         {{ parseFloat(derived.netAvg) >= 0 ? '+' : '' }}{{ derived.netAvg }}
                       </span>

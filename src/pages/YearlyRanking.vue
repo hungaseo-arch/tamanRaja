@@ -235,7 +235,7 @@ function stickyTint(rank: number | null): string {
                 class="font-mono font-semibold ml-1"
                 :class="row.avg_net_score >= 0
                   ? 'text-blue-600 dark:text-blue-400'
-                  : 'text-orange-600 dark:text-orange-400'"
+                  : 'text-orange-700 dark:text-orange-400'"
               >
                 {{ row.avg_net_score >= 0 ? '+' : '' }}{{ row.avg_net_score.toFixed(2) }}
               </span>
@@ -270,7 +270,7 @@ function stickyTint(rank: number | null): string {
         <CardContent class="flex-1 overflow-hidden min-h-0">
           <!-- Table 컴포넌트가 이미 스크롤 컨테이너다 (이중 스크롤 방지) -->
           <div class="h-full min-h-0 mt-4">
-            <Table>
+            <Table :caption="`${selectedYear}년 연간 랭킹 — 평균 Net 낮은 순, ${minRoundsNum}회 이상 참석자 대상`">
               <TableHeader>
                 <TableRow>
                   <!-- 가로 스크롤에도 순위·회원은 남는다.
@@ -283,64 +283,92 @@ function stickyTint(rank: number | null): string {
                   </TableHead>
                   <TableHead class="font-bold text-foreground whitespace-nowrap sticky left-14 z-30 bg-card" scope="col">회원</TableHead>
                   <TableHead
-                    class="font-bold text-center whitespace-nowrap cursor-pointer select-none hover:text-primary"
+                    class="font-bold text-center whitespace-nowrap p-0"
                     scope="col"
                     :aria-sort="sortAriaSort('attended_count')"
-                    @click="setSort('attended_count')"
                   >
-                    <div class="inline-flex items-center gap-1">
+                    <!-- 정렬은 버튼이어야 한다. th 에 @click 만 달면 마우스로만
+                         쓸 수 있고 Tab 으로는 닿지도 않는다. (P2-1) -->
+                    <button
+                      type="button"
+                      class="w-full h-full px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
+                      :aria-label="`참석 기준으로 정렬`"
+                      @click="setSort('attended_count')"
+                    >
                       참석
                       <component
                         :is="sortKey !== 'attended_count' ? ChevronsUpDown : sortAsc ? ArrowUp : ArrowDown"
                         class="w-3 h-3"
                         :class="sortKey === 'attended_count' ? 'text-primary' : 'opacity-30'"
+                        aria-hidden="true"
                       />
-                    </div>
+                    </button>
                   </TableHead>
                   <TableHead
-                    class="font-bold text-center whitespace-nowrap hidden sm:table-cell cursor-pointer select-none hover:text-primary"
+                    class="font-bold text-center whitespace-nowrap hidden sm:table-cell p-0"
                     scope="col"
                     :aria-sort="sortAriaSort('std_hc')"
-                    @click="setSort('std_hc')"
                   >
-                    <div class="inline-flex items-center gap-1">
+                    <!-- 정렬은 버튼이어야 한다. th 에 @click 만 달면 마우스로만
+                         쓸 수 있고 Tab 으로는 닿지도 않는다. (P2-1) -->
+                    <button
+                      type="button"
+                      class="w-full h-full px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
+                      :aria-label="`기준 핸디 기준으로 정렬`"
+                      @click="setSort('std_hc')"
+                    >
                       기준 핸디
                       <component
                         :is="sortKey !== 'std_hc' ? ChevronsUpDown : sortAsc ? ArrowUp : ArrowDown"
                         class="w-3 h-3"
                         :class="sortKey === 'std_hc' ? 'text-primary' : 'opacity-30'"
+                        aria-hidden="true"
                       />
-                    </div>
+                    </button>
                   </TableHead>
                   <TableHead
-                    class="font-bold text-center whitespace-nowrap cursor-pointer select-none hover:text-primary"
+                    class="font-bold text-center whitespace-nowrap p-0"
                     scope="col"
                     :aria-sort="sortAriaSort('avg_net_score')"
-                    @click="setSort('avg_net_score')"
                   >
-                    <div class="inline-flex items-center gap-1">
+                    <!-- 정렬은 버튼이어야 한다. th 에 @click 만 달면 마우스로만
+                         쓸 수 있고 Tab 으로는 닿지도 않는다. (P2-1) -->
+                    <button
+                      type="button"
+                      class="w-full h-full px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
+                      :aria-label="`평균 Net 기준으로 정렬`"
+                      @click="setSort('avg_net_score')"
+                    >
                       평균 Net
                       <component
                         :is="sortKey !== 'avg_net_score' ? ChevronsUpDown : sortAsc ? ArrowUp : ArrowDown"
                         class="w-3 h-3"
                         :class="sortKey === 'avg_net_score' ? 'text-primary' : 'opacity-30'"
+                        aria-hidden="true"
                       />
-                    </div>
+                    </button>
                   </TableHead>
                   <TableHead
-                    class="font-bold text-center whitespace-nowrap cursor-pointer select-none hover:text-primary"
+                    class="font-bold text-center whitespace-nowrap p-0"
                     scope="col"
                     :aria-sort="sortAriaSort('avg_score')"
-                    @click="setSort('avg_score')"
                   >
-                    <div class="inline-flex items-center gap-1">
+                    <!-- 정렬은 버튼이어야 한다. th 에 @click 만 달면 마우스로만
+                         쓸 수 있고 Tab 으로는 닿지도 않는다. (P2-1) -->
+                    <button
+                      type="button"
+                      class="w-full h-full px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
+                      :aria-label="`평균 스코어 기준으로 정렬`"
+                      @click="setSort('avg_score')"
+                    >
                       평균 스코어
                       <component
                         :is="sortKey !== 'avg_score' ? ChevronsUpDown : sortAsc ? ArrowUp : ArrowDown"
                         class="w-3 h-3"
                         :class="sortKey === 'avg_score' ? 'text-primary' : 'opacity-30'"
+                        aria-hidden="true"
                       />
-                    </div>
+                    </button>
                   </TableHead>
                   <TableHead class="font-bold text-center whitespace-nowrap hidden md:table-cell" scope="col">Winner</TableHead>
                   <TableHead class="font-bold text-center whitespace-nowrap hidden md:table-cell" scope="col">Medalist</TableHead>
@@ -358,7 +386,7 @@ function stickyTint(rank: number | null): string {
                   <TableRow
                     v-else-if="entry.row"
                     :class="cn('group', entry.rank === null
-                      ? 'text-muted-foreground opacity-70 hover:bg-muted/50 transition-colors'
+                      ? 'text-muted-foreground hover:bg-muted/50 transition-colors'
                       : entry.rank <= 4
                         ? 'bg-primary/5 hover:bg-primary/10 transition-colors font-semibold'
                         : 'hover:bg-muted/50 transition-colors')"
@@ -379,7 +407,7 @@ function stickyTint(rank: number | null): string {
                           ? ''
                           : entry.row.avg_net_score >= 0
                             ? 'text-blue-600 dark:text-blue-400'
-                            : 'text-orange-600 dark:text-orange-400'"
+                            : 'text-orange-700 dark:text-orange-400'"
                       >
                         {{ entry.row.avg_net_score >= 0 ? '+' : '' }}{{ entry.row.avg_net_score.toFixed(2) }}
                       </span>
@@ -392,7 +420,7 @@ function stickyTint(rank: number | null): string {
                       <span v-else class="text-muted-foreground">-</span>
                     </TableCell>
                     <TableCell class="text-center whitespace-nowrap hidden md:table-cell">
-                      <span v-if="entry.row.winner_count" class="text-yellow-600 font-bold">{{ entry.row.winner_count }}회</span>
+                      <span v-if="entry.row.winner_count" class="text-yellow-700 font-bold">{{ entry.row.winner_count }}회</span>
                       <span v-else class="text-muted-foreground">-</span>
                     </TableCell>
                     <TableCell class="text-center whitespace-nowrap hidden md:table-cell">

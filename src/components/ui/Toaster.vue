@@ -7,7 +7,16 @@ const { toasts, dismiss } = useToast();
 
 <template>
   <Teleport to="body">
-    <div class="fixed bottom-4 right-4 z-[60] flex w-full max-w-sm flex-col gap-2">
+    <!-- 토스트는 화면 낭독기에 자동으로 읽히지 않는다. 컨테이너를 라이브 영역으로
+         선언해 두면 안에 새 토스트가 들어올 때 읽어준다. 컨테이너 자체가 항상
+         떠 있어야 하므로 v-if 로 감싸지 말 것 — 나중에 생긴 라이브 영역은
+         브라우저가 무시한다. (P2-1) -->
+    <div
+      class="fixed bottom-4 right-4 z-60 flex w-full max-w-sm flex-col gap-2"
+      role="status"
+      aria-live="polite"
+      aria-atomic="false"
+    >
       <TransitionGroup
         enter-active-class="transition duration-200 ease-out"
         enter-from-class="translate-y-2 opacity-0"

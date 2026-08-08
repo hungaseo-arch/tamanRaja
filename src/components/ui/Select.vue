@@ -41,6 +41,10 @@ const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
 }>();
 
+// aria-label 같은 속성이 바깥 div 가 아니라 실제 <select> 에 붙게 한다.
+// 기본 동작대로면 라벨이 래퍼에 걸려 화면 낭독기가 읽지 못한다. (P2-1)
+defineOptions({ inheritAttrs: false });
+
 function onChange(event: Event): void {
   const target = event.target as HTMLSelectElement;
   emit('update:modelValue', target.value);
@@ -50,6 +54,7 @@ function onChange(event: Event): void {
 <template>
   <div :class="cn('relative inline-flex w-full', props.class)">
     <select
+      v-bind="$attrs"
       :id="id"
       :value="modelValue"
       :disabled="disabled"
@@ -65,6 +70,6 @@ function onChange(event: Event): void {
       </option>
       <slot />
     </select>
-    <ChevronDown class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-50" />
+    <ChevronDown class="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 opacity-50" aria-hidden="true" />
   </div>
 </template>

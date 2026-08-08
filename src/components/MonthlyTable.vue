@@ -248,8 +248,8 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
   <div class="space-y-4">
     <Card class="sticky top-20 z-20 py-0 bg-linear-to-r from-green-200 to-green-100 text-gray-900 border-0 text-xs">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2 py-2 px-3 sm:px-4">
-        <!-- 1. 연월 (제목) -->
-        <CardTitle class="px-0 text-sm font-bold text-primary truncate shrink-0">
+        <!-- 1. 연월 (제목) — 이 화면의 h1 이다. 사이트 이름은 헤더의 일반 텍스트다. -->
+        <CardTitle as="h1" class="px-0 text-sm font-bold text-primary truncate shrink-0">
           {{ heading }}
         </CardTitle>
 
@@ -281,12 +281,14 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
             <input
               type="date"
               v-model="localManualDate"
+              aria-label="모임 날짜"
               class="h-7 rounded border border-input bg-background px-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring w-full sm:w-auto sm:flex-initial"
             />
             <input
               type="text"
               v-model="localManualCourse"
               list="golf-courses-list"
+              aria-label="골프장명"
               placeholder="골프장명"
               class="h-7 rounded border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring flex-1 min-w-0 sm:flex-initial sm:w-28"
             />
@@ -306,6 +308,7 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
             v-model="localSelectedMonth"
             :options="monthOptions"
             placeholder="월 선택"
+            aria-label="조회할 월"
             select-class="h-8 py-0 text-xs bg-green-50/60 border-green-400 text-green-900 font-semibold focus:ring-green-500 focus:border-green-500"
           />
         </div>
@@ -317,7 +320,7 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
       <CardContent>
         <!-- Table 컴포넌트가 이미 스크롤 컨테이너다. 여기서 또 감싸면 이중 스크롤. -->
         <div class="mt-4">
-          <Table>
+          <Table :caption="`${heading} 회원별 핸디·스코어 기록`">
             <TableHeader>
               <TableRow>
                 <!-- 가로 스크롤에도 회원명은 남는다 — 어느 행인지 잃지 않도록 -->
@@ -355,7 +358,7 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
                 <!-- 참석여부 (미래월만) -->
                 <TableCell v-if="isFutureMonth" class="text-center">
                   <span v-if="localAttendance[row.member_id] === true" class="text-xs font-semibold text-primary">참석</span>
-                  <span v-else-if="localAttendance[row.member_id] === null" class="text-xs font-semibold text-yellow-600">미정</span>
+                  <span v-else-if="localAttendance[row.member_id] === null" class="text-xs font-semibold text-yellow-700">미정</span>
                   <span v-else-if="localAttendance[row.member_id] === false" class="text-xs font-semibold text-destructive">불참</span>
                   <span v-else class="text-xs text-muted-foreground whitespace-nowrap">미응답</span>
                 </TableCell>
@@ -375,6 +378,7 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
                       type="number"
                       :value="localScores[row.member_id] ?? ''"
                       placeholder="-"
+                      :aria-label="`${row.member_name} 스코어`"
                       class="w-16 text-center border border-input rounded px-1 py-0 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-ring"
                       @input="(e) => { localScores[row.member_id] = (e.target as HTMLInputElement).value; }"
                     />
@@ -389,7 +393,7 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
                     <span
                       v-if="getLocalNet(row)"
                       :class="getLocalNet(row).startsWith('-')
-                        ? 'text-orange-600 dark:text-orange-400'
+                        ? 'text-orange-700 dark:text-orange-400'
                         : 'text-blue-600 dark:text-blue-400 font-semibold'"
                     >
                       {{ getLocalNet(row) }}
@@ -400,7 +404,7 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
                     <span
                       :class="row.net_score >= 0
                         ? 'text-blue-600 dark:text-blue-400 font-semibold'
-                        : 'text-orange-600 dark:text-orange-400'"
+                        : 'text-orange-700 dark:text-orange-400'"
                     >
                       {{ row.net_score >= 0 ? '+' : '' }}{{ row.net_score }}
                     </span>
@@ -413,6 +417,7 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
                   <template v-if="isEditing">
                     <select
                       :value="localGroups[row.member_id] ?? ''"
+                      :aria-label="`${row.member_name} 결과 조`"
                       class="w-20 text-center border border-input rounded px-1 py-0 text-xs bg-background focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer"
                       @change="(e) => { localGroups[row.member_id] = (e.target as HTMLSelectElement).value; }"
                     >
@@ -422,7 +427,7 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
                     </select>
                   </template>
                   <template v-else-if="row.result_group">
-                    <Badge v-if="row.result_group === '1등조'" class="bg-blue-500 text-white border-0 hover:bg-blue-600">1등조</Badge>
+                    <Badge v-if="row.result_group === '1등조'" class="bg-blue-600 text-white border-0 hover:bg-blue-700">1등조</Badge>
                     <Badge v-else variant="secondary">2등조</Badge>
                   </template>
                   <span v-else class="text-muted-foreground">-</span>
@@ -433,6 +438,7 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
                   <template v-if="isEditing">
                     <select
                       :value="localRanks[row.member_id] ?? ''"
+                      :aria-label="`${row.member_name} 시상`"
                       class="w-24 text-center border border-input rounded px-1 py-0 text-xs bg-background focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer"
                       @change="(e) => { localRanks[row.member_id] = (e.target as HTMLSelectElement).value; }"
                     >
@@ -450,7 +456,7 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
                   </template>
                   <!-- 순위 없는 회원: 작은 화면(결과 그룹 컬럼 숨김)에서만 그룹 표시 -->
                   <template v-else-if="row.result_group">
-                    <Badge v-if="row.result_group === '1등조'" class="md:hidden bg-blue-500 text-white border-0 hover:bg-blue-600">1등조</Badge>
+                    <Badge v-if="row.result_group === '1등조'" class="md:hidden bg-blue-600 text-white border-0 hover:bg-blue-700">1등조</Badge>
                     <Badge v-else variant="secondary" class="md:hidden">2등조</Badge>
                   </template>
                 </TableCell>
