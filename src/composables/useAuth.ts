@@ -7,14 +7,20 @@ import {
   saveSession,
   type SessionMember,
 } from '@/lib/session';
+import { clearAttendance } from '@/composables/useAttendance';
 
 // 모듈 전역 reactive 상태 — 모든 컴포넌트가 공유
 const currentMember: Ref<SessionMember | null> = ref(loadSession()?.member ?? null);
 
 if (typeof window !== 'undefined') {
+  // 다른 탭에서 로그인/로그아웃한 경우를 따라간다. localStorage 로 세션을
+  // 유지하는 경우 이 이벤트가 실제로 뜬다.
   window.addEventListener('storage', () => {
     invalidateSessionCache();
     currentMember.value = loadSession()?.member ?? null;
+    // 세션이 사라졌을 때만 참석 사본을 버린다. 다른 탭의 참석 저장에도
+    // 반응하면 방금 누른 값이 화면에서 지워진다.
+    if (!currentMember.value) clearAttendance();
   });
 }
 
@@ -77,7 +83,7 @@ export interface UseAuthReturn {
   isLoggedIn: ComputedRef<boolean>;
   isAdmin: ComputedRef<boolean>;
   currentMember: Ref<SessionMember | null>;
-  login: (memberId: string, pin: string) => Promise<LoginResult>;
+  login: (memberId: string, pin: string, remember?: boolean) => Promise<LoginResult>;
   logout: () => Promise<void>;
   changePin: (oldPin: string, newPin: string) => Promise<ChangePinResult>;
   revalidate: () => Promise<boolean>;
@@ -86,7 +92,11 @@ export interface UseAuthReturn {
 export function useAuth(): UseAuthReturn {
   // PIN 대조는 전적으로 서버에서 일어난다. 프런트엔드는 PIN 을 보관하지도,
   // 비교하지도 않고 그저 서버에 넘기고 결과만 받는다.
-  const login = async (memberId: string, pin: string): Promise<LoginResult> => {
+  //
+  // remember 는 이 브라우저가 토큰을 얼마나 들고 있을지만 정한다. 토큰의 실제
+  // 수명(30일)과 폐기 권한은 서버에 있다. 기본은 끔 — 공용 기기에서 무심코
+  // 로그인한 사람이 로그인된 채로 남지 않도록 명시적으로 켜게 한다.
+  const login = async (memberId: string, pin: string, remember = false): Promise<LoginResult> => {
     const { data, error } = await supabase.rpc('verify_pin', {
       p_member_id: Number(memberId),
       p_pin: pin,
@@ -113,7 +123,7 @@ export function useAuth(): UseAuthReturn {
       name: res.member.name,
       role: res.member.role,
     };
-    saveSession({ token: res.token, expiresAt: res.expires_at ?? '', member });
+    saveSession({ token: res.token, expiresAt: res.expires_at ?? '', member }, remember);
     currentMember.value = member;
     return { ok: true };
   };
@@ -126,6 +136,7 @@ export function useAuth(): UseAuthReturn {
       /* 네트워크 실패 시에도 로컬 로그아웃은 진행 */
     }
     clearSession();
+    clearAttendance();
     currentMember.value = null;
   };
 

@@ -11,6 +11,7 @@ import Select from '@/components/ui/Select.vue';
 import Input from '@/components/ui/Input.vue';
 import Label from '@/components/ui/Label.vue';
 import Button from '@/components/ui/Button.vue';
+import Checkbox from '@/components/ui/Checkbox.vue';
 import Alert from '@/components/ui/Alert.vue';
 import AlertDescription from '@/components/ui/AlertDescription.vue';
 
@@ -27,6 +28,9 @@ const selectedMember = ref('');
 const pin = ref('');
 const loginError = ref('');
 const submitting = ref(false);
+// 기본은 꺼짐. 공용 기기에서 무심코 로그인한 사람이 로그인된 채 남지 않도록
+// 켜는 건 본인이 정하게 한다.
+const remember = ref(false);
 
 // 회원 목록은 members(id, name) 만 사용한다. PIN 은 어떤 형태로도 내려오지 않는다.
 const memberOptions = computed(() =>
@@ -54,7 +58,7 @@ async function handleLogin(e: Event): Promise<void> {
 
   submitting.value = true;
   try {
-    const result = await login(selectedMember.value, pin.value);
+    const result = await login(selectedMember.value, pin.value, remember.value);
     if (result.ok) {
       router.push(ROUTE_PATHS.MONTHLY);
       return;
@@ -102,6 +106,13 @@ async function handleLogin(e: Event): Promise<void> {
                 @update:model-value="(v: string) => (pin = onlyDigits(v))"
               />
             </div>
+            <div class="flex items-center gap-2">
+              <Checkbox id="remember-me" v-model="remember" />
+              <Label for="remember-me" class="text-sm font-normal cursor-pointer">
+                이 기기에서 로그인 유지
+              </Label>
+            </div>
+
             <Alert v-if="loginError" variant="destructive">
               <AlertCircle class="h-4 w-4" />
               <AlertDescription>{{ loginError }}</AlertDescription>

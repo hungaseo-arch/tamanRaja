@@ -8,6 +8,7 @@ import Button from '@/components/ui/Button.vue';
 import Select from '@/components/ui/Select.vue';
 import Input from '@/components/ui/Input.vue';
 import Label from '@/components/ui/Label.vue';
+import Checkbox from '@/components/ui/Checkbox.vue';
 import Alert from '@/components/ui/Alert.vue';
 import AlertDescription from '@/components/ui/AlertDescription.vue';
 
@@ -27,6 +28,9 @@ const selectedMember = ref<string>('');
 const pin = ref<string>('');
 const loginError = ref<string>('');
 const loginLoading = ref<boolean>(false);
+// 기본은 꺼짐. 공용 기기에서 무심코 로그인한 사람이 로그인된 채 남지 않도록
+// 켜는 건 본인이 정하게 한다.
+const remember = ref<boolean>(false);
 
 // PIN 변경 폼 상태
 const oldPin = ref<string>('');
@@ -54,6 +58,7 @@ function resetState(): void {
   pin.value = '';
   loginError.value = '';
   loginLoading.value = false;
+  remember.value = false;
   oldPin.value = '';
   newPin.value = '';
   confirmPin.value = '';
@@ -85,7 +90,7 @@ async function handleLogin(e: Event): Promise<void> {
 
   loginLoading.value = true;
   try {
-    const result = await login(selectedMember.value, pin.value);
+    const result = await login(selectedMember.value, pin.value, remember.value);
     if (result.ok) {
       resetState();
       isOpen.value = false;
@@ -216,6 +221,13 @@ async function handleChangePin(e: Event): Promise<void> {
           placeholder="PIN 4자리"
           @update:model-value="(v: string) => (pin = onlyDigits(v))"
         />
+      </div>
+
+      <div class="flex items-center gap-2">
+        <Checkbox id="remember-me-modal" v-model="remember" />
+        <Label for="remember-me-modal" class="text-sm font-normal cursor-pointer">
+          이 기기에서 로그인 유지
+        </Label>
       </div>
 
       <Alert v-if="loginError" variant="destructive">

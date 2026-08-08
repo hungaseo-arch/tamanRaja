@@ -2,19 +2,42 @@ import { reactive } from 'vue';
 import { supabase } from '@/lib/supabase';
 import { describeError } from '@/lib/errors';
 
-const STORAGE_KEY = 'golf_future_attendance';
+import { STORAGE_PREFIX } from '@/lib/session';
+
+const STORAGE_KEY = `${STORAGE_PREFIX}attendance`;
+// 접두사 규칙 이전의 키. 읽을 때 한 번만 옮기고 지운다 — 그대로 두면 로그아웃
+// 정리 대상에서 빠져 다음 사용자에게 남의 참석 답변이 보인다.
+const LEGACY_KEY = 'golf_future_attendance';
 
 type AttendanceMap = Record<string, Record<string, boolean | null>>;
 
 function load(): AttendanceMap {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}'); }
-  catch { return {}; }
+  try {
+    let raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === null) {
+      raw = localStorage.getItem(LEGACY_KEY);
+      if (raw !== null) {
+        localStorage.setItem(STORAGE_KEY, raw);
+        localStorage.removeItem(LEGACY_KEY);
+      }
+    }
+    return JSON.parse(raw ?? '{}');
+  } catch { return {}; }
 }
 
 const state = reactive<AttendanceMap>(load());
 
 function persist() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+/**
+ * 로그아웃 시 호출한다. clearSession() 이 저장소는 비우지만 이 모듈이 들고 있는
+ * reactive 사본은 그대로라, 지우지 않으면 다음 사람이 로그인했을 때 앞사람의
+ * 참석 답변이 화면에 그려진다.
+ */
+export function clearAttendance(): void {
+  for (const key of Object.keys(state)) delete state[key];
 }
 
 export function syncAttendanceFromDB(items: { year_month: string; member_id: number; attending: boolean | null }[]): void {
