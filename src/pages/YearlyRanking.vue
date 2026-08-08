@@ -1,7 +1,17 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { Trophy, Medal, Home, ArrowUp, ArrowDown, ChevronsUpDown, Download } from 'lucide-vue-next';
-import { getYearlySummary, MEETINGS, MONTHLY_HANDICAPS, setting } from '@/data';
+import {
+  getYearlySummary,
+  hasYearlySummary,
+  loadYearlySummary,
+  yearlyRankingLoading,
+  yearlyRankingError,
+  yearlyRankingVersion,
+  MEETINGS,
+  MONTHLY_HANDICAPS,
+  setting,
+} from '@/data';
 import type { YearlySummary } from '@/lib';
 import { cn } from '@/lib/utils';
 import { useRecordExport } from '@/composables/useRecordExport';
@@ -38,7 +48,26 @@ watch(
   { immediate: true }
 );
 
+// 집계는 서버(yearly_ranking RPC)가 한다. 연도를 바꿀 때마다 그 연도를
+// 받아 오되, 한 번 받은 연도는 캐시에서 바로 나온다.
 const summary = computed(() => getYearlySummary(selectedYear.value));
+
+// 기록을 고치고 저장하면 원본을 다시 받으면서 버전이 오른다. 그때도 다시
+// 부르지 않으면 랭킹만 고치기 전 숫자로 남는다.
+watch(
+  [selectedYear, yearlyRankingVersion],
+  ([year]) => void loadYearlySummary(year),
+  { immediate: true }
+);
+
+function retryRanking(): void {
+  void loadYearlySummary(selectedYear.value, true);
+}
+
+// 아직 한 번도 못 받은 연도는 "기록 없음"이 아니라 "불러오는 중"이다.
+const rankingPending = computed(
+  () => yearlyRankingLoading.value || (!!selectedYear.value && !hasYearlySummary(selectedYear.value))
+);
 
 // ── 최소 참석 기준 (P1-3) ────────────────────────────────────────────────────
 // 3회 참석자가 8회 참석자와 같은 표에서 나란히 순위를 받던 문제. 기준 미달
@@ -321,9 +350,15 @@ function stickyTint(rank: number | null): string {
           <!-- 기록이 하나도 없으면 연도 목록 자체가 비어 selectedYear 도 빈 값이다.
                그대로 끼우면 "년 기록이 없습니다" 가 된다. -->
           <AsyncState
+            label="연간 랭킹"
+            :loading="rankingPending"
+            :skeleton-rows="8"
+            :error="yearlyRankingError"
             :empty="summary.length === 0"
             :empty-title="selectedYear ? `${selectedYear}년 기록이 없습니다` : '기록이 없습니다'"
             empty-hint="경기 결과가 저장되면 이 표에 순위가 나타납니다."
+            container-class="mt-4"
+            @retry="retryRanking"
           >
           <div class="h-full min-h-0 mt-4">
             <Table :caption="`${selectedYear}년 연간 랭킹 — 평균 스코어 낮은 순, ${minRoundsNum}회 이상 참석자 대상`">

@@ -22,6 +22,8 @@ export interface Member {
   id: string;
   name: string;
   display_order: number;
+  /** 휴면 시작월(YYYY-MM). 이 달부터의 경기는 집계·랭킹에서 빠진다. 현역이면 null. */
+  dormant_from: string | null;
 }
 
 export interface Meeting {

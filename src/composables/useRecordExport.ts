@@ -74,10 +74,13 @@ export interface ProfileExportRow {
 }
 
 export function useRecordExport() {
-  /** 선택된 월이 속한 연도의 전체 경기 기록. 내보낸 행 수를 반환. */
-  function exportYearlyRecords(yearMonth: string): number {
+  /**
+   * 선택된 월이 속한 연도의 전체 경기 기록. 내보낸 행 수를 반환.
+   * 연간 평균·순위를 서버(yearly_ranking RPC)에서 받아 오므로 비동기다.
+   */
+  async function exportYearlyRecords(yearMonth: string): Promise<number> {
     const year = yearMonth.substring(0, 4);
-    const body: CsvValue[][] = getYearlyExportRows(year).map((r) => [
+    const body: CsvValue[][] = (await getYearlyExportRows(year)).map((r) => [
       r.year_month,
       r.meeting_date,
       r.course_name,

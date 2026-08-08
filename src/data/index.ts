@@ -12,13 +12,12 @@ import type {
 } from '@/lib/index';
 
 // ── 휴면 회원: 해당 year_month 이후 대시보드·랭킹에서 제외 ──────────────────
-const DORMANT: { name: string; from: string }[] = [
-  { name: '이성남', from: '2026-04' },
-];
-
+// 시작월은 members.dormant_from 에서 온다. 예전에는 여기 상수로 박혀 있어
+// 회원 한 명이 쉬는 것을 배포로만 반영할 수 있었고, 서버 집계(yearly_ranking)
+// 와 규칙이 갈릴 수밖에 없었다.
 function isActive(memberName: string, yearMonth: string): boolean {
-  const d = DORMANT.find((x) => x.name === memberName);
-  return !d || yearMonth < d.from;
+  const from = MEMBERS.find((m) => m.name === memberName)?.dormant_from;
+  return !from || yearMonth < from;
 }
 
 // 현재(오늘 기준) 휴면 여부 — 로그인 목록 등에서 제외 판단에 사용
@@ -75,7 +74,9 @@ export async function loadMembers(): Promise<void> {
   if (MEMBERS.length > 0 || membersLoading.value) return;
   membersLoading.value = true;
   try {
-    const { data, error } = await supabase.from('members').select('id, name');
+    // dormant_from 은 로그인 화면의 회원 목록에서 휴면 회원을 빼는 데 쓴다.
+    // 기록이 아니라 명단에 붙는 표시라 로그인 전에도 필요하다.
+    const { data, error } = await supabase.from('members').select('id, name, dormant_from');
     if (error) throw new Error(error.message);
     fillMembers(data ?? []);
   } catch (err) {
@@ -92,11 +93,12 @@ export function clearData(): void {
   fill(MONTHLY_HANDICAPS, []);
   fill(MEETING_RESULTS, []);
   for (const key of Object.keys(SETTINGS)) delete SETTINGS[key];
+  for (const key of Object.keys(YEARLY_RANKING)) delete YEARLY_RANKING[key];
   dataInitialized.value = false;
   dataError.value = null;
 }
 
-function fillMembers(rows: { id: unknown; name: unknown }[]): void {
+function fillMembers(rows: { id: unknown; name: unknown; dormant_from?: unknown }[]): void {
   fill(
     MEMBERS,
     rows
@@ -104,6 +106,7 @@ function fillMembers(rows: { id: unknown; name: unknown }[]): void {
         id: String(m.id),
         name: m.name as string,
         display_order: m.id as number,
+        dormant_from: (m.dormant_from as string | null) ?? null,
       }))
       .sort((a, b) => a.display_order - b.display_order)
   );
@@ -140,6 +143,10 @@ export async function loadData(retries = 1): Promise<void> {
 async function _fetchAll(): Promise<void> {
   const from = defaultFromYearMonth();
 
+  // 기록을 다시 받으므로 서버 집계 캐시는 버린다 (저장 직후 재조회 포함).
+  for (const key of Object.keys(YEARLY_RANKING)) delete YEARLY_RANKING[key];
+  yearlyRankingVersion.value += 1;
+
   const [
       { data: courses, error: e1 },
       { data: meetings, error: e2 },
@@ -164,7 +171,7 @@ async function _fetchAll(): Promise<void> {
         .from('meeting_results')
         .select('id, meeting_id, member_id, attended, score, result_group, result_rank, meetings!inner(year_month)')
         .gte('meetings.year_month', from),
-      supabase.from('members').select('id, name'),
+      supabase.from('members').select('id, name, dormant_from'),
       supabase
         .from('attendance_confirmations')
         .select('year_month, member_id, attending')
@@ -359,76 +366,63 @@ export function getMonthlyData(yearMonth: string): MonthlyRow[] {
   return rows;
 }
 
-// ── 연간 요약 ─────────────────────────────────────────────────────────────────
+// ── 연간 요약 (서버 집계) ─────────────────────────────────────────────────────
+// 랭킹 규칙은 public.yearly_ranking(year) RPC 한 곳에만 있다. 예전에는 원본
+// 기록을 전부 받아 브라우저에서 평균을 냈는데, 규칙이 화면 코드에만 있어
+// 어느 쪽이 맞는지 확인할 방법이 없었다. RPC 는 호출자 권한으로 돌아
+// 기록 RLS 가 그대로 걸린다 — 세션이 없으면 빈 배열이 온다.
+//
+// 연도별로 한 번만 받아 두고 재사용한다. 연도를 오가며 볼 때마다 같은
+// 집계를 다시 시키지 않기 위해서다. 기록을 고친 뒤에는 reload=true 로 부른다.
+const YEARLY_RANKING: Record<string, YearlySummary[]> = reactive({});
+
+export const yearlyRankingLoading = ref(false);
+export const yearlyRankingError = ref<string | null>(null);
+
+/**
+ * 원본 기록을 다시 받을 때마다 1 씩 오른다. 랭킹 화면이 이 값을 지켜보다가
+ * 다시 요청한다 — 기록을 고치고 저장하면 loadData() 가 돌므로, 이게 없으면
+ * 랭킹만 고치기 전 숫자로 남는다.
+ */
+export const yearlyRankingVersion = ref(0);
+
+/** 이미 받아 둔 연간 랭킹. 아직 안 받았으면 빈 배열. */
 export function getYearlySummary(year: string): YearlySummary[] {
-  const yearMeetings = MEETINGS.filter((m) => m.year_month.startsWith(year));
-  const summaries: YearlySummary[] = [];
+  return YEARLY_RANKING[year] ?? [];
+}
 
-  for (const member of MEMBERS) {
-    // 해당 연도 중 휴면 전환된 회원은 제외 (예: from='2026-04' → 2026·2027 랭킹에서 제외)
-    const dormant = DORMANT.find((d) => d.name === member.name);
-    if (dormant && dormant.from <= `${year}-12`) continue;
+export function hasYearlySummary(year: string): boolean {
+  return YEARLY_RANKING[year] !== undefined;
+}
 
-    const netScores: number[] = [];
-    const rawScores: number[] = [];
-    let winnerCount = 0;
-    let medalistCount = 0;
-    let hostCount = 0;
+export async function loadYearlySummary(year: string, reload = false): Promise<void> {
+  if (!year) return;
+  if (!reload && YEARLY_RANKING[year] !== undefined) return;
 
-    for (const meeting of yearMeetings) {
-      if (!isActive(member.name, meeting.year_month)) continue;
+  yearlyRankingLoading.value = true;
+  yearlyRankingError.value = null;
+  try {
+    const { data, error } = await supabase.rpc('yearly_ranking', { p_year: year });
+    if (error) throw new Error(error.message);
 
-      const result = MEETING_RESULTS.find(
-        (r) => r.meeting_id === meeting.id && r.member_id === member.id
-      );
-      const handicap = resolveHandicap(member.id, meeting.year_month);
-
-      if (result) {
-        if (result.result_rank === 'Winner') winnerCount++;
-        if (result.result_rank === 'Medalist') medalistCount++;
-        if (result.result_rank === 'Host') hostCount++;
-      }
-
-      if (result && result.attended && result.score !== null && result.score > 0) {
-        rawScores.push(result.score);
-        if (handicap) netScores.push(result.score - handicap.app_hc);
-      }
-    }
-
-    if (netScores.length > 0) {
-      summaries.push({
-        member_id: member.id,
-        member_name: member.name,
-        avg_net_score: netScores.reduce((a, b) => a + b, 0) / netScores.length,
-        avg_score: rawScores.length > 0
-          ? rawScores.reduce((a, b) => a + b, 0) / rawScores.length
-          : null,
-        attended_count: netScores.length,
-        winner_count: winnerCount,
-        medalist_count: medalistCount,
-        host_count: hostCount,
-        rank: 0,
-      });
-    }
+    // numeric 은 postgrest 가 문자열로 내려보낸다. 화면에서 toFixed 를 쓰므로
+    // 여기서 숫자로 바꿔 둔다 — 안 그러면 정렬이 문자열 비교가 된다.
+    YEARLY_RANKING[year] = ((data ?? []) as Record<string, unknown>[]).map((r) => ({
+      member_id: String(r.member_id),
+      member_name: r.member_name as string,
+      avg_net_score: Number(r.avg_net_score),
+      avg_score: r.avg_score === null ? null : Number(r.avg_score),
+      attended_count: Number(r.attended_count),
+      winner_count: Number(r.winner_count),
+      medalist_count: Number(r.medalist_count),
+      host_count: Number(r.host_count),
+      rank: Number(r.rank),
+    }));
+  } catch (err) {
+    yearlyRankingError.value = describeError(err, '연간 랭킹을 불러오지 못했습니다.');
+  } finally {
+    yearlyRankingLoading.value = false;
   }
-
-  // 순위 기준은 평균 스코어(낮을수록 좋다). 평균 Net 은 표에 함께 보여주되
-  // 순위에는 쓰지 않는다 — 같은 스코어면 Net 이 낮은 쪽을 앞에 둬서 순서가
-  // 매번 흔들리지 않게만 한다.
-  // avg_score 는 타입상 null 이 될 수 있어(집계 대상이 없는 경우) 뒤로 보낸다.
-  // 지금 규칙에서는 netScores > 0 이면 rawScores 도 > 0 이라 실제로는 안 걸린다.
-  summaries.sort((a, b) => {
-    if (a.avg_score === null && b.avg_score === null) return a.avg_net_score - b.avg_net_score;
-    if (a.avg_score === null) return 1;
-    if (b.avg_score === null) return -1;
-    if (a.avg_score !== b.avg_score) return a.avg_score - b.avg_score;
-    return a.avg_net_score - b.avg_net_score;
-  });
-  summaries.forEach((s, index) => {
-    s.rank = index + 1;
-  });
-
-  return summaries;
 }
 
 // ── 연간 기록 내보내기(CSV) ───────────────────────────────────────────────────
@@ -452,11 +446,13 @@ export interface YearlyExportRow {
   yearly_rank: number | null;
 }
 
-export function getYearlyExportRows(year: string): YearlyExportRow[] {
+export async function getYearlyExportRows(year: string): Promise<YearlyExportRow[]> {
   const yearMeetings = MEETINGS.filter((m) => m.year_month.startsWith(year)).sort((a, b) =>
     a.year_month < b.year_month ? -1 : a.year_month > b.year_month ? 1 : 0
   );
-  // 연간 평균·순위는 랭킹 페이지와 동일한 집계를 재사용한다
+  // 연간 평균·순위는 랭킹 화면과 같은 서버 집계를 그대로 쓴다.
+  // 여기서 따로 계산하면 파일과 화면이 다른 순위를 말하게 된다.
+  await loadYearlySummary(year);
   const summaryByMember = new Map(getYearlySummary(year).map((s) => [s.member_id, s]));
 
   const rows: YearlyExportRow[] = [];
