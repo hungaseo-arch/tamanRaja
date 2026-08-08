@@ -23,6 +23,14 @@ const SESSION_KEY = `${STORAGE_PREFIX}session`;
 // 사용자에게 보인다. 지우기만 하고 새로 쓰지는 않는다.
 const LEGACY_KEYS = ['golf_auth_member', 'golf_future_attendance'];
 
+/**
+ * 접두사는 같지만 로그아웃해도 지우지 않는 키.
+ * 화면 밝기 취향은 계정이 아니라 이 기기의 설정이다 — 로그아웃할 때마다
+ * 다시 어둡게 맞춰야 한다면 그건 정리가 아니라 고장이다.
+ */
+export const THEME_KEY = `${STORAGE_PREFIX}theme`;
+const KEEP_ON_LOGOUT = [THEME_KEY];
+
 export type MemberRole = 'admin' | 'member';
 
 export interface SessionMember {
@@ -96,7 +104,8 @@ export function clearSession(): void {
     const keys: string[] = [];
     for (let i = 0; i < store.length; i++) {
       const key = store.key(i);
-      if (key && (key.startsWith(STORAGE_PREFIX) || LEGACY_KEYS.includes(key))) keys.push(key);
+      if (!key || KEEP_ON_LOGOUT.includes(key)) continue;
+      if (key.startsWith(STORAGE_PREFIX) || LEGACY_KEYS.includes(key)) keys.push(key);
     }
     keys.forEach((key) => store.removeItem(key));
   }

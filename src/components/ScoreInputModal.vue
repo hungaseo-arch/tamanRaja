@@ -65,7 +65,7 @@ function handleSubmit(e: Event): void {
 
 <template>
   <Dialog v-model:open="isOpen" content-class="sm:max-w-sm" :label="`${member.name} 님 참석 확인`">
-    <h2 class="text-lg font-semibold text-left mb-5">{{ member.name }} <span class="text-zinc-500">님 참석 확인</span></h2>
+    <h2 class="text-lg font-semibold text-left mb-5">{{ member.name }} <span class="text-muted-foreground">님 참석 확인</span></h2>
 
     <form class="space-y-5" @submit="handleSubmit">
 

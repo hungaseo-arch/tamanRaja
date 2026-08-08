@@ -468,7 +468,7 @@ function stickyTint(rank: number | null): string {
                       <span v-else class="text-muted-foreground">-</span>
                     </TableCell>
                     <TableCell class="text-center whitespace-nowrap hidden md:table-cell">
-                      <span v-if="entry.row.medalist_count" class="text-gray-500 font-bold">{{ entry.row.medalist_count }}회</span>
+                      <span v-if="entry.row.medalist_count" class="text-muted-foreground font-bold">{{ entry.row.medalist_count }}회</span>
                       <span v-else class="text-muted-foreground">-</span>
                     </TableCell>
                     <TableCell class="text-center whitespace-nowrap hidden md:table-cell">

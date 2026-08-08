@@ -206,7 +206,7 @@ function handleExport(): void {
           <Card>
             <CardContent class="flex flex-col items-center justify-center h-full py-3 px-2 sm:px-4">
               <p class="text-xs sm:text-sm text-muted-foreground mb-1">Medalist</p>
-              <p class="text-xl font-bold text-gray-500">{{ derived.medalistCount }}회</p>
+              <p class="text-xl font-bold text-muted-foreground">{{ derived.medalistCount }}회</p>
             </CardContent>
           </Card>
           <Card>
