@@ -217,7 +217,7 @@ async function _fetchAll(): Promise<void> {
         year_month: h.year_month as string,
         std_hc: h.std_hc as number,
         app_hc: h.app_hc as number,
-        next_hc: h.next_hc as number,
+        next_hc: (h.next_hc as number | null) ?? null,
       }))
     );
 
@@ -250,10 +250,16 @@ async function _fetchAll(): Promise<void> {
 // ── 핸디캡 해석 ───────────────────────────────────────────────────────────────
 // 해당 월 핸디 레코드가 없으면 직전 달의 next_hc를 당월 핸디로 사용한다.
 // (월간/연간/나의기록 모두 동일 규칙을 쓰기 위한 단일 소스)
+//
+// 폴백의 근거인 직전 달 next_hc 는 그 달 스코어가 입력돼야 정해진다. 아직
+// 비어 있으면 당월 적용 핸디를 알 수 없으므로 app_hc 는 null 이다. 이 값을
+// 그대로 빼면 JS 는 null 을 0 으로 바꿔 "핸디 0" 으로 계산해 버리므로,
+// 받는 쪽은 반드시 null 을 확인하고 Net 계산에서 빼야 한다.
+// (서버 yearly_ranking 도 app_hc is not null 인 라운드만 집계한다)
 export function resolveHandicap(
   memberId: string,
   yearMonth: string
-): { std_hc: number; app_hc: number; next_hc: number | null } | null {
+): { std_hc: number; app_hc: number | null; next_hc: number | null } | null {
   const exact = MONTHLY_HANDICAPS.find(
     (h) => h.member_id === memberId && h.year_month === yearMonth
   );
@@ -311,7 +317,7 @@ export function getMonthlyData(yearMonth: string): MonthlyRow[] {
     // (예: 휴면 중 미팅이 생성된 뒤 활성 전환된 회원)에도 미참석(-)으로 노출한다.
 
     const netScore =
-      result?.attended && result.score !== null ? result.score - appHc : null;
+      result?.attended && result.score !== null && appHc !== null ? result.score - appHc : null;
 
     const year = yearMonth.substring(0, 4);
     const yearMeetings = MEETINGS.filter((m) => m.year_month.startsWith(year));
@@ -323,7 +329,13 @@ export function getMonthlyData(yearMonth: string): MonthlyRow[] {
         (r) => r.meeting_id === ym.id && r.member_id === member.id
       );
       const ymHandicap = resolveHandicap(member.id, ym.year_month);
-      if (ymResult && ymResult.attended && ymResult.score !== null && ymResult.score > 0 && ymHandicap) {
+      if (
+        ymResult &&
+        ymResult.attended &&
+        ymResult.score !== null &&
+        ymResult.score > 0 &&
+        ymHandicap?.app_hc != null
+      ) {
         yearlyNetScores.push(ymResult.score - ymHandicap.app_hc);
       }
     }
@@ -435,7 +447,8 @@ export interface YearlyExportRow {
   member_name: string;
   attended: boolean;
   std_hc: number;
-  app_hc: number;
+  /** 적용 핸디를 정할 수 없는 달이면 null (Net 도 함께 비운다) */
+  app_hc: number | null;
   next_hc: number | null;
   score: number | null;
   net_score: number | null;
@@ -486,7 +499,7 @@ export async function getYearlyExportRows(year: string): Promise<YearlyExportRow
         // 차월 핸디는 스코어가 기록된 경우에만 확정값 (월간 화면과 동일)
         next_hc: scored ? handicap.next_hc : null,
         score,
-        net_score: scored ? score - handicap.app_hc : null,
+        net_score: scored && handicap.app_hc !== null ? score - handicap.app_hc : null,
         monthly_rank: null,
         result_group: result?.result_group ?? null,
         result_rank: result?.result_rank ?? null,

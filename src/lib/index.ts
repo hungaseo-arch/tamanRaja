@@ -40,7 +40,9 @@ export interface MonthlyHandicap {
   year_month: string;
   std_hc: number;
   app_hc: number;
-  next_hc: number;
+  // 그 달 스코어가 아직 입력되지 않았으면 차월 핸디는 정해지지 않는다.
+  // (최신 달은 대개 null 이다 — number 로 단언하면 폴백 계산이 조용히 깨진다)
+  next_hc: number | null;
 }
 
 export type ResultRank = 'Winner' | 'Medalist' | 'Host' | null;
@@ -61,7 +63,9 @@ export interface MonthlyRow {
   member_name: string;
   display_order: number;
   std_hc: number;
-  app_hc: number;
+  // 적용 핸디가 아직 정해지지 않은 달이 있다 (직전 달 차월핸디로 폴백했는데
+  // 그 값도 비어 있는 경우). 이때 Net·조 편성은 계산하지 않는다.
+  app_hc: number | null;
   next_hc: number | null;
   prev_result_group: ResultGroup;
   attended: boolean;

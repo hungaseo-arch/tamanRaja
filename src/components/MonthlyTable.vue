@@ -112,6 +112,7 @@ function enterEdit(): void {
 function getLocalNet(row: MonthlyRow): string {
   const raw = localScores[row.member_id];
   if (!raw) return '';
+  if (row.app_hc === null) return '';
   const score = parseInt(raw, 10);
   if (isNaN(score)) return '';
   const net = score - row.app_hc;
@@ -121,17 +122,24 @@ function getLocalNet(row: MonthlyRow): string {
 function computeAutoFields(): void {
   const scored = props.monthlyData
     .filter((row) => {
+      // 적용 핸디가 없으면 Net 을 낼 수 없다. 0 으로 두고 계산하면 Net 이
+      // 스코어와 같아져 조 편성·Winner 판정까지 어긋나므로 아예 뺀다.
+      if (row.app_hc === null) return false;
       const val = localScores[row.member_id];
       return val !== undefined && val !== '' && !isNaN(parseInt(val, 10));
     })
-    .map((row) => ({
-      member_id: row.member_id,
-      std_hc: row.std_hc,
-      app_hc: row.app_hc,
-      prev_result_group: row.prev_result_group,
-      score: parseInt(localScores[row.member_id], 10),
-      netScore: parseInt(localScores[row.member_id], 10) - row.app_hc,
-    }))
+    .map((row) => {
+      const appHc = row.app_hc as number;
+      const score = parseInt(localScores[row.member_id], 10);
+      return {
+        member_id: row.member_id,
+        std_hc: row.std_hc,
+        app_hc: appHc,
+        prev_result_group: row.prev_result_group,
+        score,
+        netScore: score - appHc,
+      };
+    })
     .sort((a, b) => a.netScore - b.netScore);
 
   // 점수 없는 회원의 자동 계산값 초기화
@@ -508,7 +516,10 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 </TableCell>
 
                 <TableCell class="text-center font-mono hidden sm:table-cell">{{ row.std_hc }}</TableCell>
-                <TableCell class="text-center font-mono">{{ row.app_hc }}</TableCell>
+                <TableCell class="text-center font-mono">
+                  <template v-if="row.app_hc !== null">{{ row.app_hc }}</template>
+                  <span v-else class="text-muted-foreground" title="직전 달 차월 핸디가 아직 정해지지 않았습니다">-</span>
+                </TableCell>
                 <TableCell class="text-center font-mono hidden sm:table-cell">
                   <template v-if="isEditing && localNextHc[row.member_id] != null">{{ localNextHc[row.member_id] }}</template>
                   <template v-else-if="!isEditing && row.attended && row.score !== null">{{ row.next_hc }}</template>

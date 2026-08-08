@@ -70,7 +70,9 @@ const history = computed<HistoryRow[]>(() => {
 
       const attended    = result?.attended ?? false;
       const score       = result?.score ?? null;
-      const net_score   = attended && score !== null && handicap ? score - handicap.app_hc : null;
+      // 적용 핸디가 아직 없는 달(직전 달 차월핸디 미확정)은 Net 을 비워 둔다.
+      // 빼기로 넘기면 null 이 0 이 되어 Net 이 스코어와 같아진다.
+      const net_score   = attended && score !== null && handicap?.app_hc != null ? score - handicap.app_hc : null;
       const result_rank = result?.result_rank ?? null;
 
       return {
