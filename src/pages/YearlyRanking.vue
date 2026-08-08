@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { Trophy, Medal, Home, ArrowUp, ArrowDown, ChevronsUpDown } from 'lucide-vue-next';
+import { Trophy, Medal, Home, ArrowUp, ArrowDown, ChevronsUpDown, Download } from 'lucide-vue-next';
 import { getYearlySummary, MEETINGS, MONTHLY_HANDICAPS } from '@/data';
 import type { YearlySummary } from '@/lib';
 import { cn } from '@/lib/utils';
+import { useRecordExport } from '@/composables/useRecordExport';
+import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -151,6 +153,28 @@ const tableRows = computed<TableEntry[]>(() => {
   return out;
 });
 
+// ── 엑셀(CSV) 다운로드 ────────────────────────────────────────────────────────
+// 파일에는 화면에 보이는 그대로를 담는다 — 선택한 연도·최소 참석 기준·정렬 순서.
+// 여기서 다시 집계하면 화면과 파일이 어긋나 어느 쪽이 맞는지 알 수 없게 된다.
+const { exportYearlyRanking } = useRecordExport();
+
+function handleExport(): void {
+  const rows = tableRows.value
+    .filter((e) => e.row !== null)
+    .map((e) => ({
+      rank: e.rank,
+      member_name: e.row!.member_name,
+      attended_count: e.row!.attended_count,
+      std_hc: stdHcMap.value.get(e.row!.member_id) ?? null,
+      avg_net_score: e.row!.avg_net_score,
+      avg_score: e.row!.avg_score,
+      winner_count: e.row!.winner_count,
+      medalist_count: e.row!.medalist_count,
+      host_count: e.row!.host_count,
+    }));
+  exportYearlyRanking(selectedYear.value, rows, minRoundsNum.value);
+}
+
 function rankLabel(rank: number): string {
   if (rank === 1) return '🥇';
   if (rank === 2) return '🥈';
@@ -197,6 +221,18 @@ function stickyTint(rank: number | null): string {
           class="w-28 shrink-0"
           select-class="h-8 text-xs"
         />
+        <!-- 좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->
+        <Button
+          variant="outline"
+          size="sm"
+          class="h-8 px-2 shrink-0 gap-1 text-xs"
+          :title="`${selectedYear}년 연간 랭킹 엑셀(CSV) 다운로드`"
+          :aria-label="`${selectedYear}년 연간 랭킹 엑셀 다운로드`"
+          @click="handleExport"
+        >
+          <Download class="w-3.5 h-3.5" aria-hidden="true" />
+          <span class="hidden sm:inline">엑셀</span>
+        </Button>
       </div>
 
       <!-- 랭킹 기준을 화면에 명시한다 (P1-3 완료 조건) -->

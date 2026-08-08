@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
-import { Trophy, Medal, Home } from 'lucide-vue-next';
+import { Trophy, Medal, Home, Download } from 'lucide-vue-next';
 import type { MonthlyRow, ResultRank, ResultGroup } from '@/lib';
 import { formatMeetingHeading } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { GOLF_COURSES } from '@/data';
 import { useAttendance } from '@/composables/useAttendance';
+import { useRecordExport } from '@/composables/useRecordExport';
 import Select from '@/components/ui/Select.vue';
 import type { SelectOption } from '@/components/ui/Select.vue';
 import Card from '@/components/ui/Card.vue';
@@ -242,6 +243,12 @@ const RANK_META: Record<string, RankMeta> = {
 function getRankMeta(rank: ResultRank | string): RankMeta | null {
   return rank ? RANK_META[rank] ?? null : null;
 }
+
+// ── 엑셀(CSV) 다운로드 ────────────────────────────────────────────────────────
+// 결과 알림(성공·빈 데이터)은 useRecordExport 안에서 처리한다.
+const { exportYearlyRecords } = useRecordExport();
+
+const exportYear = computed(() => props.selectedMonth.substring(0, 4));
 </script>
 
 <template>
@@ -302,8 +309,22 @@ function getRankMeta(rank: ResultRank | string): RankMeta | null {
           </div>
         </template>
 
+        <!-- 엑셀(CSV) 다운로드 — 해당 연도 전체 기록.
+             좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->
+        <Button
+          variant="outline"
+          size="sm"
+          class="text-xs h-7 px-2 shrink-0 ml-auto gap-1 bg-white/70 hover:bg-white"
+          :title="`${exportYear}년 전체 기록 엑셀(CSV) 다운로드`"
+          :aria-label="`${exportYear}년 전체 기록 엑셀 다운로드`"
+          @click="exportYearlyRecords(props.selectedMonth)"
+        >
+          <Download class="w-3.5 h-3.5" aria-hidden="true" />
+          <span class="hidden sm:inline">엑셀</span>
+        </Button>
+
         <!-- 월 선택 -->
-        <div class="shrink-0 w-24 ml-auto">
+        <div class="shrink-0 w-24">
           <Select
             v-model="localSelectedMonth"
             :options="monthOptions"

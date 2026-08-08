@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { Trophy, Medal, Home } from 'lucide-vue-next';
+import { Trophy, Medal, Home, Download } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
+import { useRecordExport } from '@/composables/useRecordExport';
 import { MEETINGS, MEETING_RESULTS, MONTHLY_HANDICAPS, GOLF_COURSES, resolveHandicap } from '@/data';
 import { ROUTE_PATHS } from '@/lib';
 import { formatPending, formatValue } from '@/lib/format';
 import type { ResultRank } from '@/lib';
+import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -125,15 +127,53 @@ const nowYM = (() => {
 function formatCourse(row: HistoryRow): string {
   return row.year_month >= nowYM ? formatPending(row.course_name) : formatValue(row.course_name);
 }
+
+// ── 엑셀(CSV) 다운로드 ────────────────────────────────────────────────────────
+// 화면의 표와 같은 행·같은 순서로 내보낸다. 평균 행은 파일에 넣지 않는다 —
+// 엑셀에서 정렬·필터를 걸면 합계 행이 섞여 들어가 계산을 망친다.
+const { exportMyRecords } = useRecordExport();
+
+function handleExport(): void {
+  if (!currentMember.value) return;
+  exportMyRecords(
+    currentMember.value.name,
+    history.value.map((r) => ({
+      year_month: r.year_month,
+      course_name: r.course_name,
+      std_hc: r.std_hc,
+      app_hc: r.app_hc,
+      next_hc: r.next_hc,
+      attended: r.attended,
+      score: r.score,
+      net_score: r.net_score,
+      result_group: r.result_group,
+      result_rank: r.result_rank,
+    }))
+  );
+}
 </script>
 
 <template>
   <div class="w-full h-full min-h-full bg-background">
     <div class="container mx-auto px-4 py-2 max-w-7xl space-y-2 h-full flex flex-col flex-1">
       <template v-if="currentMember">
-        <h1 class="text-lg font-bold text-foreground pt-1">
-          나의 기록 <span class="text-muted-foreground font-medium text-sm">— {{ currentMember.name }} 님</span>
-        </h1>
+        <div class="flex items-center gap-2 pt-1">
+          <h1 class="text-lg font-bold text-foreground mr-auto">
+            나의 기록 <span class="text-muted-foreground font-medium text-sm">— {{ currentMember.name }} 님</span>
+          </h1>
+          <!-- 좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->
+          <Button
+            variant="outline"
+            size="sm"
+            class="h-8 px-2 shrink-0 gap-1 text-xs"
+            title="나의 기록 엑셀(CSV) 다운로드"
+            aria-label="나의 기록 엑셀 다운로드"
+            @click="handleExport"
+          >
+            <Download class="w-3.5 h-3.5" aria-hidden="true" />
+            <span class="hidden sm:inline">엑셀</span>
+          </Button>
+        </div>
 
         <!-- 통계 카드 -->
         <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4">
