@@ -1,0 +1,25 @@
+-- P0-1 2단계: 평문 PIN 테이블 제거
+--
+-- 20260808000100_p0_auth_core.sql 에서 PIN 을 app.member_credentials 의
+-- crypt() 해시로 옮기고, 20260808000300 에서 app.member_pins 의 권한을
+-- 회수했다. 남은 건 평문 자체를 지우는 일이다. 무중단 적용을 위해
+-- 옮기는 단계와 지우는 단계를 나눠 뒀던 것이고, 새 프런트가 이미
+-- 배포돼 verify_pin RPC 로만 로그인하므로 이제 지운다.
+--
+-- 지우기 전에 확인한 것 (2026-08-08):
+--   회원 15명 / 해시 15행 / 해시 없는 회원 0 / 빈 해시 0
+--   verify_pin·change_pin 모두 member_pins 를 참조하지 않음
+--   member_pins 를 참조하는 함수·뷰 없음
+--
+-- ⚠️ 되돌릴 수 없다. 이 테이블이 PIN 을 원문으로 볼 수 있는 유일한 곳이었다.
+--    앞으로 회원이 PIN 을 잊으면 조회가 아니라 재설정만 가능하다. 관리자는
+--    DB 에서 아래처럼 새 PIN 을 심어주면 된다 (예: 회원 7번을 1234 로):
+--
+--      update app.member_credentials
+--      set pin_hash = crypt('1234', gen_salt('bf')),
+--          failed_attempts = 0, locked_until = null
+--      where member_id = 7;
+--
+--    본인이 바꾸는 정상 경로는 화면의 PIN 변경(change_pin RPC)이다.
+
+drop table if exists app.member_pins;
