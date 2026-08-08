@@ -5,6 +5,7 @@ import { getYearlySummary, MEETINGS, MONTHLY_HANDICAPS } from '@/data';
 import type { YearlySummary } from '@/lib';
 import { cn } from '@/lib/utils';
 import { useRecordExport } from '@/composables/useRecordExport';
+import AsyncState from '@/components/ui/AsyncState.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
@@ -305,6 +306,13 @@ function stickyTint(rank: number | null): string {
       <Card class="flex flex-col flex-1 min-h-0">
         <CardContent class="flex-1 overflow-hidden min-h-0">
           <!-- Table 컴포넌트가 이미 스크롤 컨테이너다 (이중 스크롤 방지) -->
+          <!-- 기록이 하나도 없으면 연도 목록 자체가 비어 selectedYear 도 빈 값이다.
+               그대로 끼우면 "년 기록이 없습니다" 가 된다. -->
+          <AsyncState
+            :empty="summary.length === 0"
+            :empty-title="selectedYear ? `${selectedYear}년 기록이 없습니다` : '기록이 없습니다'"
+            empty-hint="경기 결과가 저장되면 이 표에 순위가 나타납니다."
+          >
           <div class="h-full min-h-0 mt-4">
             <Table :caption="`${selectedYear}년 연간 랭킹 — 평균 Net 낮은 순, ${minRoundsNum}회 이상 참석자 대상`">
               <TableHeader>
@@ -475,9 +483,7 @@ function stickyTint(rank: number | null): string {
               * 기준 핸디는 2026년 7월 부터 신규 적용
             </p>
           </div>
-          <p v-if="summary.length === 0" class="text-center text-muted-foreground py-8">
-            해당 연도의 데이터가 없습니다.
-          </p>
+          </AsyncState>
         </CardContent>
       </Card>
     </div>

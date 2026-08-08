@@ -3,7 +3,6 @@ import { computed, ref, watch } from 'vue';
 import type { Member } from '@/lib';
 import { formatValue } from '@/lib/format';
 import { MONTHLY_HANDICAPS } from '@/data';
-import { useToast } from '@/composables/useToast';
 import Dialog from '@/components/ui/Dialog.vue';
 import Button from '@/components/ui/Button.vue';
 
@@ -18,6 +17,8 @@ interface Props {
   currentScore: number | null;
   meetingDate: string;
   courseName: string;
+  /** 부모가 서버에 보내는 중. 이 창은 저장이 끝난 뒤 부모가 닫는다. */
+  saving?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -26,8 +27,6 @@ const emit = defineEmits<{
   (e: 'update:open', value: boolean): void;
   (e: 'save', score: number | null, attended: boolean | null, meetingDate: string, courseName: string): void;
 }>();
-
-const { toast } = useToast();
 
 const isOpen = computed({
   get: () => props.open,
@@ -55,14 +54,12 @@ const handicap = computed(() =>
   )
 );
 
+// 저장 결과를 아는 쪽은 부모다. 여기서 미리 "저장 완료"를 띄우고 창을 닫으면
+// 서버가 거절해도 성공한 것처럼 보인다. 알림과 닫기는 부모에게 맡긴다.
 function handleSubmit(e: Event): void {
   e.preventDefault();
+  if (props.saving) return;
   emit('save', null, attended.value, props.meetingDate, props.courseName);
-  toast({
-    title: '저장 완료',
-    description: attended.value === true ? '참석으로 저장되었습니다.' : attended.value === false ? '불참으로 저장되었습니다.' : '미정으로 저장되었습니다.',
-  });
-  isOpen.value = false;
 }
 </script>
 
@@ -122,8 +119,12 @@ function handleSubmit(e: Event): void {
       </div>
 
       <div class="flex justify-end gap-3">
-        <Button type="button" variant="outline" @click="isOpen = false">취소</Button>
-        <Button type="submit">저장</Button>
+        <Button type="button" variant="outline" :disabled="saving" @click="isOpen = false">취소</Button>
+        <!-- 저장 중에는 눌러도 반응이 없어야 한다. 참석 확인을 두 번 보내면
+             두 번째 요청이 첫 번째를 덮어써 순서가 뒤집힐 수 있다. -->
+        <Button type="submit" :disabled="saving" aria-live="polite">
+          {{ saving ? '저장 중...' : '저장' }}
+        </Button>
       </div>
     </form>
   </Dialog>

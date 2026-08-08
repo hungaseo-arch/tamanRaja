@@ -3,7 +3,9 @@ import { computed, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { getMonthlyData, getAvailableMonths, GOLF_COURSES, MEETINGS, MEETING_RESULTS, MEMBERS, loadData } from '@/data';
 import { useAuth } from '@/composables/useAuth';
+import { useToast } from '@/composables/useToast';
 import { supabase } from '@/lib/supabase';
+import { describeError } from '@/lib/errors';
 import type { SavePayload } from '@/components/MonthlyTable.vue';
 import MonthlyTable from '@/components/MonthlyTable.vue';
 
@@ -85,6 +87,7 @@ const isFutureMonth = computed(() => {
 });
 
 const { currentMember, isAdmin } = useAuth();
+const { toast } = useToast();
 
 // 화면 노출 조건일 뿐 권한 경계가 아니다. 실제 쓰기 허용 여부는 서버 RLS 가
 // app.can_manage_month() 로 동일한 규칙(관리자 또는 전월 Host)을 재검증한다.
@@ -127,9 +130,12 @@ const isEditableMonth = computed(() => {
 });
 
 const saveError = ref<string | null>(null);
+const saveState = ref<'idle' | 'saving' | 'error'>('idle');
 
 async function handleSaveMonth(payload: SavePayload): Promise<void> {
+  if (saveState.value === 'saving') return;
   saveError.value = null;
+  saveState.value = 'saving';
   try {
     // 1. 골프장 조회 or 생성 (RLS로 생성 불가 시 null 처리)
     let courseId: number | null = null;
@@ -201,8 +207,17 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
     if (e3) throw new Error(e3.message);
 
     await loadData();
+    saveState.value = 'idle';
+    toast({
+      title: '저장 완료',
+      description: `${selectedMonth.value} 기록 ${results.length}건을 저장했습니다.`,
+    });
   } catch (err) {
-    saveError.value = err instanceof Error ? err.message : '저장 중 오류가 발생했습니다.';
+    // 인라인 문구는 남겨 둔다 — 토스트는 몇 초 뒤 사라지는데, 저장에 실패했다는
+    // 사실은 다시 저장할 때까지 화면에 남아 있어야 한다.
+    saveError.value = describeError(err, '저장 중 오류가 발생했습니다.');
+    saveState.value = 'error';
+    toast({ title: '저장하지 못했습니다', description: saveError.value, variant: 'destructive' });
   }
 }
 
@@ -212,7 +227,7 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
 <template>
   <div class="w-full min-h-full bg-background">
     <div class="container mx-auto px-4 py-2 max-w-7xl">
-        <p v-if="saveError" class="text-sm text-destructive px-1">{{ saveError }}</p>
+        <p v-if="saveError" class="text-sm text-destructive px-1" role="alert">{{ saveError }}</p>
 
         <MonthlyTable
           :year-month="selectedMonth"
@@ -226,6 +241,7 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
           :month-options="monthOptions"
           v-model:manual-date="manualDate"
           v-model:manual-course="manualCourse"
+          :save-state="saveState"
           @save="handleSaveMonth"
         />
       

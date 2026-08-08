@@ -20,6 +20,7 @@ import TableBody from '@/components/ui/TableBody.vue';
 import TableRow from '@/components/ui/TableRow.vue';
 import TableHead from '@/components/ui/TableHead.vue';
 import TableCell from '@/components/ui/TableCell.vue';
+import AsyncState from '@/components/ui/AsyncState.vue';
 
 export interface SavePayload {
   scores: Record<string, string>;
@@ -40,6 +41,12 @@ interface Props {
   monthOptions: SelectOption[];
   manualDate: string;
   manualCourse: string;
+  /**
+   * 부모의 저장 진행 상태. 'saving' → 'idle' 로 끝나야 편집 모드를 닫는다.
+   * 'error' 로 끝나면 입력값을 그대로 둔 채 편집 모드를 유지한다 —
+   * 저장에 실패했는데 화면이 읽기 모드로 돌아가면 방금 친 값이 사라진 것처럼 보인다.
+   */
+  saveState?: 'idle' | 'saving' | 'error';
 }
 
 const props = defineProps<Props>();
@@ -181,14 +188,22 @@ function computeAutoFields(): void {
 watch(localScores, computeAutoFields, { deep: true });
 
 function handleSave(): void {
+  if (props.saveState === 'saving') return;
   emit('save', {
     scores: { ...localScores },
     groups: { ...localGroups },
     ranks: { ...localRanks },
     attendance: { ...localAttendance },
   });
-  isEditing.value = false;
 }
+
+// 저장이 실제로 끝난 뒤에만 편집 모드를 닫는다.
+watch(
+  () => props.saveState,
+  (now, before) => {
+    if (before === 'saving' && now === 'idle') isEditing.value = false;
+  },
+);
 
 // 골프장이 아직 없으면 구분자('-')를 아예 붙이지 않는다 — "2026년 8월 1일 - "
 // 처럼 구분자만 남는 문제 (P1-1)
@@ -304,7 +319,15 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             </datalist>
           </template>
           <div class="flex gap-2 shrink-0">
-            <Button v-if="isEditing" size="sm" class="text-xs h-7 px-2" @click="handleSave">저장</Button>
+            <!-- 저장 중 재클릭은 meeting_results 를 지웠다 다시 넣는 과정을
+                 겹쳐 돌려 기록이 어긋날 수 있다. 끝날 때까지 잠근다. -->
+            <Button
+              v-if="isEditing"
+              size="sm"
+              class="text-xs h-7 px-2"
+              :disabled="props.saveState === 'saving'"
+              @click="handleSave"
+            >{{ props.saveState === 'saving' ? '저장 중...' : '저장' }}</Button>
             <Button v-else size="sm" variant="outline" class="text-xs h-7 px-2" @click="enterEdit">수정</Button>
           </div>
         </template>
@@ -341,6 +364,13 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
       <CardContent>
         <!-- Table 컴포넌트가 이미 스크롤 컨테이너다. 여기서 또 감싸면 이중 스크롤. -->
         <div class="mt-4">
+          <!-- 위의 월 선택·엑셀은 밖에 둔다. 기록이 없는 달이라도 다른 달로
+               넘어갈 수단은 남아 있어야 한다. -->
+          <AsyncState
+            :empty="props.monthlyData.length === 0"
+            :empty-title="`${heading} 기록이 없습니다`"
+            empty-hint="다른 달을 고르거나, 경기 결과가 저장되면 여기에 표가 나타납니다."
+          >
           <Table :caption="`${heading} 회원별 핸디·스코어 기록`">
             <TableHeader>
               <TableRow>
@@ -487,6 +517,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           <p class="text-xs text-muted-foreground mt-2 px-2">
             * 기준 핸디는 2026년 7월 부터 신규 적용
           </p>
+          </AsyncState>
         </div>
       </CardContent>
     </Card>

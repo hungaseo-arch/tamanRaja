@@ -5,18 +5,22 @@ import Layout from '@/components/Layout.vue';
 import LoginModal from '@/components/LoginModal.vue';
 import ScoreInputModal from '@/components/ScoreInputModal.vue';
 import Toaster from '@/components/ui/Toaster.vue';
+import AsyncState from '@/components/ui/AsyncState.vue';
 import { loadData, loadMembers, clearData, dataLoading, dataInitialized, dataError, MEETINGS, GOLF_COURSES, getMonthlyData } from '@/data';
 import { useAuth } from '@/composables/useAuth';
 import { useAttendance } from '@/composables/useAttendance';
+import { useToast } from '@/composables/useToast';
 import { ROUTE_PATHS } from '@/lib';
 
 const router = useRouter();
 const route = useRoute();
 const { currentMember, isAdmin, isLoggedIn, revalidate } = useAuth();
 const { setAttendance, getAttendance } = useAttendance();
+const { toast } = useToast();
 
 const loginModalOpen = ref(false);
 const scoreModalOpen = ref(false);
+const savingAttendance = ref(false);
 
 function openLoginModal(): void {
   loginModalOpen.value = true;
@@ -52,9 +56,32 @@ const isManager = computed(() =>
   isAdmin.value || nextMemberData.value?.result_rank === 'Host'
 );
 
+const ATTENDANCE_LABEL: Record<string, string> = { true: '참석', false: '불참', null: '미정' };
+
+// 저장이 끝나기 전에는 창을 닫지 않는다. 실패하면 창이 그대로 열려 있어
+// 사유를 보고 바로 다시 누를 수 있다.
 async function handleSaveScore(_score: number | null, attended: boolean | null): Promise<void> {
-  if (!currentMember.value) return;
-  await setAttendance(nextYM, currentMember.value.id, attended);
+  if (!currentMember.value || savingAttendance.value) return;
+  savingAttendance.value = true;
+  const result = await setAttendance(nextYM, currentMember.value.id, attended);
+  savingAttendance.value = false;
+
+  if (!result.ok) {
+    toast({
+      title: '저장하지 못했습니다',
+      // 화면 값은 setAttendance 안에서 이미 원래대로 돌아갔다.
+      description: result.message ?? '네트워크 상태를 확인한 뒤 다시 시도해 주세요.',
+      variant: 'destructive',
+    });
+    return;
+  }
+
+  scoreModalOpen.value = false;
+  toast({
+    title: '저장 완료',
+    description: `${nextYM} ${ATTENDANCE_LABEL[String(attended)]}(으)로 저장되었습니다.`,
+  });
+
   const alreadyOnFutureMonth = route.path === ROUTE_PATHS.MONTHLY && route.query.month === nextYM;
   if (alreadyOnFutureMonth) {
     // 전체 페이지 리로드 대신 데이터만 다시 읽는다 (번들 재다운로드·세션 재검증 회피)
@@ -87,28 +114,18 @@ onMounted(async () => {
   <RouterView v-if="route.path === ROUTE_PATHS.HOME" />
 
   <Layout v-else :on-login-click="openLoginModal" :on-attendance-click="openAttendanceModal">
-    <!-- 최초 로딩 (초기화 전에만 표시 — 저장 후 백그라운드 리로드 때는 표시 안 함) -->
-    <div
-      v-if="!dataInitialized && dataLoading"
-      class="flex items-center justify-center min-h-[60vh] text-muted-foreground"
+    <!-- 초기화 전에만 로딩·오류를 그린다. 저장 후 백그라운드 리로드 때는
+         이미 화면에 표가 있으므로 갈아엎지 않는다. -->
+    <AsyncState
+      container-class="container mx-auto px-4 py-4 max-w-7xl"
+      :loading="!dataInitialized && dataLoading"
+      :error="!dataInitialized ? dataError : null"
+      label="기록"
+      :skeleton-rows="8"
+      @retry="loadData()"
     >
-      <span class="animate-pulse text-lg">데이터를 불러오는 중...</span>
-    </div>
-
-    <!-- 오류 (초기 로딩 실패) -->
-    <div
-      v-else-if="!dataInitialized && dataError"
-      class="flex flex-col items-center justify-center min-h-[60vh] gap-4"
-    >
-      <span class="text-destructive text-sm">{{ dataError }}</span>
-      <button
-        class="px-4 py-2 text-sm rounded-md bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
-        @click="loadData()"
-      >다시 시도</button>
-    </div>
-
-    <!-- 정상 -->
-    <RouterView v-else />
+      <RouterView />
+    </AsyncState>
   </Layout>
 
   <LoginModal v-model:open="loginModalOpen" />
@@ -123,6 +140,7 @@ onMounted(async () => {
     :meeting-date="nextMeeting?.meeting_date ?? ''"
     :course-name="nextMeetingCourseName"
     :is-manager="isManager"
+    :saving="savingAttendance"
     @save="handleSaveScore"
   />
   <Toaster />

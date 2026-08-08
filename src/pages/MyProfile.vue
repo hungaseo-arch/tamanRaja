@@ -8,6 +8,7 @@ import { MEETINGS, MEETING_RESULTS, MONTHLY_HANDICAPS, GOLF_COURSES, resolveHand
 import { ROUTE_PATHS } from '@/lib';
 import { formatPending, formatValue } from '@/lib/format';
 import type { ResultRank } from '@/lib';
+import AsyncState from '@/components/ui/AsyncState.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
@@ -219,6 +220,11 @@ function handleExport(): void {
         <!-- 월별 히스토리 테이블 -->
         <Card class="flex flex-col flex-1 min-h-0">
           <CardContent class="flex-1 overflow-hidden min-h-0">
+            <AsyncState
+              :empty="history.length === 0"
+              empty-title="아직 기록이 없습니다"
+              empty-hint="모임에 참석하고 스코어가 저장되면 여기에 쌓입니다."
+            >
             <div class="overflow-x-auto overflow-y-auto h-full min-h-0 mt-4">
               <Table caption="월별 참석·핸디·스코어 기록">
                 <TableHeader>
@@ -308,6 +314,7 @@ function handleExport(): void {
                 * 기준 핸디는 2026년 7월 부터 신규 적용
               </p>
             </div>
+            </AsyncState>
           </CardContent>
         </Card>
 

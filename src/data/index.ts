@@ -1,6 +1,7 @@
 import { reactive, ref } from 'vue';
 import { supabase } from '@/lib/supabase';
 import { syncAttendanceFromDB } from '@/composables/useAttendance';
+import { describeError } from '@/lib/errors';
 import type {
   Member,
   Meeting,
@@ -67,8 +68,7 @@ export async function loadMembers(): Promise<void> {
     if (error) throw new Error(error.message);
     fillMembers(data ?? []);
   } catch (err) {
-    dataError.value =
-      err instanceof Error ? err.message : '회원 목록을 불러오는 중 오류가 발생했습니다.';
+    dataError.value = describeError(err, '회원 목록을 불러오는 중 오류가 발생했습니다.');
   } finally {
     membersLoading.value = false;
   }
@@ -97,7 +97,13 @@ function fillMembers(rows: { id: unknown; name: unknown }[]): void {
   );
 }
 
-export async function loadData(retries = 3): Promise<void> {
+/**
+ * 기본값이 1인 이유: postgrest-js 가 이미 요청 단위로 3회(1s·2s·4s 백오프)
+ * 재시도한다. 여기서 또 감싸면 재시도가 곱해져 실패 화면이 뜨기까지 26초가
+ * 걸린다 — 그동안 사용자는 골격만 본다. 재시도는 아래 계층에 맡기고,
+ * 이 층은 "안 되면 빨리 알리고 다시 시도 버튼을 준다"만 한다.
+ */
+export async function loadData(retries = 1): Promise<void> {
   if (dataLoading.value) return;
   dataLoading.value = true;
   dataError.value = null;
@@ -112,8 +118,7 @@ export async function loadData(retries = 3): Promise<void> {
       if (attempt < retries) {
         await delay(1500 * attempt);
       } else {
-        dataError.value =
-          err instanceof Error ? err.message : '데이터를 불러오는 중 오류가 발생했습니다.';
+        dataError.value = describeError(err, '데이터를 불러오는 중 오류가 발생했습니다.');
       }
     }
   }
