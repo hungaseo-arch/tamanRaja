@@ -48,8 +48,10 @@ const emit = defineEmits<{
   (e: 'update:manualCourse', value: string): void;
 }>();
 
-// 편집 모드: 미래 달이면 기본 편집 상태
-const isEditing = ref(props.isFutureMonth ?? false);
+// 편집 모드. 미래 달은 기본 편집 상태로 열리지만, 편집 권한이 있을 때만이다.
+// (권한 없는 회원에게 입력 필드가 노출되던 문제 — 서버 RLS 가 최종 차단하지만
+//  애초에 보이지 않아야 한다.)
+const isEditing = ref(false);
 
 // 입력값 — watch보다 먼저 선언해야 immediate watch의 TDZ 에러 방지
 const localScores = reactive<Record<string, string>>({});
@@ -71,9 +73,9 @@ function clearLocal(): void {
 }
 
 watch(
-  () => [props.yearMonth, props.isFutureMonth] as const,
-  ([ym, future]) => {
-    isEditing.value = future ?? false; // 미래월만 기본 편집
+  () => [props.yearMonth, props.isFutureMonth, canManage.value] as const,
+  ([ym, future, manage]) => {
+    isEditing.value = (future ?? false) && manage; // 미래월 + 편집 권한
     clearLocal();
     if (future) {
       Object.assign(localAttendance, getAttendance(ym));

@@ -4,9 +4,14 @@
 
 export const ROUTE_PATHS = {
   HOME: '/',
-  MONTHLY: '/monthlyRecord/',
+  MONTHLY: '/monthly',
   RANKING: '/ranking',
   PROFILE: '/profile',
+} as const;
+
+// 예전 경로(끝 슬래시 포함). 북마크·공유 링크가 살아 있도록 리다이렉트만 남긴다.
+export const LEGACY_ROUTE_PATHS = {
+  MONTHLY: ['/monthlyRecord/', '/monthlyRecord'],
 } as const;
 
 // Domain types (1:1 with original src/lib/index.ts)

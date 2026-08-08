@@ -1,5 +1,10 @@
-import { createRouter, createWebHashHistory, type RouteRecordRaw } from 'vue-router';
-import { ROUTE_PATHS } from '@/lib';
+import {
+  createRouter,
+  createWebHashHistory,
+  type RouteLocationNormalized,
+  type RouteRecordRaw,
+} from 'vue-router';
+import { LEGACY_ROUTE_PATHS, ROUTE_PATHS } from '@/lib';
 import { loadSession } from '@/lib/session';
 
 // 라우터 가드는 편의일 뿐 권한 경계가 아니다. 실제 접근 통제는 서버 RLS 가 한다.
@@ -28,6 +33,17 @@ const routes: RouteRecordRaw[] = [
     name: 'profile',
     component: () => import('@/pages/MyProfile.vue'),
   },
+  // 예전 경로 → 새 경로. 쿼리(?month=...)는 그대로 넘긴다.
+  ...LEGACY_ROUTE_PATHS.MONTHLY.map((path, i) => ({
+    path,
+    name: `monthly-legacy-${i}`,
+    redirect: (to: RouteLocationNormalized) => ({ path: ROUTE_PATHS.MONTHLY, query: to.query }),
+  })),
+  {
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: () => import('@/pages/NotFound.vue'),
+  },
 ];
 
 export const router = createRouter({
@@ -35,9 +51,16 @@ export const router = createRouter({
   routes,
 });
 
+const AUTH_REQUIRED = new Set<string>([
+  ROUTE_PATHS.MONTHLY,
+  ROUTE_PATHS.RANKING,
+  ROUTE_PATHS.PROFILE,
+]);
+
 router.beforeEach((to) => {
-  const requiresAuth = [ROUTE_PATHS.MONTHLY, ROUTE_PATHS.RANKING, ROUTE_PATHS.PROFILE];
-  if (requiresAuth.includes(to.path as typeof ROUTE_PATHS.MONTHLY) && !isLoggedIn()) {
+  // 없는 경로는 로그인 여부와 무관하게 404 를 보여준다 (홈으로 튕기면
+  // 주소가 틀렸다는 사실 자체를 알 수 없다).
+  if (AUTH_REQUIRED.has(to.path) && !isLoggedIn()) {
     return ROUTE_PATHS.HOME;
   }
 });
