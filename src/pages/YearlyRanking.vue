@@ -87,16 +87,47 @@ const unqualified = computed(() =>
   summary.value.filter((r) => r.attended_count < minRoundsNum.value)
 );
 
-// 순위는 정렬과 분리한다. 어떤 열로 정렬하든 순위는 항상 랭킹 기준
-// (평균 스코어 낮은 순, 기준 참석 충족자 한정)을 따른다.
-// 비교 규칙은 getYearlySummary 의 정렬과 같아야 한다 — 한쪽만 바꾸면
-// 표의 순위와 상단 카드 순서가 어긋난다.
+// ── 랭킹 기준 ────────────────────────────────────────────────────────────────
+// 평균 Net 과 평균 스코어는 서로 다른 이야기를 한다. 핸디를 뺀 실력 대비
+// 성적이 평균 Net, 친 그대로가 평균 스코어다. 어느 쪽으로 볼지는 보는
+// 사람이 정하게 하고, 그 열 제목을 누르면 그 지표가 순위 기준이 된다.
+// 기본값은 서버 yearly_ranking 이 매기는 기준(평균 스코어)과 맞춘다.
+type RankBasis = 'avg_net_score' | 'avg_score';
+const rankBasis = ref<RankBasis>('avg_score');
+
+const rankBasisLabel = computed(() =>
+  rankBasis.value === 'avg_score' ? '평균 스코어' : '평균 Net'
+);
+// '평균 스코어가' / '평균 Net이' — 받침에 따라 조사가 다르다
+const rankBasisParticle = computed(() => (rankBasis.value === 'avg_score' ? '가' : '이'));
+
+// 기준 지표를 카드 위쪽에 놓아 "무엇으로 매긴 순위인지"가 먼저 읽히게 한다.
+const metricOrder = computed<RankBasis[]>(() =>
+  rankBasis.value === 'avg_net_score'
+    ? ['avg_net_score', 'avg_score']
+    : ['avg_score', 'avg_net_score']
+);
+
+function metric(row: YearlySummary, key: RankBasis): number | null {
+  return key === 'avg_score' ? row.avg_score : row.avg_net_score;
+}
+
+// 순위는 표 정렬과 분리돼 있다. 참석·기준 핸디로 정렬해도 순위는 그대로고,
+// 평균 Net / 평균 스코어를 누를 때만 기준이 바뀐다.
+// 기준 지표가 같으면 나머지 지표로 가린다 — 둘 다 없으면 동순위.
 function byRankingRule(a: YearlySummary, b: YearlySummary): number {
-  if (a.avg_score === null && b.avg_score === null) return a.avg_net_score - b.avg_net_score;
-  if (a.avg_score === null) return 1;
-  if (b.avg_score === null) return -1;
-  if (a.avg_score !== b.avg_score) return a.avg_score - b.avg_score;
-  return a.avg_net_score - b.avg_net_score;
+  const primary = rankBasis.value;
+  const secondary: RankBasis = primary === 'avg_score' ? 'avg_net_score' : 'avg_score';
+
+  for (const key of [primary, secondary]) {
+    const av = metric(a, key);
+    const bv = metric(b, key);
+    if (av === null && bv === null) continue; // 둘 다 없으면 다음 지표로
+    if (av === null) return 1; // 값 없는 회원은 항상 뒤로
+    if (bv === null) return -1;
+    if (av !== bv) return av - bv;
+  }
+  return 0;
 }
 
 const rankedQualified = computed(() => [...qualified.value].sort(byRankingRule));
@@ -120,6 +151,9 @@ function setSort(key: SortKey): void {
     sortKey.value = key;
     sortAsc.value = true; // 새 열은 항상 오름차순부터 (모든 지표가 낮을수록 좋다)
   }
+  // 순위를 매길 수 있는 두 지표는 누르는 순간 랭킹 기준이 된다.
+  // 참석·기준 핸디는 순위 기준이 될 수 없으므로 직전 기준을 유지한다.
+  if (key === 'avg_net_score' || key === 'avg_score') rankBasis.value = key;
 }
 
 function sortAriaSort(key: SortKey): 'ascending' | 'descending' | 'none' {
@@ -277,9 +311,12 @@ function stickyTint(rank: number | null): string {
 
       <!-- 랭킹 기준을 화면에 명시한다 (P1-3 완료 조건) -->
       <p class="text-xs text-muted-foreground leading-relaxed">
-        <strong class="text-foreground">랭킹 기준</strong> — 평균 스코어가 낮은 순.
+        <strong class="text-foreground">랭킹 기준</strong> —
+        <strong class="text-foreground">{{ rankBasisLabel }}</strong>{{ rankBasisParticle }} 낮은 순.
         {{ selectedYear }}년에 <strong class="text-foreground">{{ minRoundsNum }}회 이상</strong> 참석한
-        회원에게만 순위를 부여합니다. 표의 열 제목을 눌러 정렬해도 순위는 이 기준을 따릅니다.
+        회원에게만 순위를 부여합니다. 표의 <strong class="text-foreground">평균 Net</strong> ·
+        <strong class="text-foreground">평균 스코어</strong> 열 제목을 누르면 그 지표가 순위 기준이 되고,
+        참석 · 기준 핸디로 정렬해도 순위는 바뀌지 않습니다.
       </p>
 
       <!-- 상위 4명 하이라이트 카드 -->
@@ -298,25 +335,32 @@ function stickyTint(rank: number | null): string {
           <CardContent class="pt-2 text-center space-y-1">
             <p class="text-xl">{{ rankLabel(idx + 1) }}</p>
             <p class="text-shadow-md font-bold">{{ row.member_name }}</p>
-            <!-- 기본은 랭킹 기준인 평균 스코어. 평균 Net 으로 정렬 중일 때만
-                 그 값을 보여준다 — 카드와 표가 다른 숫자를 말하면 헷갈린다. -->
-            <p v-if="sortKey !== 'avg_net_score'" class="text-sm text-muted-foreground">
-              평균 스코어
-              <span class="font-mono font-semibold ml-1 text-purple-600 dark:text-purple-400">
-                <template v-if="row.avg_score !== null">{{ row.avg_score.toFixed(1) }}</template>
-                <span v-else class="text-muted-foreground">-</span>
-              </span>
-            </p>
-            <p v-else class="text-sm text-muted-foreground">
-              평균 Net
-              <span
-                class="font-mono font-semibold ml-1"
-                :class="row.avg_net_score >= 0
-                  ? 'text-blue-600 dark:text-blue-400'
-                  : 'text-orange-700 dark:text-orange-400'"
-              >
-                {{ row.avg_net_score >= 0 ? '+' : '' }}{{ row.avg_net_score.toFixed(2) }}
-              </span>
+            <!-- 두 지표를 모두 보이되 순위 기준인 쪽을 위에 두고 진하게 쓴다.
+                 카드에 한 지표만 있으면 "이 숫자가 낮은데 왜 아래 등수냐"가 된다. -->
+            <p
+              v-for="key in metricOrder"
+              :key="key"
+              class="text-sm"
+              :class="key === rankBasis ? 'text-foreground' : 'text-muted-foreground'"
+            >
+              <template v-if="key === 'avg_score'">
+                평균 스코어
+                <span class="font-mono font-semibold ml-1 text-purple-600 dark:text-purple-400">
+                  <template v-if="row.avg_score !== null">{{ row.avg_score.toFixed(1) }}</template>
+                  <span v-else class="text-muted-foreground">-</span>
+                </span>
+              </template>
+              <template v-else>
+                평균 Net
+                <span
+                  class="font-mono font-semibold ml-1"
+                  :class="row.avg_net_score >= 0
+                    ? 'text-blue-600 dark:text-blue-400'
+                    : 'text-orange-700 dark:text-orange-400'"
+                >
+                  {{ row.avg_net_score >= 0 ? '+' : '' }}{{ row.avg_net_score.toFixed(2) }}
+                </span>
+              </template>
             </p>
             <p class="text-sm text-muted-foreground">{{ row.attended_count }}회 참석</p>
             <div class="flex justify-center gap-1 flex-wrap pt-1">
@@ -361,7 +405,7 @@ function stickyTint(rank: number | null): string {
             @retry="retryRanking"
           >
           <div class="h-full min-h-0 mt-4">
-            <Table :caption="`${selectedYear}년 연간 랭킹 — 평균 스코어 낮은 순, ${minRoundsNum}회 이상 참석자 대상`">
+            <Table :caption="`${selectedYear}년 연간 랭킹 — ${rankBasisLabel} 낮은 순, ${minRoundsNum}회 이상 참석자 대상`">
               <TableHeader>
                 <TableRow>
                   <!-- 가로 스크롤에도 순위·회원은 남는다.
