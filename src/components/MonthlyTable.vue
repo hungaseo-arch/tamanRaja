@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from 'vue';
+import { computed, nextTick, reactive, ref, watch } from 'vue';
 import { Trophy, Medal, Home, Download } from 'lucide-vue-next';
 import type { MonthlyRow, ResultRank, ResultGroup } from '@/lib';
 import { formatMeetingHeading } from '@/lib/format';
@@ -185,10 +185,44 @@ function computeAutoFields(): void {
   }
 }
 
-watch(localScores, computeAutoFields, { deep: true });
+// ── 스코어 입력 검증 ──────────────────────────────────────────────────────────
+// 여기 스코어는 총타수가 아니라 오버파 기준값이라 실제 기록은 한 자리~두 자리다.
+// 자릿수를 잘못 눌러 세 자리가 들어가면 조 편성·차월 핸디까지 통째로 어긋나므로
+// 저장 전에 막는다.
+const SCORE_MIN = -20;
+const SCORE_MAX = 60;
+
+function isScoreInvalid(memberId: string): boolean {
+  const raw = localScores[memberId];
+  if (raw === undefined || raw.trim() === '') return false;
+  const n = Number(raw);
+  return !Number.isInteger(n) || n < SCORE_MIN || n > SCORE_MAX;
+}
+
+const invalidScoreNames = computed(() =>
+  props.monthlyData.filter((row) => isScoreInvalid(row.member_id)).map((row) => row.member_name),
+);
+
+const validationError = ref<string | null>(null);
+
+watch(
+  localScores,
+  () => {
+    computeAutoFields();
+    // 고치는 즉시 경고를 거둔다. 남겨 두면 이미 고친 뒤에도 야단맞는 것처럼 보인다.
+    if (validationError.value && invalidScoreNames.value.length === 0) validationError.value = null;
+  },
+  { deep: true },
+);
 
 function handleSave(): void {
   if (props.saveState === 'saving') return;
+  if (invalidScoreNames.value.length > 0) {
+    validationError.value =
+      `스코어는 ${SCORE_MIN}~${SCORE_MAX} 사이의 정수여야 합니다 — ${invalidScoreNames.value.join(', ')}`;
+    return;
+  }
+  validationError.value = null;
   emit('save', {
     scores: { ...localScores },
     groups: { ...localGroups },
@@ -227,9 +261,53 @@ const localManualDate = computed({
   set: (v: string) => emit('update:manualDate', v),
 });
 
-const localManualCourse = computed({
-  get: () => props.manualCourse,
-  set: (v: string) => emit('update:manualCourse', v),
+// ── 골프장 선택 ───────────────────────────────────────────────────────────────
+// 값은 계속 이름 문자열 하나(props.manualCourse)로 오간다. 화면에서만
+// "목록에서 고르기 / 신규 추가" 두 갈래로 나눠 보여준다.
+const NEW_COURSE = '__new__';
+const courseChoice = ref('');
+const newCourseName = ref('');
+const newCourseInput = ref<HTMLInputElement | null>(null);
+
+const courseOptions = computed<SelectOption[]>(() => [
+  ...GOLF_COURSES.map((c) => ({ value: c.name, label: c.name })),
+  { value: NEW_COURSE, label: '+ 신규 추가' },
+]);
+
+const resolvedCourse = computed(() =>
+  courseChoice.value === NEW_COURSE ? newCourseName.value.trim() : courseChoice.value,
+);
+
+// 바깥에서 값이 바뀐 경우(달 전환 등)만 두 갈래로 되돌려 놓는다.
+// 우리가 올린 값이 그대로 되돌아온 것이면 건드리지 않는다 — 신규 입력 도중
+// 글자를 지웠을 때 셀렉트가 제멋대로 '선택 안 함' 으로 튀는 걸 막는다.
+watch(
+  () => props.manualCourse,
+  (name) => {
+    if (resolvedCourse.value === name) return;
+    if (!name) {
+      courseChoice.value = '';
+      newCourseName.value = '';
+    } else if (GOLF_COURSES.some((c) => c.name === name)) {
+      courseChoice.value = name;
+      newCourseName.value = '';
+    } else {
+      // 목록에 없는 이름이 이미 저장돼 있던 경우 (예전 자유 입력분)
+      courseChoice.value = NEW_COURSE;
+      newCourseName.value = name;
+    }
+  },
+  { immediate: true },
+);
+
+watch(resolvedCourse, (v) => {
+  if (v !== props.manualCourse) emit('update:manualCourse', v);
+});
+
+watch(courseChoice, async (v) => {
+  if (v !== NEW_COURSE) return;
+  await nextTick();
+  newCourseInput.value?.focus();
 });
 
 const futureAttendedCount = computed(() =>
@@ -306,17 +384,26 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
               aria-label="모임 날짜"
               class="h-7 rounded border border-input bg-background px-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring w-full sm:w-auto sm:flex-initial"
             />
+            <!-- 골프장은 목록에서 고르는 것이 기본이다. datalist 는 제안일 뿐이라
+                 오타가 그대로 저장돼 같은 골프장이 두 개로 갈라졌다. 새 골프장은
+                 '신규 추가' 를 고른 뒤 명시적으로 입력한다. -->
+            <Select
+              v-model="courseChoice"
+              :options="courseOptions"
+              placeholder="골프장 선택"
+              aria-label="골프장"
+              class="flex-1 min-w-0 sm:flex-initial sm:w-32"
+              select-class="h-7 py-0 pr-7 text-xs"
+            />
             <input
+              v-if="courseChoice === NEW_COURSE"
+              ref="newCourseInput"
               type="text"
-              v-model="localManualCourse"
-              list="golf-courses-list"
-              aria-label="골프장명"
-              placeholder="골프장명"
+              v-model="newCourseName"
+              aria-label="새 골프장명"
+              placeholder="새 골프장명"
               class="h-7 rounded border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring flex-1 min-w-0 sm:flex-initial sm:w-28"
             />
-            <datalist id="golf-courses-list">
-              <option v-for="c in GOLF_COURSES" :key="c.id" :value="c.name" />
-            </datalist>
           </template>
           <div class="flex gap-2 shrink-0">
             <!-- 저장 중 재클릭은 meeting_results 를 지웠다 다시 넣는 과정을
@@ -345,6 +432,12 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           <Download class="w-3.5 h-3.5" aria-hidden="true" />
           <span class="hidden sm:inline">엑셀</span>
         </Button>
+
+        <!-- 저장을 막은 이유는 저장 버튼 옆에 둔다. 표 아래에 있으면 화면이 긴
+             달에서는 눌러 놓고 아무 반응이 없는 것처럼 보인다. -->
+        <p v-if="validationError" class="w-full text-xs text-destructive" role="alert">
+          {{ validationError }}
+        </p>
 
         <!-- 월 선택 -->
         <div class="shrink-0 w-24">
@@ -425,12 +518,21 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 <!-- Score -->
                 <TableCell class="text-center font-mono">
                   <template v-if="isEditing">
+                    <!-- type="number" 는 모바일에서 스피너가 붙어 스크롤 한 번에
+                         값이 바뀐다. 숫자 자판은 inputmode 로 부르고 스피너는 뗀다. -->
                     <input
-                      type="number"
+                      type="text"
+                      inputmode="numeric"
+                      pattern="-?[0-9]*"
+                      maxlength="4"
                       :value="localScores[row.member_id] ?? ''"
                       placeholder="-"
                       :aria-label="`${row.member_name} 스코어`"
-                      class="w-16 text-center border border-input rounded px-1 py-0 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-ring"
+                      :aria-invalid="isScoreInvalid(row.member_id) || undefined"
+                      :class="cn('w-16 text-center border rounded px-1 py-0 text-sm bg-background focus:outline-none focus:ring-1',
+                        isScoreInvalid(row.member_id)
+                          ? 'border-destructive text-destructive focus:ring-destructive'
+                          : 'border-input focus:ring-ring')"
                       @input="(e) => { localScores[row.member_id] = (e.target as HTMLInputElement).value; }"
                     />
                   </template>

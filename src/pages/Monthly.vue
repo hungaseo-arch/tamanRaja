@@ -6,6 +6,7 @@ import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/composables/useToast';
 import { supabase } from '@/lib/supabase';
 import { describeError } from '@/lib/errors';
+import { ROUTE_PATHS } from '@/lib';
 import type { SavePayload } from '@/components/MonthlyTable.vue';
 import MonthlyTable from '@/components/MonthlyTable.vue';
 
@@ -18,7 +19,12 @@ const nextYM = `${today.getFullYear()}-${String(today.getMonth() + 2).padStart(2
 // 현재달 이하의 가장 최근 미팅을 기본으로 선택 (미래달 미팅이 있어도 현재달을 우선)
 const route = useRoute();
 const queryMonth = route.query.month as string | undefined;
-const defaultMonth = queryMonth ?? availableMonths.value.find((m) => m.year_month <= currentYM)?.year_month ?? currentYM;
+// #/attendance 는 이 화면을 배경으로 쓰는 참석 확인 창이다. 확인 대상은 익월이니
+// 뒤에 깔리는 표도 익월이어야 한다.
+const defaultMonth = queryMonth
+  ?? (route.path === ROUTE_PATHS.ATTENDANCE ? nextYM : undefined)
+  ?? availableMonths.value.find((m) => m.year_month <= currentYM)?.year_month
+  ?? currentYM;
 const selectedMonth = ref<string>(defaultMonth);
 
 watch(() => route.query.month, (m) => {

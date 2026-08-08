@@ -19,15 +19,24 @@ const { setAttendance, getAttendance } = useAttendance();
 const { toast } = useToast();
 
 const loginModalOpen = ref(false);
-const scoreModalOpen = ref(false);
 const savingAttendance = ref(false);
 
 function openLoginModal(): void {
   loginModalOpen.value = true;
 }
 
-function openAttendanceModal(): void {
-  scoreModalOpen.value = true;
+// 창의 열림 여부는 주소가 정한다. ref 로 따로 들고 있으면 뒤로가기를 눌러도
+// 창이 남고, 링크로 들어온 사람에게는 창이 열리지 않는다.
+const scoreModalOpen = computed({
+  get: () => route.path === ROUTE_PATHS.ATTENDANCE,
+  set: (open: boolean) => { if (!open) closeAttendance(); },
+});
+
+// 이 앱 안에서 열었으면 뒤로가기가 곧 닫기다. 링크를 눌러 바로 들어온 경우엔
+// 돌아갈 곳이 없으므로 그 달 기록으로 바꿔 준다.
+function closeAttendance(): void {
+  if (window.history.state?.back) router.back();
+  else router.replace({ path: ROUTE_PATHS.MONTHLY, query: { month: nextYM } });
 }
 
 const today = new Date();
@@ -76,19 +85,16 @@ async function handleSaveScore(_score: number | null, attended: boolean | null):
     return;
   }
 
-  scoreModalOpen.value = false;
   toast({
     title: '저장 완료',
     description: `${nextYM} ${ATTENDANCE_LABEL[String(attended)]}(으)로 저장되었습니다.`,
   });
 
-  const alreadyOnFutureMonth = route.path === ROUTE_PATHS.MONTHLY && route.query.month === nextYM;
-  if (alreadyOnFutureMonth) {
-    // 전체 페이지 리로드 대신 데이터만 다시 읽는다 (번들 재다운로드·세션 재검증 회피)
-    await loadData();
-  } else {
-    router.push({ path: ROUTE_PATHS.MONTHLY, query: { month: nextYM } });
-  }
+  // 전체 페이지 리로드 대신 데이터만 다시 읽는다 (번들 재다운로드·세션 재검증 회피)
+  await loadData();
+  // push 가 아니라 replace — 이미 저장한 뒤라 뒤로가기로 확인 창이 다시 열리면
+  // 저장이 안 된 줄 알고 또 누르게 된다.
+  router.replace({ path: ROUTE_PATHS.MONTHLY, query: { month: nextYM } });
 }
 
 // 로그인 전에는 members(id, name) 만 가져온다. 나머지 테이블은 세션이 생긴
@@ -113,7 +119,7 @@ onMounted(async () => {
   <!-- 홈(로그인) 페이지는 Layout 없이 렌더링 -->
   <RouterView v-if="route.path === ROUTE_PATHS.HOME" />
 
-  <Layout v-else :on-login-click="openLoginModal" :on-attendance-click="openAttendanceModal">
+  <Layout v-else :on-login-click="openLoginModal">
     <!-- 초기화 전에만 로딩·오류를 그린다. 저장 후 백그라운드 리로드 때는
          이미 화면에 표가 있으므로 갈아엎지 않는다. -->
     <AsyncState

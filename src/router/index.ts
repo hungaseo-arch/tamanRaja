@@ -33,6 +33,14 @@ const routes: RouteRecordRaw[] = [
     name: 'profile',
     component: () => import('@/pages/MyProfile.vue'),
   },
+  {
+    // 참석 확인 창의 주소. 뒤에는 그 달(익월) 기록이 그대로 깔린다 —
+    // 창을 닫았을 때 빈 화면이 남지 않고, 링크로 들어온 사람도 누가 참석하는지
+    // 바로 본다. 창 자체는 App.vue 가 이 경로를 보고 연다.
+    path: ROUTE_PATHS.ATTENDANCE,
+    name: 'attendance',
+    component: () => import('@/pages/Monthly.vue'),
+  },
   // 예전 경로 → 새 경로. 쿼리(?month=...)는 그대로 넘긴다.
   ...LEGACY_ROUTE_PATHS.MONTHLY.map((path, i) => ({
     path,
@@ -55,6 +63,7 @@ const AUTH_REQUIRED = new Set<string>([
   ROUTE_PATHS.MONTHLY,
   ROUTE_PATHS.RANKING,
   ROUTE_PATHS.PROFILE,
+  ROUTE_PATHS.ATTENDANCE,
 ]);
 
 router.beforeEach((to) => {

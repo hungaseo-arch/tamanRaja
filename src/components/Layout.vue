@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils';
 
 interface Props {
   onLoginClick: () => void;
-  onAttendanceClick?: () => void;
 }
 
 defineProps<Props>();
@@ -34,6 +33,9 @@ const navItems = computed<NavItem[]>(() => {
   ];
   if (isLoggedIn.value) {
     items.push({ path: ROUTE_PATHS.PROFILE, label: '나의 기록', line1: '나의', line2: '기록', icon: UserRound });
+    // 참석 확인도 이제 주소가 있는 화면이라 다른 메뉴와 똑같이 링크로 둔다.
+    // 버튼이었을 때는 새 탭으로 열거나 주소를 복사할 수 없었다.
+    items.push({ path: ROUTE_PATHS.ATTENDANCE, label: '참석 확인', line1: '참석', line2: '확인', icon: ClipboardCheck });
   }
   return items;
 });
@@ -75,16 +77,6 @@ function isActive(path: string): boolean {
               <span class="xl:hidden">{{ item.line1 }}<br>{{ item.line2 }}</span>
               <span class="hidden xl:inline">{{ item.label }}</span>
             </RouterLink>
-            <button
-              v-if="isLoggedIn && onAttendanceClick"
-              :class="cn(
-                'flex items-center justify-center px-4 py-1.5 rounded-lg text-sm font-medium transition-colors text-center leading-tight',
-                'text-muted-foreground hover:text-foreground hover:bg-accent'
-              )"
-              @click="onAttendanceClick"
-            >
-              <span class="xl:hidden">참석<br>확인</span><span class="hidden xl:inline">참석 확인</span>
-            </button>
           </nav>
 
           <!-- sm 미만에서 로고와 우측 버튼 사이를 벌린다 -->
@@ -146,14 +138,6 @@ function isActive(path: string): boolean {
           <component :is="item.icon" class="w-5 h-5 shrink-0" aria-hidden="true" />
           {{ item.label }}
         </RouterLink>
-        <button
-          v-if="isLoggedIn && onAttendanceClick"
-          class="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap text-muted-foreground hover:text-foreground transition-colors"
-          @click="onAttendanceClick"
-        >
-          <ClipboardCheck class="w-5 h-5 shrink-0" aria-hidden="true" />
-          참석 확인
-        </button>
       </div>
     </nav>
   </div>
