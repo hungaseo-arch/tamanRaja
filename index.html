@@ -3,18 +3,48 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏌️</text></svg>" />
+
+    <!-- 브라우저 UI(안드로이드 주소창 등) 색. 이 앱은 밝은 화면만 쓰므로
+         prefers-color-scheme 로 나누지 않고 흰색 하나로 고정한다. -->
+    <meta name="theme-color" content="#ffffff" />
+    <!-- OS 가 어둡더라도 폼 컨트롤·스크롤바까지 밝게 그리게 한다. 이걸 빼면
+         입력창과 셀렉트만 검게 나와 화면이 반쯤 어두워진 것처럼 보인다. -->
+    <meta name="color-scheme" content="light" />
+
     <title>따만라자 모임</title>
     <meta name="description" content="따만라자 골프모임 대시보드" />
     <meta name="author" content="따만라자" />
 
+    <!-- 아래 자리표시자는 vite 가 base('/tamanRaja/')로 치환한다. 경로를 직접
+         적으면 나중에 배포 경로가 바뀔 때 아이콘만 조용히 404 가 된다. -->
+    <link rel="icon" type="image/svg+xml" href="/tamanRaja/favicon.svg" />
+    <!-- SVG 파비콘을 못 읽는 브라우저용 대체 -->
+    <link rel="icon" type="image/png" sizes="96x96" href="/tamanRaja/favicon-96.png" />
+    <!-- iOS 홈 화면. sizes 를 붙이지 않으면 기기별로 흐리게 늘어난다. -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/tamanRaja/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-title" content="따만라자" />
+
+    <!-- 공유 카드. og:image 는 반드시 절대 URL 이어야 한다 — 카카오톡·트위터
+         크롤러는 페이지를 우리 도메인 밖에서 읽으므로 상대경로를 못 푼다. -->
     <meta property="og:title" content="따만라자 골프모임" />
-    <meta property="og:description" content="따만라자 골프모임 대시보드" />
+    <meta property="og:description" content="월간 기록 · 연간 랭킹 · 핸디캡 관리" />
     <meta property="og:type" content="website" />
-    <script type="module" crossorigin src="/tamanRaja/assets/index-Cooy7kDH.js"></script>
-    <link rel="stylesheet" crossorigin href="/tamanRaja/assets/index-DzGey_nc.css">
-  </head>
+    <meta property="og:url" content="https://hungaseo-arch.github.io/tamanRaja/" />
+    <meta property="og:site_name" content="따만라자 모임" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta property="og:image" content="https://hungaseo-arch.github.io/tamanRaja/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="따만라자 모임 — 월간 기록, 연간 랭킹, 핸디캡 관리" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="따만라자 골프모임" />
+    <meta name="twitter:description" content="월간 기록 · 연간 랭킹 · 핸디캡 관리" />
+    <meta name="twitter:image" content="https://hungaseo-arch.github.io/tamanRaja/og-image.png" />
+    <script type="module" crossorigin src="/tamanRaja/assets/index-CCNX_hOt.js"></script>
+    <link rel="stylesheet" crossorigin href="/tamanRaja/assets/index-aCimCzYF.css">
+  <link rel="manifest" href="/tamanRaja/manifest.webmanifest"></head>
   <body>
-    <div id="app"></div>
+    <div id="app"></div>
   </body>
 </html>
