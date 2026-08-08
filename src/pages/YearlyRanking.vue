@@ -72,12 +72,20 @@ const rankingPending = computed(
 // ── 최소 참석 기준 (P1-3) ────────────────────────────────────────────────────
 // 3회 참석자가 8회 참석자와 같은 표에서 나란히 순위를 받던 문제. 기준 미달
 // 회원도 화면에서 사라지지 않고 별도 구역에 남되, 순위는 받지 않는다.
-// 기준을 화면에서 고르게 두면 같은 연도를 두고도 사람마다 다른 순위를 보게
-// 된다. 4회로 못박고, 그 숫자는 안내 문구에 그대로 적어 둔다.
-const minRoundsNum = 4;
+// 기준은 그 해 치른 경기의 절반이다. 횟수로 못박아 두면 해가 갈수록 기준이
+// 헐거워진다 — 8경기 시점의 4회는 절반이지만 12경기가 되면 3분의 1이다.
+// 홀수면 올림한다 (7경기의 50% 는 3.5 회, 4회부터 절반을 넘는다).
+const yearMeetingCount = computed(
+  () => MEETINGS.filter((m) => m.year_month.startsWith(selectedYear.value)).length
+);
+const minRoundsNum = computed(() => Math.ceil(yearMeetingCount.value / 2));
 
-const qualified = computed(() => summary.value.filter((r) => r.attended_count >= minRoundsNum));
-const unqualified = computed(() => summary.value.filter((r) => r.attended_count < minRoundsNum));
+const qualified = computed(() =>
+  summary.value.filter((r) => r.attended_count >= minRoundsNum.value)
+);
+const unqualified = computed(() =>
+  summary.value.filter((r) => r.attended_count < minRoundsNum.value)
+);
 
 // ── 랭킹 기준 ────────────────────────────────────────────────────────────────
 // 평균 Net 과 평균 스코어는 서로 다른 이야기를 한다. 핸디를 뺀 실력 대비
@@ -238,7 +246,7 @@ function handleExport(): void {
       medalist_count: e.row!.medalist_count,
       host_count: e.row!.host_count,
     }));
-  exportYearlyRanking(selectedYear.value, rows, minRoundsNum);
+  exportYearlyRanking(selectedYear.value, rows, minRoundsNum.value);
 }
 
 function rankLabel(rank: number): string {
@@ -303,7 +311,8 @@ function stickyTint(rank: number | null): string {
       <p class="text-xs text-muted-foreground leading-relaxed">
         <strong class="text-foreground">랭킹 기준</strong> —
         <strong class="text-foreground">{{ rankBasisLabel }}</strong>{{ rankBasisParticle }} 낮은 순.
-        {{ selectedYear }}년에 <strong class="text-foreground">{{ minRoundsNum }}회 이상</strong> 참석한
+        {{ selectedYear }}년 {{ yearMeetingCount }}경기 중
+        <strong class="text-foreground">50% 이상({{ minRoundsNum }}회)</strong> 참석한
         회원에게만 순위를 부여합니다. 표의 <strong class="text-foreground">평균 Net</strong> ·
         <strong class="text-foreground">평균 스코어</strong> 열 제목을 누르면 그 지표가 순위 기준이 되고,
         참석 · 기준 핸디로 정렬해도 순위는 바뀌지 않습니다.
@@ -395,7 +404,7 @@ function stickyTint(rank: number | null): string {
             @retry="retryRanking"
           >
           <div class="h-full min-h-0 mt-4">
-            <Table :caption="`${selectedYear}년 연간 랭킹 — ${rankBasisLabel} 낮은 순, ${minRoundsNum}회 이상 참석자 대상`">
+            <Table :caption="`${selectedYear}년 연간 랭킹 — ${rankBasisLabel} 낮은 순, ${yearMeetingCount}경기 중 50% 이상(${minRoundsNum}회) 참석자 대상`">
               <TableHeader>
                 <TableRow>
                   <!-- 가로 스크롤에도 순위·회원은 남는다.
@@ -505,7 +514,7 @@ function stickyTint(rank: number | null): string {
                   <!-- 기준 미달 구역 시작 -->
                   <TableRow v-if="entry.divider" class="bg-muted/50 hover:bg-muted/50">
                     <TableCell :colspan="9" class="text-xs text-muted-foreground py-1.5">
-                      아래는 {{ minRoundsNum }}회 미만 참석으로 순위에서 제외된 회원입니다.
+                      아래는 50% 미만 참석으로 순위에서 제외된 회원입니다.
                     </TableCell>
                   </TableRow>
                   <TableRow

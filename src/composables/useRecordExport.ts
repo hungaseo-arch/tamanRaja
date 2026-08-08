@@ -118,7 +118,7 @@ export function useRecordExport() {
       r.medalist_count,
       r.host_count,
       // 순위가 비어 있는 이유를 파일만 봐도 알 수 있게 남긴다
-      r.rank === null ? `${minRounds}회 미만 참석` : '',
+      r.rank === null ? `50% 미만 참석(${minRounds}회 미만)` : '',
     ]);
 
     return download(`타만라자_연간랭킹_${year}.csv`, RANKING_HEADERS, body, `${year}년 랭킹`);
