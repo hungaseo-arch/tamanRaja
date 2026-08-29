@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import type { Member } from '@/lib';
+import type { SessionMember } from '@/lib/session';
 import { formatValue } from '@/lib/format';
 import { MONTHLY_HANDICAPS } from '@/data';
 import Dialog from '@/components/ui/Dialog.vue';
@@ -8,7 +8,12 @@ import Button from '@/components/ui/Button.vue';
 
 interface Props {
   open: boolean;
-  member: Member;
+  /**
+   * 이 창은 로그인한 본인의 참석만 다룬다. 명단의 Member(display_order·
+   * dormant_from 까지 있는 것)가 아니라 세션이 들고 있는 회원이 넘어온다.
+   * 여기서 쓰는 것도 id 와 name 뿐이다.
+   */
+  member: SessionMember;
   yearMonth: string;       // 다음달 year_month
   currentAttended: boolean | null;
   hasMeeting: boolean;
