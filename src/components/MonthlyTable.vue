@@ -383,7 +383,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
               type="date"
               v-model="localManualDate"
               aria-label="모임 날짜"
-              class="h-7 rounded border border-input bg-background px-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring w-full sm:w-auto sm:flex-initial"
+              class="h-8 rounded-md border border-input bg-background px-2 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring w-full sm:w-auto sm:flex-initial"
             />
             <!-- 골프장은 목록에서 고르는 것이 기본이다. datalist 는 제안일 뿐이라
                  오타가 그대로 저장돼 같은 골프장이 두 개로 갈라졌다. 새 골프장은
@@ -393,8 +393,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
               :options="courseOptions"
               placeholder="골프장 선택"
               aria-label="골프장"
+              size="xs"
               class="flex-1 min-w-0 sm:flex-initial sm:w-32"
-              select-class="h-7 py-0 pr-7 text-xs"
             />
             <input
               v-if="courseChoice === NEW_COURSE"
@@ -403,7 +403,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
               v-model="newCourseName"
               aria-label="새 골프장명"
               placeholder="새 골프장명"
-              class="h-7 rounded border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring flex-1 min-w-0 sm:flex-initial sm:w-28"
+              class="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring flex-1 min-w-0 sm:flex-initial sm:w-28"
             />
           </template>
           <div class="flex gap-2 shrink-0">
@@ -411,12 +411,11 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                  겹쳐 돌려 기록이 어긋날 수 있다. 끝날 때까지 잠근다. -->
             <Button
               v-if="isEditing"
-              size="sm"
-              class="text-xs h-7 px-2"
+              size="xs"
               :disabled="props.saveState === 'saving'"
               @click="handleSave"
             >{{ props.saveState === 'saving' ? '저장 중...' : '저장' }}</Button>
-            <Button v-else size="sm" variant="outline" class="text-xs h-7 px-2" @click="enterEdit">수정</Button>
+            <Button v-else size="xs" variant="outline" @click="enterEdit">수정</Button>
           </div>
         </template>
 
@@ -424,8 +423,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
              좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->
         <Button
           variant="outline"
-          size="sm"
-          class="text-xs h-7 px-2 shrink-0 ml-auto gap-1 bg-white/70 hover:bg-white"
+          size="xs"
+          class="shrink-0 ml-auto gap-1"
           :title="`${exportYear}년 전체 기록 엑셀(CSV) 다운로드`"
           :aria-label="`${exportYear}년 전체 기록 엑셀 다운로드`"
           @click="exportYearlyRecords(props.selectedMonth)"
@@ -447,7 +446,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             :options="monthOptions"
             placeholder="월 선택"
             aria-label="조회할 월"
-            select-class="h-8 py-0 text-xs bg-green-50/60 border-green-400 text-green-900 font-semibold focus:ring-green-500 focus:border-green-500"
+            size="xs"
+            select-class="bg-green-50/60 border-green-400 text-green-900 font-semibold focus:ring-green-500 focus:border-green-500"
           />
         </div>
       </div>

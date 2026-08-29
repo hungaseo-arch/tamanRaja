@@ -18,6 +18,9 @@ const buttonVariants = cva(
       size: {
         default: 'h-10 px-4 py-2',
         sm: 'h-9 rounded-md px-3',
+        // 화면 위쪽 툴바(엑셀·수정·저장 등)에 놓이는 규격. 각 화면이 h-7/h-8 을
+        // 제각기 덮어쓰던 것을 하나로 모았다. Select 의 size="xs" 와 짝이다.
+        xs: 'h-8 rounded-md px-2 text-xs',
         lg: 'h-11 rounded-md px-6',
         icon: 'h-10 w-10',
       },

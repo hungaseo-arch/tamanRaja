@@ -313,8 +313,8 @@ function stickyTint(rank: number | null): string {
             v-model="selectedYear"
             :options="yearOptions"
             placeholder=""
+            size="xs"
             class="w-24 shrink-0"
-            select-class="h-8 text-xs"
           />
         </template>
         <span v-else-if="selectedYear" class="text-sm font-semibold text-foreground shrink-0">
@@ -323,8 +323,8 @@ function stickyTint(rank: number | null): string {
         <!-- 좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->
         <Button
           variant="outline"
-          size="sm"
-          class="h-8 px-2 shrink-0 gap-1 text-xs"
+          size="xs"
+          class="shrink-0 gap-1"
           :title="`${selectedYear}년 연간 랭킹 엑셀(CSV) 다운로드`"
           :aria-label="`${selectedYear}년 연간 랭킹 엑셀 다운로드`"
           @click="handleExport"

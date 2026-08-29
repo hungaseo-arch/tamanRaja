@@ -173,8 +173,8 @@ function handleExport(): void {
           <!-- 좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->
           <Button
             variant="outline"
-            size="sm"
-            class="h-8 px-2 shrink-0 gap-1 text-xs"
+            size="xs"
+            class="shrink-0 gap-1"
             title="나의 기록 엑셀(CSV) 다운로드"
             aria-label="나의 기록 엑셀 다운로드"
             @click="handleExport"

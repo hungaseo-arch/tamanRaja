@@ -28,6 +28,8 @@ interface Props {
   placeholder?: string;
   id?: string;
   disabled?: boolean;
+  /** 툴바에 놓일 때는 'xs'. Button 의 size="xs" 와 높이·글자 크기가 같다. */
+  size?: 'default' | 'xs';
   class?: string;
   selectClass?: string;
 }
@@ -35,7 +37,13 @@ interface Props {
 const props = withDefaults(defineProps<Props>(), {
   modelValue: '',
   placeholder: '선택',
+  size: 'default',
 });
+
+const SIZE_CLASS = {
+  default: 'h-10 py-2 text-sm',
+  xs: 'h-8 py-0 text-xs',
+} as const;
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
@@ -59,7 +67,8 @@ function onChange(event: Event): void {
       :value="modelValue"
       :disabled="disabled"
       :class="cn(
-        'flex h-10 w-full appearance-none items-center justify-between rounded-md border border-input bg-background px-3 py-2 pr-9 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        'flex w-full appearance-none items-center justify-between rounded-md border border-input bg-background px-3 pr-9 ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+        SIZE_CLASS[props.size],
         props.selectClass
       )"
       @change="onChange"
