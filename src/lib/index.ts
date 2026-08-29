@@ -32,6 +32,8 @@ export interface Meeting {
   meeting_date: string;
   golf_course_id: string;
   host_member_id: string;
+  /** 모임 비고. 대체 개최·앞당김 사유가 여기에 적혀 있다. */
+  notes: string | null;
 }
 
 export interface MonthlyHandicap {
@@ -56,6 +58,11 @@ export interface MeetingResult {
   score: number | null;
   result_group: ResultGroup;
   result_rank: ResultRank;
+  /**
+   * 엑셀 원본 비고 원문. 시상 3종(result_rank)에 담기지 않는 표기 — 연간
+   * 위너·연말 준우승·깍두기·Guest — 가 여기에만 남아 있어 그대로 보여준다.
+   */
+  note: string | null;
 }
 
 export interface MonthlyRow {
@@ -75,6 +82,8 @@ export interface MonthlyRow {
   result_rank: ResultRank;
   yearly_net: number | null;
   yearly_rank: number | null;
+  /** meeting_results.note 원문 (비고 열) */
+  note: string | null;
   // 기준핸디 재적용(리셋) 월 여부 — 이 달은 조 변경 리셋 없이 ±1만 적용
   is_reset_month: boolean;
 }

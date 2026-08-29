@@ -2,6 +2,7 @@ import { reactive, ref } from 'vue';
 import { supabase } from '@/lib/supabase';
 import { syncAttendanceFromDB } from '@/composables/useAttendance';
 import { describeError } from '@/lib/errors';
+import { resetHistory } from '@/data/history';
 import type {
   Member,
   Meeting,
@@ -94,6 +95,7 @@ export function clearData(): void {
   fill(MEETING_RESULTS, []);
   for (const key of Object.keys(SETTINGS)) delete SETTINGS[key];
   for (const key of Object.keys(YEARLY_RANKING)) delete YEARLY_RANKING[key];
+  resetHistory();
   dataInitialized.value = false;
   dataError.value = null;
 }
@@ -145,6 +147,7 @@ async function _fetchAll(): Promise<void> {
 
   // 기록을 다시 받으므로 서버 집계 캐시는 버린다 (저장 직후 재조회 포함).
   for (const key of Object.keys(YEARLY_RANKING)) delete YEARLY_RANKING[key];
+  resetHistory();
   yearlyRankingVersion.value += 1;
 
   const [
@@ -157,10 +160,12 @@ async function _fetchAll(): Promise<void> {
       { data: settings },
     ] = await Promise.all([
       supabase.from('golf_courses').select('id, name'),
+      // 모임만 전 기간을 받는다. 53행짜리 목차라 전송량이 거의 없고, 연도
+      // 탭과 월 드롭다운이 "어떤 달에 모임이 있었나"를 알아야 만들어진다.
+      // 기록(핸디·성적)은 아래처럼 최근 2년으로 계속 묶어 둔다.
       supabase
         .from('meetings')
-        .select('id, year_month, meeting_date, course_id, host_member_id')
-        .gte('year_month', from),
+        .select('id, year_month, meeting_date, course_id, host_member_id, notes'),
       supabase
         .from('monthly_handicaps')
         .select('id, member_id, year_month, std_hc, app_hc, next_hc')
@@ -169,7 +174,7 @@ async function _fetchAll(): Promise<void> {
       // (meeting_results_meeting_id_fkey 로 임베드 필터가 가능).
       supabase
         .from('meeting_results')
-        .select('id, meeting_id, member_id, attended, score, result_group, result_rank, meetings!inner(year_month)')
+        .select('id, meeting_id, member_id, attended, score, result_group, result_rank, note, meetings!inner(year_month)')
         .gte('meetings.year_month', from),
       supabase.from('members').select('id, name, dormant_from'),
       supabase
@@ -201,6 +206,7 @@ async function _fetchAll(): Promise<void> {
           meeting_date: m.meeting_date as string,
           golf_course_id: String((m as { course_id: unknown }).course_id),
           host_member_id: m.host_member_id ? String(m.host_member_id) : '',
+          notes: (m.notes as string | null) ?? null,
         }))
         .sort((a, b) => new Date(a.meeting_date).getTime() - new Date(b.meeting_date).getTime())
     );
@@ -232,6 +238,7 @@ async function _fetchAll(): Promise<void> {
         score: r.score as number | null,
         result_group: (r.result_group ?? null) as MeetingResult['result_group'],
         result_rank: (r.result_rank ?? null) as MeetingResult['result_rank'],
+        note: (r.note as string | null) ?? null,
       }))
     );
 
@@ -364,6 +371,7 @@ export function getMonthlyData(yearMonth: string): MonthlyRow[] {
       result_rank: result?.result_rank ?? null,
       yearly_net: yearlyNet,
       yearly_rank: null,
+      note: result?.note ?? null,
       is_reset_month: isResetMonth,
     });
   }
