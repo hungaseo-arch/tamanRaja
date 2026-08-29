@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { Trophy, Medal, Home, ArrowUp, ArrowDown, ChevronsUpDown, Download } from 'lucide-vue-next';
+import { ArrowUp, ArrowDown, ChevronsUpDown, Download } from 'lucide-vue-next';
 import {
   getYearlySummary,
   hasYearlySummary,
@@ -15,12 +15,13 @@ import {
 } from '@/data';
 import type { YearlySummary } from '@/lib';
 import { cn } from '@/lib/utils';
+import { RANK_STYLE } from '@/lib/rank';
 import { useRecordExport } from '@/composables/useRecordExport';
 import AsyncState from '@/components/ui/AsyncState.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
-import Badge from '@/components/ui/Badge.vue';
+import RankBadge from '@/components/ui/RankBadge.vue';
 import Select from '@/components/ui/Select.vue';
 import Table from '@/components/ui/Table.vue';
 import TableHeader from '@/components/ui/TableHeader.vue';
@@ -380,24 +381,9 @@ function stickyTint(rank: number | null): string {
             </p>
             <p class="text-sm text-muted-foreground">{{ row.attended_count }}회 참석</p>
             <div class="flex justify-center gap-1 flex-wrap pt-1.5">
-              <Badge
-                v-if="row.winner_count"
-                class="bg-linear-to-r from-yellow-400 to-yellow-600 text-yellow-950 border-0 text-xs whitespace-nowrap"
-              >
-                <Trophy class="w-3 h-3 mr-1" />Winner {{ row.winner_count }}
-              </Badge>
-              <Badge
-                v-if="row.medalist_count"
-                class="bg-linear-to-r from-gray-300 to-gray-400 text-gray-900 border-0 text-xs whitespace-nowrap"
-              >
-                <Medal class="w-3 h-3 mr-1" />Medalist {{ row.medalist_count }}
-              </Badge>
-              <Badge
-                v-if="row.host_count"
-                class="bg-linear-to-r from-violet-500 to-violet-600 text-white border-0 text-xs whitespace-nowrap"
-              >
-                <Home class="w-3 h-3 mr-1" />Host {{ row.host_count }}
-              </Badge>
+              <RankBadge v-if="row.winner_count" rank="Winner" :count="row.winner_count" class="text-xs" />
+              <RankBadge v-if="row.medalist_count" rank="Medalist" :count="row.medalist_count" class="text-xs" />
+              <RankBadge v-if="row.host_count" rank="Host" :count="row.host_count" class="text-xs" />
             </div>
           </CardContent>
         </Card>
@@ -580,15 +566,15 @@ function stickyTint(rank: number | null): string {
                       <span v-else class="text-muted-foreground">-</span>
                     </TableCell>
                     <TableCell class="text-center whitespace-nowrap hidden md:table-cell">
-                      <span v-if="entry.row.winner_count" class="text-yellow-700 font-bold">{{ entry.row.winner_count }}회</span>
+                      <span v-if="entry.row.winner_count" :class="cn(RANK_STYLE.Winner.text, 'font-bold')">{{ entry.row.winner_count }}회</span>
                       <span v-else class="text-muted-foreground">-</span>
                     </TableCell>
                     <TableCell class="text-center whitespace-nowrap hidden md:table-cell">
-                      <span v-if="entry.row.medalist_count" class="text-muted-foreground font-bold">{{ entry.row.medalist_count }}회</span>
+                      <span v-if="entry.row.medalist_count" :class="cn(RANK_STYLE.Medalist.text, 'font-bold')">{{ entry.row.medalist_count }}회</span>
                       <span v-else class="text-muted-foreground">-</span>
                     </TableCell>
                     <TableCell class="text-center whitespace-nowrap hidden md:table-cell">
-                      <span v-if="entry.row.host_count" class="text-green-600 font-bold">{{ entry.row.host_count }}회</span>
+                      <span v-if="entry.row.host_count" :class="cn(RANK_STYLE.Host.text, 'font-bold')">{{ entry.row.host_count }}회</span>
                       <span v-else class="text-muted-foreground">-</span>
                     </TableCell>
                   </TableRow>

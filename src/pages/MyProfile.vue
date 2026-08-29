@@ -1,18 +1,21 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useRouter } from 'vue-router';
-import { Trophy, Medal, Home, Download } from 'lucide-vue-next';
+import { Download } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { useRecordExport } from '@/composables/useRecordExport';
 import { MEETINGS, MEETING_RESULTS, MONTHLY_HANDICAPS, GOLF_COURSES, resolveHandicap, setting } from '@/data';
 import { ROUTE_PATHS } from '@/lib';
 import { formatPending, formatValue } from '@/lib/format';
+import { cn } from '@/lib/utils';
+import { RANK_STYLE, isRankName } from '@/lib/rank';
 import type { ResultRank } from '@/lib';
 import AsyncState from '@/components/ui/AsyncState.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
 import Badge from '@/components/ui/Badge.vue';
+import RankBadge from '@/components/ui/RankBadge.vue';
 import Table from '@/components/ui/Table.vue';
 import TableHeader from '@/components/ui/TableHeader.vue';
 import TableBody from '@/components/ui/TableBody.vue';
@@ -27,14 +30,6 @@ if (!isLoggedIn.value) {
   router.replace(ROUTE_PATHS.HOME);
 }
 
-interface RankMeta { cls: string; icon: typeof Trophy; label: string }
-
-const RANK_META: Record<NonNullable<ResultRank>, RankMeta> = {
-  Winner:   { cls: 'bg-linear-to-r from-yellow-400 to-yellow-600 text-yellow-950 border-0 shadow-md', icon: Trophy,  label: 'Winner' },
-  Medalist: { cls: 'bg-linear-to-r from-gray-300 to-gray-400 text-gray-900 border-0 shadow-md',      icon: Medal,   label: 'Medalist' },
-  Host:     { cls: 'bg-linear-to-r from-green-500 to-green-600 text-white border-0 shadow-md',        icon: Home,    label: 'Host' },
-};
-
 interface HistoryRow {
   year_month: string;
   // 아직 정해지지 않은 값은 null 로 둔다. `?? 0` 으로 채우면 확정된 핸디 0 과
@@ -48,7 +43,6 @@ interface HistoryRow {
   net_score: number | null;
   result_group: string | null;
   result_rank: ResultRank;
-  rankMeta: RankMeta | null;
 }
 
 // 표에 담을 연도. 기록이 있는 달 중 가장 나중 달의 해다 (없으면 올해).
@@ -96,7 +90,6 @@ const history = computed<HistoryRow[]>(() => {
         net_score,
         result_group: result?.result_group ?? null,
         result_rank,
-        rankMeta:     result_rank ? (RANK_META[result_rank] ?? null) : null,
       };
     });
 });
@@ -215,19 +208,19 @@ function handleExport(): void {
           <Card>
             <CardContent class="flex flex-col items-center justify-center h-full py-3 px-2 sm:px-4">
               <p class="text-xs sm:text-sm text-muted-foreground mb-1">Winner</p>
-              <p class="text-xl font-bold text-yellow-700">{{ derived.winnerCount }}회</p>
+              <p :class="cn('text-xl font-bold', RANK_STYLE.Winner.text)">{{ derived.winnerCount }}회</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent class="flex flex-col items-center justify-center h-full py-3 px-2 sm:px-4">
               <p class="text-xs sm:text-sm text-muted-foreground mb-1">Medalist</p>
-              <p class="text-xl font-bold text-muted-foreground">{{ derived.medalistCount }}회</p>
+              <p :class="cn('text-xl font-bold', RANK_STYLE.Medalist.text)">{{ derived.medalistCount }}회</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent class="flex flex-col items-center justify-center h-full py-3 px-2 sm:px-4">
               <p class="text-xs sm:text-sm text-muted-foreground mb-1">Host</p>
-              <p class="text-xl font-bold text-green-600">{{ derived.hostCount }}회</p>
+              <p :class="cn('text-xl font-bold', RANK_STYLE.Host.text)">{{ derived.hostCount }}회</p>
             </CardContent>
           </Card>
         </div>
@@ -295,10 +288,7 @@ function handleExport(): void {
                     </TableCell>
 
                     <TableCell class="text-center whitespace-nowrap">
-                      <Badge v-if="row.rankMeta" :class="row.rankMeta.cls">
-                        <component :is="row.rankMeta.icon" class="w-3 h-3 mr-1" />
-                        {{ row.rankMeta.label }}
-                      </Badge>
+                      <RankBadge v-if="isRankName(row.result_rank)" :rank="row.result_rank" />
                       <Badge
                         v-else-if="row.result_group"
                         :variant="row.result_group === '1등조' ? 'default' : 'secondary'"

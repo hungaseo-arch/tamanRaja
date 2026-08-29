@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue';
-import { Trophy, Medal, Home, Download } from 'lucide-vue-next';
+import { Download } from 'lucide-vue-next';
 import type { MonthlyRow, ResultRank, ResultGroup } from '@/lib';
 import { formatMeetingHeading } from '@/lib/format';
 import { cn } from '@/lib/utils';
+import { isRankName } from '@/lib/rank';
 import { GOLF_COURSES, setting } from '@/data';
 import { useAttendance } from '@/composables/useAttendance';
 import { useRecordExport } from '@/composables/useRecordExport';
@@ -13,6 +14,7 @@ import Card from '@/components/ui/Card.vue';
 import CardTitle from '@/components/ui/CardTitle.vue';
 import CardContent from '@/components/ui/CardContent.vue';
 import Badge from '@/components/ui/Badge.vue';
+import RankBadge from '@/components/ui/RankBadge.vue';
 import Button from '@/components/ui/Button.vue';
 import Table from '@/components/ui/Table.vue';
 import TableHeader from '@/components/ui/TableHeader.vue';
@@ -333,18 +335,6 @@ const stats = computed(() => {
   return { attendedCount, winnerName, medalistName, hostName };
 });
 
-interface RankMeta { cls: string; icon: typeof Trophy; label: string }
-
-const RANK_META: Record<string, RankMeta> = {
-  Winner:   { cls: 'bg-linear-to-r from-yellow-400 to-yellow-600 text-yellow-950 border-0 shadow-md', icon: Trophy, label: 'Winner' },
-  Medalist: { cls: 'bg-linear-to-r from-gray-300 to-gray-400 text-gray-900 border-0 shadow-md',      icon: Medal,  label: 'Medalist' },
-  Host:     { cls: 'bg-linear-to-r from-violet-500 to-violet-600 text-white border-0 shadow-md',      icon: Home,   label: 'Host' },
-};
-
-function getRankMeta(rank: ResultRank | string): RankMeta | null {
-  return rank ? RANK_META[rank] ?? null : null;
-}
-
 // ── 엑셀(CSV) 다운로드 ────────────────────────────────────────────────────────
 // 결과 알림(성공·빈 데이터)은 useRecordExport 안에서 처리한다.
 const { exportYearlyRecords } = useRecordExport();
@@ -377,11 +367,11 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             <span class="font-bold">{{ stats.attendedCount }}명</span>
           </div>
           <div class="hidden lg:flex items-center gap-1.5 min-w-0">
-            <Badge class="bg-yellow-500 text-white hover:bg-yellow-600 shrink-0">🏆 Winner</Badge>
+            <RankBadge rank="Winner" class="shrink-0" />
             <span class="font-semibold truncate">{{ stats.winnerName }}</span>
           </div>
           <div class="hidden lg:flex items-center gap-1.5 min-w-0">
-            <Badge class="bg-muted text-foreground hover:bg-muted/80 shrink-0">🥈 Medalist</Badge>
+            <RankBadge rank="Medalist" class="shrink-0" />
             <span class="font-semibold truncate">{{ stats.medalistName }}</span>
           </div>
         </div>
@@ -620,11 +610,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                       <option value="Host">Host</option>
                     </select>
                   </template>
-                  <template v-else-if="getRankMeta(row.result_rank)">
-                    <Badge :class="getRankMeta(row.result_rank)!.cls">
-                      <component :is="getRankMeta(row.result_rank)!.icon" class="w-3 h-3 mr-1" />
-                      {{ getRankMeta(row.result_rank)!.label }}
-                    </Badge>
+                  <template v-else-if="isRankName(row.result_rank)">
+                    <RankBadge :rank="row.result_rank" />
                   </template>
                   <!-- 순위 없는 회원: 작은 화면(결과 그룹 컬럼 숨김)에서만 그룹 표시 -->
                   <template v-else-if="row.result_group">
