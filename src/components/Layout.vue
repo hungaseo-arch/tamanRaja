@@ -110,8 +110,10 @@ function isActive(path: string): boolean {
     </header>
 
     <!-- 이 앱에서 세로로 스크롤되는 상자는 여기 하나다. 각 화면은 자기
-         높이를 정하지 않고 내용만큼 길어지고, 넘치는 만큼 여기서 스크롤된다. -->
-    <main class="flex-1 min-h-0 overflow-y-auto w-full max-w-5xl mx-auto">
+         높이를 정하지 않고 내용만큼 길어지고, 넘치는 만큼 여기서 스크롤된다.
+         가로 폭도 여기서 자르지 않는다 — 각 화면이 container … max-w-7xl 로
+         스스로 정한다. 여기에 max-w 를 두면 그 선언이 조용히 무시된다. -->
+    <main class="flex-1 min-h-0 overflow-y-auto w-full">
       <slot />
     </main>
     <footer class="shrink-0 text-center text-xs text-muted-foreground py-4 border-t border-border">
