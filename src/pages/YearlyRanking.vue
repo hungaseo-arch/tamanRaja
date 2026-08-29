@@ -276,6 +276,13 @@ function rankLabel(rank: number): string {
   return `${rank}위`;
 }
 
+// 금·은·동 다음은 '쇠'다. 쇠 색 메달 이모지는 없으므로 메달의 색을 빼고
+// 한 톤 어둡게 눌러 무광 금속으로 보이게 한다 (그냥 회색으로만 두면 은과
+// 구분이 안 된다). 이모지는 글자라 색만 바꿀 수 없어 필터를 쓴다.
+function rankIconClass(rank: number): string {
+  return rank === 4 ? 'inline-block grayscale brightness-90 contrast-125' : '';
+}
+
 // 고정(sticky) 열은 밑으로 지나가는 셀을 가려야 하므로 불투명한 bg-card 를 깐다.
 // 그러면 tr 에 걸린 반투명 강조·hover 틴트가 이 두 열에서만 사라져 왼쪽에 흰
 // 홈이 생긴다. isolate + 음수 z-index ::before 로 셀 배경 위·글자 아래에 같은
@@ -292,7 +299,7 @@ function stickyTint(rank: number | null): string {
 
 <template>
   <div class="w-full h-full min-h-0 bg-background">
-    <div class="container mx-auto px-4 py-2 max-w-7xl space-y-4 h-full min-h-0 flex flex-col">
+    <div class="container mx-auto px-4 py-2 max-w-7xl space-y-3 h-full min-h-0 flex flex-col">
       <!-- 연도·기준 선택 -->
       <div class="flex flex-wrap items-center gap-2">
         <h1 class="text-lg font-bold text-foreground mr-auto">연간 랭킹</h1>
@@ -326,19 +333,8 @@ function stickyTint(rank: number | null): string {
         </Button>
       </div>
 
-      <!-- 랭킹 기준을 화면에 명시한다 (P1-3 완료 조건) -->
-      <p class="text-xs text-muted-foreground leading-relaxed">
-        <strong class="text-foreground">랭킹 기준</strong> —
-        <strong class="text-foreground">{{ rankBasisLabel }}</strong>{{ rankBasisParticle }} 낮은 순.
-        {{ selectedYear }}년 치른 {{ yearMeetingCount }}경기 중
-        <strong class="text-foreground">50% 이상({{ minRoundsNum }}회)</strong> 참석한
-        회원에게만 순위를 부여합니다. 표의 <strong class="text-foreground">평균 Net</strong> ·
-        <strong class="text-foreground">평균 스코어</strong> 열 제목을 누르면 그 지표가 순위 기준이 되고,
-        참석 · 기준 핸디로 정렬해도 순위는 바뀌지 않습니다.
-      </p>
-
       <!-- 상위 4명 하이라이트 카드 -->
-      <div v-if="rankedQualified.length > 0" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div v-if="rankedQualified.length > 0" class="shrink-0 grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card
           v-for="(row, idx) in rankedQualified.slice(0, 4)"
           :key="row.member_id"
@@ -350,8 +346,10 @@ function stickyTint(rank: number | null): string {
                 ? 'border-amber-700 bg-orange-50 dark:bg-orange-950/20'
                 : 'border-blue-400 bg-blue-50 dark:bg-blue-950/20'"
         >
-          <CardContent class="pt-2 text-center space-y-1">
-            <p class="text-xl">{{ rankLabel(idx + 1) }}</p>
+          <CardContent class="px-3 pt-2 pb-3 sm:px-3 sm:pb-3 text-center space-y-0.5">
+            <p class="text-xl">
+              <span role="img" :aria-label="`${idx + 1}위`" :class="rankIconClass(idx + 1)">{{ rankLabel(idx + 1) }}</span>
+            </p>
             <p class="text-shadow-md font-bold">{{ row.member_name }}</p>
             <!-- 두 지표를 모두 보이되 순위 기준인 쪽을 위에 두고 진하게 쓴다.
                  카드에 한 지표만 있으면 "이 숫자가 낮은데 왜 아래 등수냐"가 된다. -->
@@ -381,7 +379,7 @@ function stickyTint(rank: number | null): string {
               </template>
             </p>
             <p class="text-sm text-muted-foreground">{{ row.attended_count }}회 참석</p>
-            <div class="flex justify-center gap-1 flex-wrap pt-1">
+            <div class="flex justify-center gap-1 flex-wrap pt-1.5">
               <Badge
                 v-if="row.winner_count"
                 class="bg-linear-to-r from-yellow-400 to-yellow-600 text-yellow-950 border-0 text-xs whitespace-nowrap"
@@ -428,7 +426,9 @@ function stickyTint(rank: number | null): string {
                세로 flex 로 나눠 표가 남는 높이를 갖게 한다. -->
           <div class="h-full min-h-0 flex flex-col pt-4">
             <div class="flex-1 min-h-0">
-            <Table :caption="`${selectedYear}년 연간 랭킹 — ${rankBasisLabel} 낮은 순, 치른 ${yearMeetingCount}경기 중 50% 이상(${minRoundsNum}회) 참석자 대상`">
+            <Table
+              class="text-sm sm:text-base [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
+              :caption="`${selectedYear}년 연간 랭킹 — ${rankBasisLabel} 낮은 순, 치른 ${yearMeetingCount}경기 중 50% 이상(${minRoundsNum}회) 참석자 대상`">
               <TableHeader>
                 <TableRow>
                   <!-- 가로 스크롤에도 순위·회원은 남는다.
@@ -552,7 +552,12 @@ function stickyTint(rank: number | null): string {
                     <TableCell :class="cn('font-medium whitespace-nowrap px-2 left-0', STICKY_BASE, stickyTint(entry.rank))">
                       <!-- w-10 + 좌우 px-2 = 56px. 회원 열의 left-14 가 여기에 맞춰져 있다. -->
                       <div class="w-10">
-                        <template v-if="entry.rank !== null">{{ rankLabel(entry.rank) }}</template>
+                        <span
+                          v-if="entry.rank !== null"
+                          role="img"
+                          :aria-label="`${entry.rank}위`"
+                          :class="rankIconClass(entry.rank)"
+                        >{{ rankLabel(entry.rank) }}</span>
                         <span v-else aria-label="순위 없음">-</span>
                       </div>
                     </TableCell>
@@ -601,6 +606,19 @@ function stickyTint(rank: number | null): string {
           </AsyncState>
         </CardContent>
       </Card>
+
+      <!-- 랭킹 기준을 화면에 명시한다 (P1-3 완료 조건).
+           표 위에 두면 첫 화면의 상당 부분을 설명이 차지해 정작 봐야 할 표가
+           서너 줄만 남는다. 한 번 읽으면 되는 안내라 표 아래로 내렸다. -->
+      <p class="shrink-0 text-xs text-muted-foreground leading-relaxed">
+        <strong class="text-foreground">랭킹 기준</strong> —
+        <strong class="text-foreground">{{ rankBasisLabel }}</strong>{{ rankBasisParticle }} 낮은 순.
+        {{ selectedYear }}년 치른 {{ yearMeetingCount }}경기 중
+        <strong class="text-foreground">50% 이상({{ minRoundsNum }}회)</strong> 참석한
+        회원에게만 순위를 부여합니다. 표의 <strong class="text-foreground">평균 Net</strong> ·
+        <strong class="text-foreground">평균 스코어</strong> 열 제목을 누르면 그 지표가 순위 기준이 되고,
+        참석 · 기준 핸디로 정렬해도 순위는 바뀌지 않습니다.
+      </p>
     </div>
   </div>
 </template>
