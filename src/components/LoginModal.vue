@@ -13,14 +13,30 @@ import Label from '@/components/ui/Label.vue';
 import Checkbox from '@/components/ui/Checkbox.vue';
 import Alert from '@/components/ui/Alert.vue';
 import AlertDescription from '@/components/ui/AlertDescription.vue';
+import Tabs from '@/components/ui/Tabs.vue';
+import TabsList from '@/components/ui/TabsList.vue';
+import TabsTrigger from '@/components/ui/TabsTrigger.vue';
+import TabsContent from '@/components/ui/TabsContent.vue';
+import AttendancePanel from '@/components/AttendancePanel.vue';
 
+/**
+ * 로그인 전에는 로그인 폼, 로그인 뒤에는 [참석 확인]·[계정] 두 탭을 가진 창.
+ * 참석 확인은 예전에 따로 있던 창이자 메뉴였는데, 어차피 본인 계정으로 하는
+ * 일이라 헤더의 계정 버튼 하나 아래로 모았다.
+ */
 interface Props {
   open: boolean;
+  /** 참석 확인 대상 달(익월). 계산은 App 이 한다. */
+  attendanceYearMonth: string;
+  attendanceAttended: boolean | null;
+  /** App 이 서버에 참석 여부를 보내는 중 */
+  savingAttendance?: boolean;
 }
 
 const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void;
+  (e: 'save-attendance', attended: boolean | null): void;
 }>();
 
 const { login, changePin, logout, isLoggedIn, currentMember } = useAuth();
@@ -70,8 +86,13 @@ function resetState(): void {
   changePinLoading.value = false;
 }
 
+// 계정 창을 열 때 먼저 보이는 것은 참석 확인이다. PIN 변경·로그아웃보다
+// 훨씬 자주 하는 일이고, 예전에 메뉴에 따로 있던 것도 그래서였다.
+const tab = ref<'attendance' | 'account'>('attendance');
+
 watch(isOpen, (v) => {
-  if (!v) resetState();
+  if (v) tab.value = 'attendance';
+  else resetState();
 });
 
 function onlyDigits(v: string): string {
@@ -151,71 +172,93 @@ async function handleLogout(): Promise<void> {
 
 <template>
   <Dialog v-model:open="isOpen" content-class="sm:max-w-sm" :label="isLoggedIn ? '계정' : '로그인'">
-    <!-- 로그인 상태 → 계정(PIN 변경·로그아웃) -->
+    <!-- 로그인 상태 → [참석 확인] / [계정(PIN 변경·로그아웃)] -->
     <div v-if="isLoggedIn" class="w-full px-5 pt-4 space-y-4">
       <p class="text-sm font-medium text-foreground">{{ currentMember?.name }} 님</p>
 
-      <form class="space-y-6" @submit="handleChangePin">
-          <div class="flex items-center gap-3">
-            <Label for="old-pin" class="w-20 shrink-0 text-right">기존 PIN</Label>
-            <Input
-              id="old-pin"
-              type="password"
-              inputmode="numeric"
-              :maxlength="4"
-              :model-value="oldPin"
-              class="w-40" placeholder="4자리 숫자"
-              @update:model-value="(v: string) => (oldPin = onlyDigits(v))"
-            />
+      <Tabs v-model="tab">
+        <TabsList class="grid w-full grid-cols-2">
+          <TabsTrigger value="attendance">참석 확인</TabsTrigger>
+          <TabsTrigger value="account">계정</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="attendance" class="pt-3">
+          <!-- 참석은 본인 것만 다루므로 세션 회원이 있어야 그린다. -->
+          <AttendancePanel
+            v-if="currentMember"
+            :member="currentMember"
+            :year-month="attendanceYearMonth"
+            :current-attended="attendanceAttended"
+            :saving="savingAttendance"
+            @save="(attended: boolean | null) => emit('save-attendance', attended)"
+            @cancel="isOpen = false"
+          />
+        </TabsContent>
+
+        <TabsContent value="account" class="pt-3 space-y-4">
+          <form class="space-y-6" @submit="handleChangePin">
+            <div class="flex items-center gap-3">
+              <Label for="old-pin" class="w-20 shrink-0 text-right">기존 PIN</Label>
+              <Input
+                id="old-pin"
+                type="password"
+                inputmode="numeric"
+                :maxlength="4"
+                :model-value="oldPin"
+                class="w-40" placeholder="4자리 숫자"
+                @update:model-value="(v: string) => (oldPin = onlyDigits(v))"
+              />
+            </div>
+
+            <div class="flex items-center gap-3">
+              <Label for="new-pin" class="w-20 shrink-0 text-right">새 PIN</Label>
+              <Input
+                id="new-pin"
+                type="password"
+                inputmode="numeric"
+                :maxlength="4"
+                :model-value="newPin"
+                class="w-40" placeholder="4자리 숫자"
+                @update:model-value="(v: string) => (newPin = onlyDigits(v))"
+              />
+            </div>
+
+            <div class="flex items-center gap-3">
+              <Label for="confirm-pin" class="w-20 shrink-0 text-right">새 PIN 확인</Label>
+              <Input
+                id="confirm-pin"
+                type="password"
+                inputmode="numeric"
+                :maxlength="4"
+                :model-value="confirmPin"
+                class="w-40" placeholder="4자리 숫자 확인"
+                @update:model-value="(v: string) => (confirmPin = onlyDigits(v))"
+              />
+            </div>
+
+            <Alert v-if="changePinError" variant="destructive">
+              <AlertCircle class="h-4 w-4" />
+              <AlertDescription>{{ changePinError }}</AlertDescription>
+            </Alert>
+
+            <Alert v-if="changePinSuccess" class="border-primary bg-primary/10">
+              <CheckCircle2 class="h-4 w-4 text-primary" />
+              <AlertDescription class="text-primary">PIN이 성공적으로 변경되었습니다.</AlertDescription>
+            </Alert>
+
+            <Button type="submit" class="w-full" :disabled="changePinLoading">
+              {{ changePinLoading ? '저장 중...' : 'PIN 변경' }}
+            </Button>
+          </form>
+
+          <div class="border-t border-border pt-4">
+            <Button variant="outline" class="w-full gap-2" @click="handleLogout">
+              <LogOut class="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+              로그아웃
+            </Button>
           </div>
-
-          <div class="flex items-center gap-3">
-            <Label for="new-pin" class="w-20 shrink-0 text-right">새 PIN</Label>
-            <Input
-              id="new-pin"
-              type="password"
-              inputmode="numeric"
-              :maxlength="4"
-              :model-value="newPin"
-              class="w-40" placeholder="4자리 숫자"
-              @update:model-value="(v: string) => (newPin = onlyDigits(v))"
-            />
-          </div>
-
-          <div class="flex items-center gap-3">
-            <Label for="confirm-pin" class="w-20 shrink-0 text-right">새 PIN 확인</Label>
-            <Input
-              id="confirm-pin"
-              type="password"
-              inputmode="numeric"
-              :maxlength="4"
-              :model-value="confirmPin"
-              class="w-40" placeholder="4자리 숫자 확인"
-              @update:model-value="(v: string) => (confirmPin = onlyDigits(v))"
-            />
-          </div>
-
-          <Alert v-if="changePinError" variant="destructive">
-            <AlertCircle class="h-4 w-4" />
-            <AlertDescription>{{ changePinError }}</AlertDescription>
-          </Alert>
-
-          <Alert v-if="changePinSuccess" class="border-primary bg-primary/10">
-            <CheckCircle2 class="h-4 w-4 text-primary" />
-            <AlertDescription class="text-primary">PIN이 성공적으로 변경되었습니다.</AlertDescription>
-          </Alert>
-
-          <Button type="submit" class="w-full" :disabled="changePinLoading">
-            {{ changePinLoading ? '저장 중...' : 'PIN 변경' }}
-          </Button>
-      </form>
-
-      <div class="border-t border-border pt-4">
-        <Button variant="outline" class="w-full gap-2" @click="handleLogout">
-          <LogOut class="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-          로그아웃
-        </Button>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
 
     <!-- 비로그인 → 로그인 폼 -->

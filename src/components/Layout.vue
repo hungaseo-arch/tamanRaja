@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
-import { User, CalendarDays, Trophy, UserRound, ClipboardCheck } from 'lucide-vue-next';
+import { User, CalendarDays, Trophy, UserRound } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
 import { useAuth } from '@/composables/useAuth';
 import { ROUTE_PATHS } from '@/lib';
@@ -25,11 +25,10 @@ const navItems = computed<NavItem[]>(() => {
     { path: ROUTE_PATHS.MONTHLY, label: '월간 기록', line1: '월간', line2: '기록', icon: CalendarDays },
     { path: ROUTE_PATHS.RANKING, label: '연간 랭킹', line1: '연간', line2: '랭킹', icon: Trophy },
   ];
+  // 참석 확인은 메뉴에서 뺐다. 어차피 본인 계정으로 하는 일이라 오른쪽 위
+  // 계정 버튼(계정 창의 첫 탭)으로 모았다. #/attendance 주소는 그대로 살아 있다.
   if (isLoggedIn.value) {
     items.push({ path: ROUTE_PATHS.PROFILE, label: '나의 기록', line1: '나의', line2: '기록', icon: UserRound });
-    // 참석 확인도 이제 주소가 있는 화면이라 다른 메뉴와 똑같이 링크로 둔다.
-    // 버튼이었을 때는 새 탭으로 열거나 주소를 복사할 수 없었다.
-    items.push({ path: ROUTE_PATHS.ATTENDANCE, label: '참석 확인', line1: '참석', line2: '확인', icon: ClipboardCheck });
   }
   return items;
 });
