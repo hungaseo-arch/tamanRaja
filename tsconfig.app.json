@@ -18,9 +18,10 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
 
-    "baseUrl": ".",
+    // baseUrl 없이 paths 만 쓴다 (TS 7.0 에서 baseUrl 이 사라진다).
+    // paths 의 경로는 이 파일이 있는 곳을 기준으로 읽힌다.
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "env.d.ts"],
