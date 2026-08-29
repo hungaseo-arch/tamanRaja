@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import type { SessionMember } from '@/lib/session';
 import { formatValue } from '@/lib/format';
-import { MONTHLY_HANDICAPS } from '@/data';
+import { resolveHandicap } from '@/data';
 import Button from '@/components/ui/Button.vue';
 
 /**
@@ -41,11 +41,9 @@ const prevYM = computed(() => {
   return `${py}-${String(pm).padStart(2, '0')}`;
 });
 
-const handicap = computed(() =>
-  MONTHLY_HANDICAPS.find(
-    (h) => h.member_id === props.member.id && h.year_month === prevYM.value
-  )
-);
+// 표와 같은 규칙을 쓴다 — 직전 달 스코어가 아직 안 들어왔으면 차월 핸디는
+// 정해지지 않은 것이라 '-' 로 나온다.
+const handicap = computed(() => resolveHandicap(props.member.id, prevYM.value));
 
 // 저장 결과를 아는 쪽은 바깥이다. 여기서 미리 "저장 완료"를 띄우고 창을 닫으면
 // 서버가 거절해도 성공한 것처럼 보인다.

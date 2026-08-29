@@ -263,33 +263,71 @@ async function _fetchAll(): Promise<void> {
 // 그대로 빼면 JS 는 null 을 0 으로 바꿔 "핸디 0" 으로 계산해 버리므로,
 // 받는 쪽은 반드시 null 을 확인하고 Net 계산에서 빼야 한다.
 // (서버 yearly_ranking 도 app_hc is not null 인 라운드만 집계한다)
+
+/** 그 달의 직전 달. 1월이면 전해 12월. */
+function prevYearMonth(yearMonth: string): string {
+  const [yr, mo] = yearMonth.split('-');
+  const prev = parseInt(mo, 10) - 1;
+  return prev === 0
+    ? `${parseInt(yr, 10) - 1}-12`
+    : `${yr}-${String(prev).padStart(2, '0')}`;
+}
+
+/**
+ * 그 달 결과가 확정됐는가. 모임은 잡혀 있는데 스코어가 한 명도 입력되지
+ * 않았으면 아직 치르지 않았거나 입력 전이다.
+ *
+ * monthly_handicaps 에는 아직 치르지 않은 달의 next_hc·app_hc 가 미리 채워져
+ * 들어오는 경우가 있다. 그대로 보여 주면 9월 스코어가 하나도 없는데 9월
+ * 차월 핸디와 10월 당월 핸디가 정해진 것처럼 보인다. 값이 있어도 근거가 될
+ * 결과가 없으면 미정으로 다룬다.
+ *
+ * 모임 자체가 없던 달은 핸디가 그대로 다음 달로 넘어가므로 확정으로 본다.
+ * 판정은 회원별이 아니라 달 단위다 — 불참한 사람은 스코어가 없을 뿐 그 달
+ * 결과는 나왔고, 회원별로 보면 불참한 달마다 다음 달 핸디가 사라진다.
+ */
+function isMonthSettled(yearMonth: string): boolean {
+  const meeting = MEETINGS.find((m) => m.year_month === yearMonth);
+  if (!meeting) return true;
+  const results = MEETING_RESULTS.filter((r) => r.meeting_id === meeting.id);
+  // 결과 행이 하나도 없으면 조회 범위(최근 2년) 밖의 오래된 달이다. 판단할
+  // 근거가 없는 것이지 미확정인 것이 아니므로 값을 그대로 쓴다.
+  if (results.length === 0) return true;
+  return results.some((r) => r.score !== null);
+}
+
 export function resolveHandicap(
   memberId: string,
   yearMonth: string
 ): { std_hc: number; app_hc: number | null; next_hc: number | null } | null {
+  // 당월 핸디는 직전 달 결과로, 차월 핸디는 그 달 결과로 정해진다.
+  const appSettled = isMonthSettled(prevYearMonth(yearMonth));
+  const nextSettled = isMonthSettled(yearMonth);
+
   const exact = MONTHLY_HANDICAPS.find(
     (h) => h.member_id === memberId && h.year_month === yearMonth
   );
-  if (exact) return { std_hc: exact.std_hc, app_hc: exact.app_hc, next_hc: exact.next_hc };
+  if (exact) {
+    return {
+      std_hc: exact.std_hc,
+      app_hc: appSettled ? exact.app_hc : null,
+      next_hc: nextSettled ? exact.next_hc : null,
+    };
+  }
 
   const prev = [...MONTHLY_HANDICAPS]
     .filter((h) => h.member_id === memberId && h.year_month < yearMonth)
     .sort((a, b) => (a.year_month > b.year_month ? -1 : 1))[0];
   if (!prev) return null;
 
-  return { std_hc: prev.std_hc, app_hc: prev.next_hc, next_hc: null };
+  return { std_hc: prev.std_hc, app_hc: appSettled ? prev.next_hc : null, next_hc: null };
 }
 
 // ── 대시보드 데이터 ───────────────────────────────────────────────────────────
 export function getMonthlyData(yearMonth: string): MonthlyRow[] {
   const meeting = MEETINGS.find((m) => m.year_month === yearMonth);
 
-  const [yr, mo] = yearMonth.split('-');
-  const prevMonthNum = parseInt(mo) - 1;
-  const prevYM =
-    prevMonthNum === 0
-      ? `${parseInt(yr) - 1}-12`
-      : `${yr}-${String(prevMonthNum).padStart(2, '0')}`;
+  const prevYM = prevYearMonth(yearMonth);
   const prevMeeting = MEETINGS.find((m) => m.year_month === prevYM);
 
   // 기준핸디 재적용(리셋) 월: 1월이거나, 직전 달 대비 std_hc가 바뀐 회원이 있으면 리셋 월.
