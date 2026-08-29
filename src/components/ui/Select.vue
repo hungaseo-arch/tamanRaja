@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { SelectHTMLAttributes } from 'vue';
 import { cn } from '@/lib/utils';
 import { ChevronDown } from 'lucide-vue-next';
 
@@ -22,7 +23,9 @@ export interface SelectOption {
   disabled?: boolean;
 }
 
-interface Props {
+// aria-label 등 네이티브 속성은 아래 $attrs 를 타고 <select> 에 붙는다.
+// extends 앞의 표시로 타입에만 넣어야 prop 으로 가로채이지 않는다 (Button.vue 참고).
+interface Props extends /* @vue-ignore */ Omit<SelectHTMLAttributes, 'size'> {
   modelValue?: string;
   options?: SelectOption[];
   placeholder?: string;

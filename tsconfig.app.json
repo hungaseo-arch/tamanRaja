@@ -23,5 +23,8 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "env.d.ts"]
+  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "env.d.ts"],
+  // IDE(Volar)는 이 검사를 켠 채로 돌아간다. 여기서 꺼두면 편집기에만
+  // 빨간 줄이 뜨고 빌드는 통과하는 어긋남이 생긴다.
+  "vueCompilerOptions": { "strictTemplates": true }
 }

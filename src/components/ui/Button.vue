@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, type ButtonHTMLAttributes } from 'vue';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
@@ -35,7 +35,12 @@ const buttonVariants = cva(
 type ButtonVariant = VariantProps<typeof buttonVariants>['variant'];
 type ButtonSize = VariantProps<typeof buttonVariants>['size'];
 
-interface Props {
+// aria-label·title 처럼 그대로 <button> 에 흘려보내는 속성까지 타입에 담는다.
+// extends 앞의 표시는 "타입에는 넣되 런타임 prop 으로는 만들지 말라"는 뜻이다 —
+// 이게 없으면 속성들이 prop 으로 잡혀 $attrs 에서 빠지고, 그러면 실제
+// <button> 에 붙지 않는다. (그 표시는 주석 안에도 적으면 안 된다. 컴파일러가
+// 그것까지 지시로 읽어 props 선언 전체를 건너뛴다.)
+interface Props extends /* @vue-ignore */ ButtonHTMLAttributes {
   variant?: ButtonVariant;
   size?: ButtonSize;
   type?: 'button' | 'submit' | 'reset';

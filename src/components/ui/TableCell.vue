@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { TdHTMLAttributes } from 'vue';
 import { cn } from '@/lib/utils';
-interface Props { class?: string }
+// colspan 등은 그대로 <td> 로 흘러간다 (extends 앞 표시는 Button.vue 참고).
+interface Props extends /* @vue-ignore */ TdHTMLAttributes { class?: string }
 const props = defineProps<Props>();
 </script>
 <template>

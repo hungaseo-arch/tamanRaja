@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { ThHTMLAttributes } from 'vue';
 import { cn } from '@/lib/utils';
-interface Props { class?: string; scope?: 'col' | 'row' }
+// aria-sort·colspan 등은 그대로 <th> 로 흘러간다 (extends 앞 표시는 Button.vue 참고).
+interface Props extends /* @vue-ignore */ Omit<ThHTMLAttributes, 'scope'> { class?: string; scope?: 'col' | 'row' }
 const props = defineProps<Props>();
 </script>
 <template>
