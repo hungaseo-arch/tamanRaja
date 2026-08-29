@@ -232,7 +232,7 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
 
 <template>
   <div class="w-full bg-background">
-    <div class="container mx-auto px-4 py-2 max-w-7xl">
+    <div class="container mx-auto px-4 py-2 max-w-5xl">
         <p v-if="saveError" class="text-sm text-destructive px-1" role="alert">{{ saveError }}</p>
 
         <MonthlyTable

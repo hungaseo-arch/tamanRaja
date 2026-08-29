@@ -123,7 +123,7 @@ onMounted(async () => {
     <!-- 초기화 전에만 로딩·오류를 그린다. 저장 후 백그라운드 리로드 때는
          이미 화면에 표가 있으므로 갈아엎지 않는다. -->
     <AsyncState
-      container-class="container mx-auto px-4 py-4 max-w-7xl"
+      container-class="container mx-auto px-4 py-4 max-w-5xl"
       :loading="!dataInitialized && dataLoading"
       :error="!dataInitialized ? dataError : null"
       label="기록"

@@ -164,7 +164,7 @@ function handleExport(): void {
 
 <template>
   <div class="w-full bg-background">
-    <div class="container mx-auto px-4 py-2 max-w-7xl space-y-3">
+    <div class="container mx-auto px-4 py-2 max-w-5xl space-y-3">
       <template v-if="currentMember">
         <div class="flex items-center gap-2 pt-1">
           <h1 class="text-lg font-bold text-foreground mr-auto">
