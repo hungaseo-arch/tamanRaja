@@ -11,8 +11,11 @@ interface Props {
 
 const props = defineProps<Props>();
 
-const ctx = inject(TABS_KEY);
-if (!ctx) throw new Error('TabsTrigger must be used inside <Tabs>');
+// 좁힌 타입을 새 상수에 옮겨 담는다. 아래 activate 는 함수 선언이라
+// 위 if 로 좁힌 결과가 그 안까지 따라오지 않는다.
+const injected = inject(TABS_KEY);
+if (!injected) throw new Error('TabsTrigger must be used inside <Tabs>');
+const ctx = injected;
 
 const isActive = computed(() => ctx.value.value === props.value);
 

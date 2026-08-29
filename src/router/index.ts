@@ -1,7 +1,7 @@
 import {
   createRouter,
   createWebHashHistory,
-  type RouteLocationNormalized,
+  type RouteLocationGeneric,
   type RouteRecordRaw,
 } from 'vue-router';
 import { LEGACY_ROUTE_PATHS, ROUTE_PATHS } from '@/lib';
@@ -45,7 +45,7 @@ const routes: RouteRecordRaw[] = [
   ...LEGACY_ROUTE_PATHS.MONTHLY.map((path, i) => ({
     path,
     name: `monthly-legacy-${i}`,
-    redirect: (to: RouteLocationNormalized) => ({ path: ROUTE_PATHS.MONTHLY, query: to.query }),
+    redirect: (to: RouteLocationGeneric) => ({ path: ROUTE_PATHS.MONTHLY, query: to.query }),
   })),
   {
     path: '/:pathMatch(.*)*',
