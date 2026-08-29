@@ -353,11 +353,11 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
 </script>
 
 <template>
-  <div class="h-full min-h-0 flex flex-col gap-4">
-    <!-- 표제 줄. 화면이 통째로 스크롤되던 때는 sticky 로 붙잡아 뒀는데, 붙잡힌
-         바 위로 표의 고정 셀이 지나가 겹쳤다. 이제 스크롤은 아래 표가 자기
-         안에서 하므로 이 줄은 그냥 제자리에 있으면 된다. -->
-    <Card class="shrink-0 py-0 bg-linear-to-r from-green-200 to-green-100 text-gray-900 border-0 text-xs">
+  <div class="space-y-4">
+    <!-- 표제 줄. 한때 sticky 로 붙잡아 뒀는데, 붙잡힌 바 위로 표의 고정 셀이
+         지나가 겹쳤다. 지금은 이 줄도 표와 함께 밀려 올라가고, 화면에 남는
+         것은 표의 열 제목뿐이다. -->
+    <Card class="py-0 bg-linear-to-r from-green-200 to-green-100 text-gray-900 border-0 text-xs">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2 py-2 px-3 sm:px-4">
         <!-- 1. 연월 (제목) — 이 화면의 h1 이다. 사이트 이름은 헤더의 일반 텍스트다. -->
         <CardTitle as="h1" class="px-0 text-sm font-bold text-primary truncate shrink-0">
@@ -464,15 +464,9 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
     </Card>
 
     <!-- 월별 기록 테이블 -->
-    <!-- min-h-56: 위쪽 카드·문구가 많은 좁은 화면에서 표가 한 줄도 못 남기고
-         짜부라지지 않게 바닥을 둔다. 그래도 모자라면 main 이 스크롤한다. -->
-    <Card class="flex flex-col flex-1 min-h-56">
-      <CardContent class="flex-1 overflow-hidden min-h-0">
-        <!-- Table 컴포넌트가 이미 스크롤 컨테이너다. 여기서 또 감싸면 이중 스크롤.
-             (아래 flex-1 div 는 스크롤 없이 높이만 주는 상자다)
-             핸디 안내 문구를 표와 같은 상자에 넣으면 표 밖으로 밀려나 잘리므로
-             세로 flex 로 나눠 표만 남는 높이를 갖게 한다. -->
-        <div class="h-full min-h-0 flex flex-col pt-4">
+    <Card>
+      <CardContent>
+        <div class="pt-4">
           <!-- 위의 월 선택·엑셀은 밖에 둔다. 기록이 없는 달이라도 다른 달로
                넘어갈 수단은 남아 있어야 한다. -->
           <AsyncState
@@ -480,8 +474,13 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             :empty-title="`${heading} 기록이 없습니다`"
             empty-hint="다른 달을 고르거나, 경기 결과가 저장되면 여기에 표가 나타납니다."
           >
-          <div class="flex-1 min-h-0">
-          <Table :caption="`${heading} 회원별 핸디·스코어 기록`">
+          <!-- scroll=false: 스크롤은 페이지가 한다. 그래야 위쪽 표제 줄이 함께
+               밀려 올라가고, 열 제목만 화면 맨 위에 남는다. -->
+          <Table
+            :scroll="false"
+            class="text-sm sm:text-base [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
+            :caption="`${heading} 회원별 핸디·스코어 기록`"
+          >
             <TableHeader>
               <TableRow>
                 <!-- 가로 스크롤에도 회원명은 남는다 — 어느 행인지 잃지 않도록 -->
@@ -636,8 +635,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
               </TableRow>
             </TableBody>
           </Table>
-          </div>
-          <p v-if="setting('handicap_notice')" class="shrink-0 text-xs text-muted-foreground mt-2 px-2">
+          <p v-if="setting('handicap_notice')" class="text-xs text-muted-foreground mt-2 px-2">
             {{ setting('handicap_notice') }}
           </p>
           </AsyncState>

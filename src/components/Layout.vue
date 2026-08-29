@@ -40,11 +40,11 @@ function isActive(path: string): boolean {
 </script>
 
 <template>
-  <!-- 화면 높이에 딱 맞는 셸이다. 페이지가 통째로 스크롤되면 표의 열 제목을
-       고정할 수가 없다 — sticky 는 스크롤되는 상자 안에서만 걸리는데, 그
-       상자가 페이지면 표의 가로 스크롤 상자에 갇혀 아무 일도 하지 않는다.
-       높이를 여기서 확정해 main 아래의 h-full 사슬이 실제 값을 갖게 하고,
-       스크롤은 각 화면의 표가 자기 안에서 하게 한다. -->
+  <!-- 화면 높이에 딱 맞는 셸이다. 헤더·푸터·탭바는 흐름 안에 있고, 스크롤은
+       main 하나가 맡는다. 표의 열 제목(sticky)은 가장 가까운 스크롤 상자를
+       기준으로 걸리므로, 각 화면의 표는 스스로 스크롤하지 않고(Table 의
+       scroll=false) 여기 main 에 열 제목을 붙인다. 그래야 표 위의 카드까지
+       함께 밀려 올라가면서도 열 제목은 화면 맨 위에 남는다. -->
   <div class="h-dvh flex flex-col bg-background">
     <header class="shrink-0 relative z-20 bg-card border-b border-border shadow-sm">
       <div class="w-full px-3 sm:px-4 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))]">
@@ -109,9 +109,8 @@ function isActive(path: string): boolean {
       </div>
     </header>
 
-    <!-- overflow-y-auto 는 안전망이다. 자기 높이를 스스로 못 맞추는 화면
-         (404 등)이 잘려 나가는 대신 여기서 스크롤된다. h-full 로 딱 맞는
-         화면에서는 넘칠 것이 없어 이 스크롤은 생기지 않는다. -->
+    <!-- 이 앱에서 세로로 스크롤되는 상자는 여기 하나다. 각 화면은 자기
+         높이를 정하지 않고 내용만큼 길어지고, 넘치는 만큼 여기서 스크롤된다. -->
     <main class="flex-1 min-h-0 overflow-y-auto w-full max-w-5xl mx-auto">
       <slot />
     </main>
