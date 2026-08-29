@@ -137,7 +137,7 @@ function onTab(e: KeyboardEvent): void {
             <button
               type="button"
               aria-label="닫기"
-              class="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              class="absolute right-2 top-2 inline-flex h-9 w-9 items-center justify-center rounded-md opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               @click="close"
             >
               <X class="h-4 w-4" />

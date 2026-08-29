@@ -350,7 +350,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
     <Card class="py-0 bg-linear-to-r from-green-200 to-green-100 text-gray-900 border-0 text-xs">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2 py-2 px-3 sm:px-4">
         <!-- 1. 연월 (제목) — 이 화면의 h1 이다. 사이트 이름은 헤더의 일반 텍스트다. -->
-        <CardTitle as="h1" class="px-0 text-lg font-bold text-foreground truncate shrink-0">
+        <CardTitle as="h1" class="px-0 text-lg font-bold text-foreground truncate min-w-0">
           {{ heading }}
         </CardTitle>
 
@@ -454,8 +454,12 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
     </Card>
 
     <!-- 월별 기록 테이블 -->
-    <Card>
-      <CardContent>
+    <!-- 카드가 표를 감싼다: 표는 좁은 화면에서 줄일 수 없는 최소 폭이 있고
+         가로 스크롤은 main 이 맡는다. 카드 폭을 그 최소 폭(w-min)에 맞춰야
+         테두리·배경이 표 오른쪽 끝까지 따라간다. 넓은 화면에서는
+         min-w-full 이 이겨서 예전과 똑같이 폭을 가득 채운다. -->
+    <Card class="w-min min-w-full">
+      <CardContent class="px-2 sm:px-6">
         <div class="pt-4">
           <!-- 위의 월 선택·엑셀은 밖에 둔다. 기록이 없는 달이라도 다른 달로
                넘어갈 수단은 남아 있어야 한다. -->
@@ -538,7 +542,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                       placeholder="-"
                       :aria-label="`${row.member_name} 스코어`"
                       :aria-invalid="isScoreInvalid(row.member_id) || undefined"
-                      :class="cn('w-16 text-center border rounded px-1 py-0 text-sm bg-background focus:outline-none focus:ring-1',
+                      :class="cn('h-8 w-16 text-center border rounded px-1 py-0 text-sm bg-background focus:outline-none focus:ring-1',
                         isScoreInvalid(row.member_id)
                           ? 'border-destructive text-destructive focus:ring-destructive'
                           : 'border-input focus:ring-ring')"
@@ -580,7 +584,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                     <select
                       :value="localGroups[row.member_id] ?? ''"
                       :aria-label="`${row.member_name} 결과 조`"
-                      class="w-20 text-center border border-input rounded px-1 py-0 text-xs bg-background focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer"
+                      class="h-8 w-20 text-center border border-input rounded px-1 py-0 text-xs bg-background focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer"
                       @change="(e) => { localGroups[row.member_id] = (e.target as HTMLSelectElement).value; }"
                     >
                       <option value="">-</option>
@@ -601,7 +605,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                     <select
                       :value="localRanks[row.member_id] ?? ''"
                       :aria-label="`${row.member_name} 시상`"
-                      class="w-24 text-center border border-input rounded px-1 py-0 text-xs bg-background focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer"
+                      class="h-8 w-24 text-center border border-input rounded px-1 py-0 text-xs bg-background focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer"
                       @change="(e) => { localRanks[row.member_id] = (e.target as HTMLSelectElement).value; }"
                     >
                       <option value="">-</option>

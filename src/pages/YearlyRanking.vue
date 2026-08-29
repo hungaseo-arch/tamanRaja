@@ -390,8 +390,12 @@ function stickyTint(rank: number | null): string {
       </div>
 
       <!-- 전체 랭킹 테이블 -->
-      <Card>
-        <CardContent>
+      <!-- 카드가 표를 감싼다: 표는 좁은 화면에서 줄일 수 없는 최소 폭이 있고
+           가로 스크롤은 main 이 맡는다. 카드 폭을 그 최소 폭(w-min)에 맞춰야
+           테두리·배경이 표 오른쪽 끝까지 따라간다. 넓은 화면에서는
+           min-w-full 이 이겨서 예전과 똑같이 폭을 가득 채운다. -->
+      <Card class="w-min min-w-full">
+        <CardContent class="px-2 sm:px-6">
           <!-- 기록이 하나도 없으면 연도 목록 자체가 비어 selectedYear 도 빈 값이다.
                그대로 끼우면 "년 기록이 없습니다" 가 된다. -->
           <AsyncState
