@@ -298,8 +298,8 @@ function stickyTint(rank: number | null): string {
 </script>
 
 <template>
-  <div class="w-full h-full min-h-0 bg-background">
-    <div class="container mx-auto px-4 py-2 max-w-7xl space-y-3 h-full min-h-0 flex flex-col">
+  <div class="w-full bg-background">
+    <div class="container mx-auto px-4 py-2 max-w-7xl space-y-3">
       <!-- 연도·기준 선택 -->
       <div class="flex flex-wrap items-center gap-2">
         <h1 class="text-lg font-bold text-foreground mr-auto">연간 랭킹</h1>
@@ -334,7 +334,7 @@ function stickyTint(rank: number | null): string {
       </div>
 
       <!-- 상위 4명 하이라이트 카드 -->
-      <div v-if="rankedQualified.length > 0" class="shrink-0 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div v-if="rankedQualified.length > 0" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card
           v-for="(row, idx) in rankedQualified.slice(0, 4)"
           :key="row.member_id"
@@ -344,7 +344,7 @@ function stickyTint(rank: number | null): string {
               ? 'border-gray-400 bg-gray-50 dark:bg-gray-950/20'
               : idx === 2
                 ? 'border-amber-700 bg-orange-50 dark:bg-orange-950/20'
-                : 'border-blue-400 bg-blue-50 dark:bg-blue-950/20'"
+                : 'border-slate-500 bg-slate-200/70 dark:bg-slate-800/40'"
         >
           <CardContent class="px-3 pt-2 pb-3 sm:px-3 sm:pb-3 text-center space-y-0.5">
             <p class="text-xl">
@@ -404,11 +404,8 @@ function stickyTint(rank: number | null): string {
       </div>
 
       <!-- 전체 랭킹 테이블 -->
-      <!-- min-h-56: 위쪽 카드·문구가 많은 좁은 화면에서 표가 한 줄도 못 남기고
-           짜부라지지 않게 바닥을 둔다. 그래도 모자라면 main 이 스크롤한다. -->
-      <Card class="flex flex-col flex-1 min-h-56">
-        <CardContent class="flex-1 overflow-hidden min-h-0">
-          <!-- Table 컴포넌트가 이미 스크롤 컨테이너다 (이중 스크롤 방지) -->
+      <Card>
+        <CardContent>
           <!-- 기록이 하나도 없으면 연도 목록 자체가 비어 selectedYear 도 빈 값이다.
                그대로 끼우면 "년 기록이 없습니다" 가 된다. -->
           <AsyncState
@@ -422,11 +419,11 @@ function stickyTint(rank: number | null): string {
             container-class="mt-4"
             @retry="retryRanking"
           >
-          <!-- 안내 문구를 표와 한 상자에 두면 표 밖으로 밀려나 잘린다.
-               세로 flex 로 나눠 표가 남는 높이를 갖게 한다. -->
-          <div class="h-full min-h-0 flex flex-col pt-4">
-            <div class="flex-1 min-h-0">
+          <div class="pt-4">
+            <!-- scroll=false: 스크롤은 페이지가 한다. 그래야 위쪽 카드가 함께
+                 밀려 올라가고, 열 제목만 화면 맨 위에 남는다. -->
             <Table
+              :scroll="false"
               class="text-sm sm:text-base [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
               :caption="`${selectedYear}년 연간 랭킹 — ${rankBasisLabel} 낮은 순, 치른 ${yearMeetingCount}경기 중 50% 이상(${minRoundsNum}회) 참석자 대상`">
               <TableHeader>
@@ -598,8 +595,7 @@ function stickyTint(rank: number | null): string {
                 </template>
               </TableBody>
             </Table>
-            </div>
-            <p v-if="setting('handicap_notice')" class="shrink-0 text-xs text-muted-foreground mt-2 px-4">
+            <p v-if="setting('handicap_notice')" class="text-xs text-muted-foreground mt-2 px-4">
               {{ setting('handicap_notice') }}
             </p>
           </div>
@@ -610,7 +606,7 @@ function stickyTint(rank: number | null): string {
       <!-- 랭킹 기준을 화면에 명시한다 (P1-3 완료 조건).
            표 위에 두면 첫 화면의 상당 부분을 설명이 차지해 정작 봐야 할 표가
            서너 줄만 남는다. 한 번 읽으면 되는 안내라 표 아래로 내렸다. -->
-      <p class="shrink-0 text-xs text-muted-foreground leading-relaxed">
+      <p class="text-xs text-muted-foreground leading-relaxed">
         <strong class="text-foreground">랭킹 기준</strong> —
         <strong class="text-foreground">{{ rankBasisLabel }}</strong>{{ rankBasisParticle }} 낮은 순.
         {{ selectedYear }}년 치른 {{ yearMeetingCount }}경기 중
