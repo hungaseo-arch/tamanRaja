@@ -51,17 +51,27 @@ interface HistoryRow {
   rankMeta: RankMeta | null;
 }
 
+// 표에 담을 연도. 기록이 있는 달 중 가장 나중 달의 해다 (없으면 올해).
+// 이 값 하나가 표의 12줄과 위쪽 통계 카드의 범위를 함께 정한다 — 예전에는
+// 달 목록을 데이터에서 그러모으느라 연도가 섞여도 '몇 월'로만 보였다.
+const historyYear = computed(() => {
+  const memberId = currentMember.value?.id;
+  const latest = [
+    ...MEETINGS.map((m) => m.year_month),
+    ...MONTHLY_HANDICAPS.filter((h) => h.member_id === memberId).map((h) => h.year_month),
+  ].reduce((max, ym) => (ym > max ? ym : max), '');
+  return latest ? latest.slice(0, 4) : nowYM.slice(0, 4);
+});
+
 const history = computed<HistoryRow[]>(() => {
   if (!currentMember.value) return [];
   const memberId = currentMember.value.id;
+  const year = historyYear.value;
 
-  // 미팅이 있는 달 + (미팅 없이) 핸디캡만 등록된 달(예: 새 기준핸디 적용 월)을 합쳐 표시
-  const months = new Set<string>();
-  for (const m of MEETINGS) months.add(m.year_month);
-  for (const h of MONTHLY_HANDICAPS) if (h.member_id === memberId) months.add(h.year_month);
-
-  return [...months]
-    .sort((a, b) => b.localeCompare(a))
+  // 1월부터 12월까지를 항상 한 해치 그대로 놓는다. 기록이 있는 달만 뽑으면
+  // 줄이 건너뛰어 몇 월이 빠졌는지 세어 봐야 알 수 있고, 남은 일정이
+  // 몇 달인지도 표에서 사라진다. 미팅도 핸디도 없는 달은 빈 줄로 남는다.
+  return Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, '0')}`)
     .map((ym) => {
       const meeting  = MEETINGS.find((m) => m.year_month === ym);
       const result   = meeting ? MEETING_RESULTS.find((r) => r.meeting_id === meeting.id && r.member_id === memberId) : undefined;
@@ -91,7 +101,10 @@ const history = computed<HistoryRow[]>(() => {
     });
 });
 
-const historyYear = computed(() => history.value[0]?.year_month.slice(0, 4) ?? '');
+// 빈 줄로 채운 12개월은 항상 있으므로, 행 수로는 기록 유무를 알 수 없다.
+const hasRecord = computed(() =>
+  history.value.some((r) => r.course_name !== null || r.std_hc !== null)
+);
 
 const derived = computed(() => {
   let attendedCount = 0, winnerCount = 0, medalistCount = 0, hostCount = 0;
@@ -223,11 +236,11 @@ function handleExport(): void {
         <Card class="flex flex-col flex-1 min-h-0">
           <CardContent class="flex-1 overflow-hidden min-h-0">
             <AsyncState
-              :empty="history.length === 0"
+              :empty="!hasRecord"
               empty-title="아직 기록이 없습니다"
               empty-hint="모임에 참석하고 스코어가 저장되면 여기에 쌓입니다."
             >
-            <div class="overflow-x-auto overflow-y-auto h-full min-h-0 mt-4">
+            <div class="h-full min-h-0 mt-4">
               <Table caption="월별 참석·핸디·스코어 기록">
                 <TableHeader>
                   <TableRow>
@@ -247,7 +260,7 @@ function handleExport(): void {
                   <TableRow
                     v-for="row in history"
                     :key="row.year_month"
-                    class="hover:bg-muted/50 transition-colors h-14"
+                    class="hover:bg-muted/50 transition-colors"
                   >
                     <TableCell class="font-medium whitespace-nowrap pl-7">{{ formatMonth(row.year_month) }}</TableCell>
                     <TableCell
@@ -290,7 +303,7 @@ function handleExport(): void {
                   </TableRow>
 
                   <!-- 평균 행 -->
-                  <TableRow class="border-t-2 border-border bg-muted/40 font-semibold h-14">
+                  <TableRow class="border-t-2 border-border bg-muted/40 font-semibold">
                     <TableCell class="text-sm text-muted-foreground whitespace-nowrap pl-7">평균</TableCell>
                     <TableCell />
                     <TableCell class="hidden sm:table-cell" />
