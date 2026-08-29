@@ -23,6 +23,9 @@ import TableRow from '@/components/ui/TableRow.vue';
 import TableHead from '@/components/ui/TableHead.vue';
 import TableCell from '@/components/ui/TableCell.vue';
 import AsyncState from '@/components/ui/AsyncState.vue';
+import RowDetailDialog from '@/components/ui/RowDetailDialog.vue';
+import RowDetailButton from '@/components/ui/RowDetailButton.vue';
+import DetailItem from '@/components/ui/DetailItem.vue';
 
 export interface SavePayload {
   scores: Record<string, string>;
@@ -251,6 +254,33 @@ watch(
 
 // 골프장이 아직 없으면 구분자('-')를 아예 붙이지 않는다 — "2026년 8월 1일 - "
 // 처럼 구분자만 남는 문제 (P1-1)
+// ── 줄 상세 (디스클로저) ─────────────────────────────────────────────────────
+// 좁은 화면에서는 기준 핸디·차월 핸디·결과 그룹 열이 숨는다. 회원 이름을
+// 누르면 그 회원의 값을 숨은 것까지 모아 보여 준다.
+// detailRow 는 창을 닫아도 비우지 않는다 — 닫히는 동안 내용이 사라지면
+// 사라지는 애니메이션이 빈 상자로 보인다.
+const detailRow = ref<MonthlyRow | null>(null);
+const detailOpen = ref(false);
+
+function openDetail(row: MonthlyRow): void {
+  detailRow.value = row;
+  detailOpen.value = true;
+}
+
+// 참석 표기는 표와 상세가 같아야 한다.
+function attendanceLabel(row: MonthlyRow): { text: string; class: string } {
+  if (props.isFutureMonth) {
+    const v = localAttendance[row.member_id];
+    if (v === true) return { text: '참석', class: 'text-primary' };
+    if (v === null) return { text: '미정', class: 'text-yellow-700' };
+    if (v === false) return { text: '불참', class: 'text-destructive' };
+    return { text: '미응답', class: 'text-muted-foreground font-normal' };
+  }
+  return row.attended
+    ? { text: '참석', class: 'text-primary' }
+    : { text: '불참', class: 'text-muted-foreground font-normal' };
+}
+
 const heading = computed(() =>
   formatMeetingHeading(props.selectedMonth, props.meetingDate, props.courseName),
 );
@@ -507,14 +537,16 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                     row.member_id === winnerRow?.member_id
                       ? 'before:bg-primary/5 group-hover:before:bg-primary/10'
                       : 'group-hover:before:bg-muted/50')"
-                >{{ row.member_name }}</TableCell>
+                >
+                  <!-- 편집 중에는 열지 않는다. 상세는 저장된 값을 보여주므로
+                       아직 저장하지 않은 입력값과 어긋나 보인다. -->
+                  <RowDetailButton v-if="!isEditing" :label="row.member_name" @click="openDetail(row)">{{ row.member_name }}</RowDetailButton>
+                  <template v-else>{{ row.member_name }}</template>
+                </TableCell>
 
                 <!-- 참석여부 (미래월만) -->
                 <TableCell v-if="isFutureMonth" class="text-center">
-                  <span v-if="localAttendance[row.member_id] === true" class="text-xs font-semibold text-primary">참석</span>
-                  <span v-else-if="localAttendance[row.member_id] === null" class="text-xs font-semibold text-yellow-700">미정</span>
-                  <span v-else-if="localAttendance[row.member_id] === false" class="text-xs font-semibold text-destructive">불참</span>
-                  <span v-else class="text-xs text-muted-foreground whitespace-nowrap">미응답</span>
+                  <span :class="cn('text-xs font-semibold whitespace-nowrap', attendanceLabel(row).class)">{{ attendanceLabel(row).text }}</span>
                 </TableCell>
 
                 <TableCell class="text-center font-mono hidden sm:table-cell">{{ row.std_hc }}</TableCell>
@@ -633,5 +665,51 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         </div>
       </CardContent>
     </Card>
+
+    <!-- 회원 한 명의 그달 기록 전부 -->
+    <RowDetailDialog
+      v-model:open="detailOpen"
+      :title="detailRow?.member_name ?? ''"
+      :subtitle="heading"
+    >
+      <template v-if="detailRow">
+        <DetailItem label="참석">
+          <span :class="attendanceLabel(detailRow).class">{{ attendanceLabel(detailRow).text }}</span>
+        </DetailItem>
+        <DetailItem label="기준 핸디">
+          <span class="font-mono">{{ detailRow.std_hc }}</span>
+        </DetailItem>
+        <DetailItem label="당월 핸디">
+          <span v-if="detailRow.app_hc !== null" class="font-mono">{{ detailRow.app_hc }}</span>
+        </DetailItem>
+        <DetailItem label="차월 핸디">
+          <span v-if="detailRow.attended && detailRow.score !== null && detailRow.next_hc !== null" class="font-mono">{{ detailRow.next_hc }}</span>
+        </DetailItem>
+        <DetailItem label="스코어">
+          <span v-if="detailRow.attended && detailRow.score !== null" class="font-mono">{{ detailRow.score }}</span>
+        </DetailItem>
+        <DetailItem label="NET 스코어">
+          <span
+            v-if="detailRow.attended && detailRow.net_score !== null"
+            :class="cn('font-mono', detailRow.net_score >= 0 ? 'text-blue-600 font-semibold' : 'text-orange-700')"
+          >{{ detailRow.net_score >= 0 ? '+' : '' }}{{ detailRow.net_score }}</span>
+        </DetailItem>
+        <DetailItem label="결과 그룹">
+          <Badge v-if="detailRow.result_group === '1등조'" class="bg-blue-600 text-white border-0">1등조</Badge>
+          <Badge v-else-if="detailRow.result_group" variant="secondary">2등조</Badge>
+        </DetailItem>
+        <DetailItem label="결과">
+          <RankBadge v-if="isRankName(detailRow.result_rank)" :rank="detailRow.result_rank" />
+        </DetailItem>
+        <!-- 연간 순위는 그달까지의 누적이다. 아직 치지 않은 달에 붙이면
+             그달 성적처럼 읽힌다. -->
+        <DetailItem
+          v-if="detailRow.yearly_rank !== null && detailRow.attended && detailRow.score !== null"
+          label="연간 순위"
+        >
+          {{ detailRow.yearly_rank }}위
+        </DetailItem>
+      </template>
+    </RowDetailDialog>
   </div>
 </template>

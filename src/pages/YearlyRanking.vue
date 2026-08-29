@@ -18,6 +18,9 @@ import { cn } from '@/lib/utils';
 import { RANK_STYLE } from '@/lib/rank';
 import { useRecordExport } from '@/composables/useRecordExport';
 import AsyncState from '@/components/ui/AsyncState.vue';
+import RowDetailDialog from '@/components/ui/RowDetailDialog.vue';
+import RowDetailButton from '@/components/ui/RowDetailButton.vue';
+import DetailItem from '@/components/ui/DetailItem.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
@@ -246,6 +249,17 @@ const tableRows = computed<TableEntry[]>(() => {
   }
   return out;
 });
+
+// ── 줄 상세 (디스클로저) ─────────────────────────────────────────────────────
+// 좁은 화면에서는 기준 핸디와 Winner/Medalist/Host 열이 숨는다. 회원 이름을
+// 누르면 그 회원의 한 해 성적을 숨은 것까지 모아 보여 준다.
+const detailEntry = ref<TableEntry | null>(null);
+const detailOpen = ref(false);
+
+function openDetail(entry: TableEntry): void {
+  detailEntry.value = entry;
+  detailOpen.value = true;
+}
 
 // ── 엑셀(CSV) 다운로드 ────────────────────────────────────────────────────────
 // 파일에는 화면에 보이는 그대로를 담는다 — 선택한 연도·최소 참석 기준·정렬 순서.
@@ -548,7 +562,9 @@ function stickyTint(rank: number | null): string {
                         <span v-else aria-label="순위 없음">-</span>
                       </div>
                     </TableCell>
-                    <TableCell :class="cn('font-medium whitespace-nowrap left-14', STICKY_BASE, stickyTint(entry.rank))">{{ entry.row.member_name }}</TableCell>
+                    <TableCell :class="cn('font-medium whitespace-nowrap left-14', STICKY_BASE, stickyTint(entry.rank))">
+                      <RowDetailButton :label="entry.row.member_name" @click="openDetail(entry)">{{ entry.row.member_name }}</RowDetailButton>
+                    </TableCell>
                     <TableCell class="text-center whitespace-nowrap">{{ entry.row.attended_count }}회</TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell">{{ stdHcMap.get(entry.row.member_id) ?? '-' }}</TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap">
@@ -592,6 +608,49 @@ function stickyTint(rank: number | null): string {
           </AsyncState>
         </CardContent>
       </Card>
+
+      <!-- 회원 한 명의 그해 성적 전부 -->
+      <RowDetailDialog
+        v-model:open="detailOpen"
+        :title="detailEntry?.row?.member_name ?? ''"
+        :subtitle="`${selectedYear}년`"
+      >
+        <template v-if="detailEntry?.row">
+          <DetailItem label="순위">
+            <span v-if="detailEntry.rank !== null">{{ detailEntry.rank }}위</span>
+            <span v-else class="text-muted-foreground text-xs">50% 미만 참석 — 순위 제외</span>
+          </DetailItem>
+          <DetailItem label="참석 횟수">{{ detailEntry.row.attended_count }}회</DetailItem>
+          <DetailItem label="기준 핸디">
+            <span class="font-mono">{{ stdHcMap.get(detailEntry.row.member_id) ?? '-' }}</span>
+          </DetailItem>
+          <DetailItem label="평균 Net">
+            <span :class="cn('font-mono', detailEntry.row.avg_net_score >= 0 ? 'text-blue-600' : 'text-orange-700')">
+              {{ detailEntry.row.avg_net_score >= 0 ? '+' : '' }}{{ detailEntry.row.avg_net_score.toFixed(2) }}
+            </span>
+          </DetailItem>
+          <DetailItem label="평균 스코어">
+            <span v-if="detailEntry.row.avg_score !== null" class="font-mono text-purple-600 font-semibold">
+              {{ detailEntry.row.avg_score.toFixed(1) }}
+            </span>
+          </DetailItem>
+          <DetailItem label="Winner">
+            <span :class="cn(detailEntry.row.winner_count ? RANK_STYLE.Winner.text : 'text-muted-foreground', 'font-bold')">
+              {{ detailEntry.row.winner_count }}회
+            </span>
+          </DetailItem>
+          <DetailItem label="Medalist">
+            <span :class="cn(detailEntry.row.medalist_count ? RANK_STYLE.Medalist.text : 'text-muted-foreground', 'font-bold')">
+              {{ detailEntry.row.medalist_count }}회
+            </span>
+          </DetailItem>
+          <DetailItem label="Host">
+            <span :class="cn(detailEntry.row.host_count ? RANK_STYLE.Host.text : 'text-muted-foreground', 'font-bold')">
+              {{ detailEntry.row.host_count }}회
+            </span>
+          </DetailItem>
+        </template>
+      </RowDetailDialog>
 
       <!-- 랭킹 기준을 화면에 명시한다 (P1-3 완료 조건).
            표 위에 두면 첫 화면의 상당 부분을 설명이 차지해 정작 봐야 할 표가

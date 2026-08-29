@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { Download } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
@@ -11,6 +11,9 @@ import { cn } from '@/lib/utils';
 import { RANK_STYLE, isRankName } from '@/lib/rank';
 import type { ResultRank } from '@/lib';
 import AsyncState from '@/components/ui/AsyncState.vue';
+import RowDetailDialog from '@/components/ui/RowDetailDialog.vue';
+import RowDetailButton from '@/components/ui/RowDetailButton.vue';
+import DetailItem from '@/components/ui/DetailItem.vue';
 import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
@@ -56,6 +59,17 @@ const historyYear = computed(() => {
   ].reduce((max, ym) => (ym > max ? ym : max), '');
   return latest ? latest.slice(0, 4) : nowYM.slice(0, 4);
 });
+
+// ── 줄 상세 (디스클로저) ─────────────────────────────────────────────────────
+// 좁은 화면에서는 기준·당월·차월 핸디 열이 숨는다. 월을 누르면 그달 기록을
+// 숨은 것까지 모아 보여 준다. 경기가 없던 달은 보여 줄 것이 없어 열지 않는다.
+const detailRow = ref<HistoryRow | null>(null);
+const detailOpen = ref(false);
+
+function openDetail(row: HistoryRow): void {
+  detailRow.value = row;
+  detailOpen.value = true;
+}
 
 const history = computed<HistoryRow[]>(() => {
   if (!currentMember.value) return [];
@@ -265,7 +279,14 @@ function handleExport(): void {
                     :key="row.year_month"
                     class="hover:bg-muted/50 transition-colors"
                   >
-                    <TableCell class="font-medium whitespace-nowrap pl-7">{{ formatMonth(row.year_month) }}</TableCell>
+                    <TableCell class="font-medium whitespace-nowrap pl-7">
+                      <RowDetailButton
+                        v-if="row.course_name"
+                        :label="formatMonth(row.year_month)"
+                        @click="openDetail(row)"
+                      >{{ formatMonth(row.year_month) }}</RowDetailButton>
+                      <template v-else>{{ formatMonth(row.year_month) }}</template>
+                    </TableCell>
                     <TableCell
                       class="whitespace-nowrap"
                       :class="row.course_name ? '' : 'text-muted-foreground text-sm'"
@@ -332,6 +353,40 @@ function handleExport(): void {
             </AsyncState>
           </CardContent>
         </Card>
+
+        <!-- 그달 기록 전부 -->
+        <RowDetailDialog
+          v-model:open="detailOpen"
+          :title="detailRow ? formatMonth(detailRow.year_month) : ''"
+          :subtitle="`${historyYear}년`"
+        >
+          <template v-if="detailRow">
+            <DetailItem label="골프장">{{ formatCourse(detailRow) }}</DetailItem>
+            <DetailItem label="참석">
+              <span v-if="detailRow.attended" class="text-primary">참석</span>
+              <span v-else class="text-muted-foreground font-normal">불참</span>
+            </DetailItem>
+            <DetailItem label="기준 핸디"><span class="font-mono">{{ formatValue(detailRow.std_hc) }}</span></DetailItem>
+            <DetailItem label="당월 핸디"><span class="font-mono">{{ formatValue(detailRow.app_hc) }}</span></DetailItem>
+            <DetailItem label="차월 핸디"><span class="font-mono">{{ formatValue(detailRow.next_hc) }}</span></DetailItem>
+            <DetailItem label="스코어">
+              <span v-if="detailRow.attended && detailRow.score !== null" class="font-mono">{{ detailRow.score }}</span>
+            </DetailItem>
+            <DetailItem label="NET 스코어">
+              <span
+                v-if="detailRow.attended && detailRow.net_score !== null"
+                :class="cn('font-mono', detailRow.net_score >= 0 ? 'text-blue-600 font-semibold' : 'text-orange-700')"
+              >{{ detailRow.net_score >= 0 ? '+' : '' }}{{ detailRow.net_score }}</span>
+            </DetailItem>
+            <DetailItem label="결과">
+              <RankBadge v-if="isRankName(detailRow.result_rank)" :rank="detailRow.result_rank" />
+              <Badge
+                v-else-if="detailRow.result_group"
+                :variant="detailRow.result_group === '1등조' ? 'default' : 'secondary'"
+              >{{ detailRow.result_group }}</Badge>
+            </DetailItem>
+          </template>
+        </RowDetailDialog>
 
       </template>
     </div>
