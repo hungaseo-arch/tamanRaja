@@ -4,32 +4,37 @@
 
 /*
 ==========================================================================
-【AI HANDOVER NOTE】
-1. DESIGN PHILOSOPHY:
-   - Golf Club Monthly Aesthetic: Professional sports club management interface with data-driven clarity
-   - Korean Typography Excellence: Optimized for Hangul readability with Noto Sans KR as primary typeface
-   - Tabular Data Hierarchy: Spreadsheet-inspired layout with color-coded columns for quick data scanning
-   - Green-White Golf Theme: Natural golf course palette with fresh greens, crisp whites, and accent colors for rankings
+【인수인계 메모】 — 이 파일이 정하는 것과, 화면이 지키는 약속
 
-2. TYPOGRAPHY:
-   - Noto Sans KR: Chosen for superior Korean character rendering, excellent readability in dense tables, and professional tone suitable for club management
-   - JetBrains Mono: Used for numeric data (scores, handicaps, rankings) to ensure alignment and clarity in tabular formats
+1. 색
+   - 브랜드는 골프장 잔디의 초록(hue 145). --primary / --accent / --ring 이
+     모두 이 계열이고, 아래 :root 토큰이 유일한 출처다.
+   - 표의 열 색은 뜻을 나눈다: 기준 핸디는 주황, 당월·차월 핸디와 Net 은 파랑,
+     원점수는 무채색.
+   - Winner(금)·Medalist(은)·Host(보라) 배지는 여기가 아니라
+     src/lib/rank.ts 한 곳에서 정한다. 색을 바꿀 일이 있으면 그 파일만 고친다.
+   - 밝은 화면 하나만 쓴다. index.html 의 color-scheme: light 와 짝이며,
+     다크 팔레트는 켜는 코드가 없어 지웠다. 되살릴 거면 토글부터 만들 것.
 
-3. COLOR SYSTEM:
-   - Brand Primary (Golf Green): Hue 145 (fresh grass green) represents golf course vitality and club identity
-   - --brand maps to --primary for main actions, --accent for highlights, --ring for focus states
-   - Orange (Hue 30): Used for 기준 핸디 column headers, representing baseline/standard data
-   - Blue (Hue 210): Used for 당월 핸디/차월 핸디/Net Score columns, representing calculated/dynamic data
-   - Semantic colors: success (green for Winner badges), warning (gold for Medalist), destructive (red for penalties)
-   - Badge system: Gold (#FFD700 equivalent), Silver (#C0C0C0), Green (success tone) for Winner/Medalist/Host
+2. 서체
+   - 본문 Noto Sans KR — 한글이 촘촘한 표에서도 읽히도록.
+   - 숫자 JetBrains Mono — 점수·핸디·순위의 자릿수가 세로로 맞도록.
+     숫자 칸에는 font-mono 를 빠뜨리지 말 것.
 
-4. USAGE GUIDE:
-   - Layout: Full-width monthly with centered content container (max-width: 1400px)
-   - Table Design: Alternating row colors (muted background), sticky headers, color-coded column headers
-   - Special Effects: Subtle shadows on cards, hover states on table rows, badge highlights with gentle glow
-   - Responsive Strategy: Horizontal scroll for tables on mobile, collapsible columns for secondary data
-   - Korean UI Patterns: Proper spacing for Hangul characters (1.5-1.6 line-height), clear hierarchy for dense information
-   - Color-coded columns: Orange headers for baseline data, Blue headers for calculated metrics, White for raw scores
+3. 폭과 스크롤
+   - 가로 폭은 각 화면이 정한다: container mx-auto px-4 max-w-7xl (1280px).
+     Layout 의 main 은 폭을 자르지 않는다 — 거기에 max-w 를 두면 화면 쪽
+     선언이 조용히 무시된다.
+   - 세로로 스크롤되는 상자는 Layout 의 main 하나뿐이다. 표는 스스로
+     스크롤하지 않고(Table 의 scroll=false), 열 제목만 sticky 로 남는다.
+     표 안에서 스크롤하면 sticky 가 그 상자에 갇혀 화면 위에 붙지 않는다.
+   - 가로로 넓은 표는 첫 두 열(순위·이름)을 sticky 로 고정한다.
+
+4. 크기 규격
+   - 화면 제목은 h1 · text-lg font-bold.
+   - 화면 컨테이너의 세로 간격은 space-y-3.
+   - 툴바에 놓이는 버튼·선택 상자는 size="xs" (h-8 · text-xs).
+     화면마다 h-7/h-8 을 덮어쓰지 말 것.
 ==========================================================================
 */
 

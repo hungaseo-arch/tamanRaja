@@ -74,7 +74,7 @@ async function handleLogin(e: Event): Promise<void> {
 <template>
   <!-- 이 화면은 Layout 을 거치지 않고 그려지므로 main 랜드마크를 여기서 준다.
        없으면 화면 낭독기가 "본문으로 건너뛰기"를 할 곳이 없다. (P2-1) -->
-  <main class="flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] px-4 py-10">
+  <main class="flex flex-col items-center justify-center min-h-dvh px-4 py-10">
     <div class="w-full max-w-sm space-y-6">
       <div class="text-center space-y-2">
         <span class="text-5xl">🏌️</span>
@@ -117,7 +117,7 @@ async function handleLogin(e: Event): Promise<void> {
               <AlertCircle class="h-4 w-4" />
               <AlertDescription>{{ loginError }}</AlertDescription>
             </Alert>
-                  <Button type="submit" class="w-full" :disabled="submitting">
+            <Button type="submit" class="w-full" :disabled="submitting">
               {{ submitting ? '확인 중...' : '로그인' }}
             </Button>
           </form>

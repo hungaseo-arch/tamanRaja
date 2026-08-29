@@ -343,14 +343,14 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
 </script>
 
 <template>
-  <div class="space-y-4">
+  <div class="space-y-3">
     <!-- 표제 줄. 한때 sticky 로 붙잡아 뒀는데, 붙잡힌 바 위로 표의 고정 셀이
          지나가 겹쳤다. 지금은 이 줄도 표와 함께 밀려 올라가고, 화면에 남는
          것은 표의 열 제목뿐이다. -->
     <Card class="py-0 bg-linear-to-r from-green-200 to-green-100 text-gray-900 border-0 text-xs">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2 py-2 px-3 sm:px-4">
         <!-- 1. 연월 (제목) — 이 화면의 h1 이다. 사이트 이름은 헤더의 일반 텍스트다. -->
-        <CardTitle as="h1" class="px-0 text-sm font-bold text-primary truncate shrink-0">
+        <CardTitle as="h1" class="px-0 text-lg font-bold text-foreground truncate shrink-0">
           {{ heading }}
         </CardTitle>
 
