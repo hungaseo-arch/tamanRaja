@@ -197,7 +197,7 @@ function handleExport(): void {
               <p class="text-xs sm:text-sm text-muted-foreground mb-1">평균 Net</p>
               <p class="text-xl font-bold font-mono">
                 <template v-if="derived.avgNet !== null">
-                  <span :class="derived.avgNet >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-700 dark:text-orange-400'">
+                  <span :class="derived.avgNet >= 0 ? 'text-blue-600' : 'text-orange-700'">
                     {{ derived.avgNet >= 0 ? '+' : '' }}{{ derived.avgNet.toFixed(1) }}
                   </span>
                 </template>
@@ -278,8 +278,8 @@ function handleExport(): void {
                     <TableCell class="text-center font-mono whitespace-nowrap">
                       <template v-if="row.attended && row.net_score !== null">
                         <span :class="row.net_score >= 0
-                          ? 'text-blue-600 dark:text-blue-400 font-semibold'
-                          : 'text-orange-700 dark:text-orange-400'"
+                          ? 'text-blue-600 font-semibold'
+                          : 'text-orange-700'"
                         >
                           {{ row.net_score >= 0 ? '+' : '' }}{{ row.net_score }}
                         </span>
@@ -310,8 +310,8 @@ function handleExport(): void {
                       <span
                         v-if="derived.netAvg !== '-'"
                         :class="parseFloat(derived.netAvg) >= 0
-                          ? 'text-blue-600 dark:text-blue-400'
-                          : 'text-orange-700 dark:text-orange-400'"
+                          ? 'text-blue-600'
+                          : 'text-orange-700'"
                       >
                         {{ parseFloat(derived.netAvg) >= 0 ? '+' : '' }}{{ derived.netAvg }}
                       </span>

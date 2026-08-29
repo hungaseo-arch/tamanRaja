@@ -555,8 +555,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                     <span
                       v-if="getLocalNet(row)"
                       :class="getLocalNet(row).startsWith('-')
-                        ? 'text-orange-700 dark:text-orange-400'
-                        : 'text-blue-600 dark:text-blue-400 font-semibold'"
+                        ? 'text-orange-700'
+                        : 'text-blue-600 font-semibold'"
                     >
                       {{ getLocalNet(row) }}
                     </span>
@@ -565,8 +565,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                   <template v-else-if="row.attended && row.net_score !== null">
                     <span
                       :class="row.net_score >= 0
-                        ? 'text-blue-600 dark:text-blue-400 font-semibold'
-                        : 'text-orange-700 dark:text-orange-400'"
+                        ? 'text-blue-600 font-semibold'
+                        : 'text-orange-700'"
                     >
                       {{ row.net_score >= 0 ? '+' : '' }}{{ row.net_score }}
                     </span>

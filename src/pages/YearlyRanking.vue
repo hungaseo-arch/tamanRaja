@@ -340,12 +340,12 @@ function stickyTint(rank: number | null): string {
           v-for="(row, idx) in rankedQualified.slice(0, 4)"
           :key="row.member_id"
           :class="idx === 0
-            ? 'border-yellow-400 bg-yellow-50 dark:bg-yellow-950/20'
+            ? 'border-yellow-400 bg-yellow-50'
             : idx === 1
-              ? 'border-gray-400 bg-gray-50 dark:bg-gray-950/20'
+              ? 'border-gray-400 bg-gray-50'
               : idx === 2
-                ? 'border-amber-700 bg-orange-50 dark:bg-orange-950/20'
-                : 'border-slate-500 bg-slate-200/70 dark:bg-slate-800/40'"
+                ? 'border-amber-700 bg-orange-50'
+                : 'border-slate-500 bg-slate-200/70'"
         >
           <CardContent class="px-3 pt-2 pb-3 sm:px-3 sm:pb-3 text-center space-y-0.5">
             <p class="text-xl">
@@ -362,7 +362,7 @@ function stickyTint(rank: number | null): string {
             >
               <template v-if="key === 'avg_score'">
                 평균 스코어
-                <span class="font-mono font-semibold ml-1 text-purple-600 dark:text-purple-400">
+                <span class="font-mono font-semibold ml-1 text-purple-600">
                   <template v-if="row.avg_score !== null">{{ row.avg_score.toFixed(1) }}</template>
                   <span v-else class="text-muted-foreground">-</span>
                 </span>
@@ -372,8 +372,8 @@ function stickyTint(rank: number | null): string {
                 <span
                   class="font-mono font-semibold ml-1"
                   :class="row.avg_net_score >= 0
-                    ? 'text-blue-600 dark:text-blue-400'
-                    : 'text-orange-700 dark:text-orange-400'"
+                    ? 'text-blue-600'
+                    : 'text-orange-700'"
                 >
                   {{ row.avg_net_score >= 0 ? '+' : '' }}{{ row.avg_net_score.toFixed(2) }}
                 </span>
@@ -552,8 +552,8 @@ function stickyTint(rank: number | null): string {
                         :class="entry.rank === null
                           ? ''
                           : entry.row.avg_net_score >= 0
-                            ? 'text-blue-600 dark:text-blue-400'
-                            : 'text-orange-700 dark:text-orange-400'"
+                            ? 'text-blue-600'
+                            : 'text-orange-700'"
                       >
                         {{ entry.row.avg_net_score >= 0 ? '+' : '' }}{{ entry.row.avg_net_score.toFixed(2) }}
                       </span>
@@ -561,7 +561,7 @@ function stickyTint(rank: number | null): string {
                     <TableCell class="text-center font-mono whitespace-nowrap">
                       <span
                         v-if="entry.row.avg_score !== null"
-                        :class="entry.rank === null ? 'font-semibold' : 'text-purple-600 dark:text-purple-400 font-semibold'"
+                        :class="entry.rank === null ? 'font-semibold' : 'text-purple-600 font-semibold'"
                       >{{ entry.row.avg_score.toFixed(1) }}</span>
                       <span v-else class="text-muted-foreground">-</span>
                     </TableCell>

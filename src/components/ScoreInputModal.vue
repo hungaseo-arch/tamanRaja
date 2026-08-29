@@ -101,7 +101,7 @@ function handleSubmit(e: Event): void {
         <button
           type="button"
           class="rounded-lg border p-3 text-center transition-colors cursor-pointer"
-          :class="attended === null ? 'border-yellow-500 bg-yellow-50 text-yellow-700 dark:bg-yellow-950/30 font-semibold' : 'border-border hover:bg-muted/30'"
+          :class="attended === null ? 'border-yellow-500 bg-yellow-50 text-yellow-700 font-semibold' : 'border-border hover:bg-muted/30'"
           @click="attended = null"
         >
           <div class="text-xl mb-1">🤔</div>
