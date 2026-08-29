@@ -387,16 +387,39 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
          카드 없이 "제목 + 오른쪽 컨트롤" 한 줄이라 이 화면만 색이 튀었다.
          지금은 세 화면이 같은 줄을 쓴다. -->
     <div class="space-y-2 pt-1">
-      <div class="flex flex-wrap items-center gap-2">
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
         <!-- 연월 (제목) — 이 화면의 h1 이다. 사이트 이름은 헤더의 일반 텍스트다. -->
         <CardTitle as="h1" class="px-0 min-w-0 truncate text-lg font-bold text-foreground">
           {{ headingDate }}
           <span v-if="headingCourse" class="text-sm font-medium text-muted-foreground">— {{ headingCourse }}</span>
         </CardTitle>
 
+        <!-- 그달 요약. 제목과 컨트롤 사이 가운데에 놓는다(mx-auto 가 남는 폭을
+             양쪽으로 나눠 가진다). 좁은 화면에서는 줄이 접혀 제목 아래로
+             내려가고, Winner·Medalist 는 sm 미만에서 숨는다. -->
+        <div v-if="isFutureMonth" class="mx-auto flex items-center gap-1.5 text-xs">
+          <span class="font-medium text-muted-foreground whitespace-nowrap">참석 예정 인원</span>
+          <span class="font-bold">{{ futureAttendedCount }}명</span>
+        </div>
+        <div v-else class="mx-auto flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs">
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="font-medium text-muted-foreground whitespace-nowrap">참석인원</span>
+            <span class="font-bold">{{ stats.attendedCount }}명</span>
+          </div>
+          <div class="hidden sm:flex items-center gap-1.5 min-w-0">
+            <RankBadge rank="Winner" class="shrink-0" />
+            <span class="font-semibold truncate">{{ stats.winnerName }}</span>
+          </div>
+          <div class="hidden sm:flex items-center gap-1.5 min-w-0">
+            <RankBadge rank="Medalist" class="shrink-0" />
+            <span class="font-semibold truncate">{{ stats.medalistName }}</span>
+          </div>
+        </div>
+
         <!-- 컨트롤은 한 덩어리다. 낱개로 두면 좁은 폭에서 줄이 접힐 때
-             왼쪽으로 흩어져 제목 아래에 아무렇게나 붙는다. -->
-        <div class="ml-auto flex flex-wrap items-center justify-end gap-2">
+             왼쪽으로 흩어져 제목 아래에 아무렇게나 붙는다. 오른쪽 끝은
+             가운데 요약의 mx-auto 가 밀어 준다. -->
+        <div class="flex flex-wrap items-center justify-end gap-2">
         <!-- 연월 입력창 / 골프장명 (미래달) / 저장·수정 (관리자) -->
         <template v-if="canManage">
           <template v-if="isFutureMonth">
@@ -463,26 +486,6 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           <Download class="w-3.5 h-3.5" aria-hidden="true" />
           <span class="hidden sm:inline">엑셀</span>
         </Button>
-        </div>
-      </div>
-
-      <!-- 그달 요약. 제목과 같은 줄에 두면 좁은 화면에서 제목이 먼저 밀린다. -->
-      <div v-if="isFutureMonth" class="flex items-center gap-1.5 text-xs">
-        <span class="font-medium text-muted-foreground whitespace-nowrap">참석 예정 인원</span>
-        <span class="font-bold">{{ futureAttendedCount }}명</span>
-      </div>
-      <div v-else class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-        <div class="flex items-center gap-1.5 shrink-0">
-          <span class="font-medium text-muted-foreground whitespace-nowrap">참석인원</span>
-          <span class="font-bold">{{ stats.attendedCount }}명</span>
-        </div>
-        <div class="hidden sm:flex items-center gap-1.5 min-w-0">
-          <RankBadge rank="Winner" class="shrink-0" />
-          <span class="font-semibold truncate">{{ stats.winnerName }}</span>
-        </div>
-        <div class="hidden sm:flex items-center gap-1.5 min-w-0">
-          <RankBadge rank="Medalist" class="shrink-0" />
-          <span class="font-semibold truncate">{{ stats.medalistName }}</span>
         </div>
       </div>
 
