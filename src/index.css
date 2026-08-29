@@ -35,6 +35,9 @@
    - 화면 컨테이너의 세로 간격은 space-y-3.
    - 툴바에 놓이는 버튼·선택 상자는 size="xs" (h-8 · text-xs).
      화면마다 h-7/h-8 을 덮어쓰지 말 것.
+   - 표 안의 글자만 한 칸 작다: text-xs sm:text-sm (12px / 14px).
+     한 화면에 열이 많아 다른 곳과 같은 크기로는 가로가 넘친다. 표 밖
+     (메뉴·제목·버튼)은 Tailwind 기본 눈금 그대로 둔다 — 메뉴는 14px.
 ==========================================================================
 */
 
@@ -128,23 +131,6 @@
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
 
-  /* 글자 크기는 여기서만 정한다. 기본(text-sm)이 12px 이 되도록 Tailwind
-     기본 눈금을 한 칸씩(2px) 내렸다. 화면에서 text-[13px] 같은 임의 값을
-     쓰지 말 것 — 여기 눈금이 다시 갈라진다.
-     줄 간격은 한글이 촘촘한 표에서 겹쳐 보이지 않게 넉넉히 잡는다. */
-  --text-xs: 0.6875rem;   /* 11px */
-  --text-xs--line-height: 1.45;
-  --text-sm: 0.75rem;     /* 12px — 본문 기본 */
-  --text-sm--line-height: 1.5;
-  --text-base: 0.875rem;  /* 14px */
-  --text-base--line-height: 1.55;
-  --text-lg: 1rem;        /* 16px — 화면 제목(h1) */
-  --text-lg--line-height: 1.5;
-  --text-xl: 1.125rem;    /* 18px */
-  --text-xl--line-height: 1.45;
-  --text-2xl: 1.375rem;   /* 22px */
-  --text-2xl--line-height: 1.35;
-
   /* Radius */
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -190,9 +176,7 @@
   }
 
   body {
-    /* 글자 크기를 따로 적지 않은 곳의 기본값. 브라우저 기본 16px 를 그대로
-       두면 클래스가 붙은 곳(12px)과 안 붙은 곳이 4px 씩 벌어졌다. */
-    @apply bg-background text-foreground font-sans text-sm min-h-screen;
+    @apply bg-background text-foreground font-sans min-h-screen;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   }
 

@@ -132,7 +132,7 @@ function isActive(path: string): boolean {
           :key="item.path"
           :to="item.path"
           :class="cn(
-            'flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 text-xs font-medium whitespace-nowrap transition-colors',
+            'flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap transition-colors',
             isActive(item.path) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
           )"
           :aria-current="isActive(item.path) ? 'page' : undefined"

@@ -410,7 +410,7 @@ function stickyTint(rank: number | null): string {
                  밀려 올라가고, 열 제목만 화면 맨 위에 남는다. -->
             <Table
               :scroll="false"
-              class="text-sm sm:text-base [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
+              class="text-xs sm:text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
               :caption="`${selectedYear}년 연간 랭킹 — ${rankBasisLabel} 낮은 순, 치른 ${yearMeetingCount}경기 중 50% 이상(${minRoundsNum}회) 참석자 대상`">
               <TableHeader>
                 <TableRow>

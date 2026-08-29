@@ -238,7 +238,7 @@ function handleExport(): void {
                    함께 밀려 올라가고, 열 제목만 화면 맨 위에 남는다. -->
               <Table
                 :scroll="false"
-                class="text-sm sm:text-base [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
+                class="text-xs sm:text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
                 caption="월별 참석·핸디·스코어 기록"
               >
                 <TableHeader>
