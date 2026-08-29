@@ -2,7 +2,7 @@
 import { computed, nextTick, reactive, ref, watch } from 'vue';
 import { Download } from 'lucide-vue-next';
 import type { MonthlyRow, ResultRank, ResultGroup } from '@/lib';
-import { formatMeetingHeading } from '@/lib/format';
+import { formatDate, formatMeetingHeading, formatYearMonth } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { isRankName } from '@/lib/rank';
 import { GOLF_COURSES, setting } from '@/data';
@@ -252,8 +252,6 @@ watch(
   },
 );
 
-// 골프장이 아직 없으면 구분자('-')를 아예 붙이지 않는다 — "2026년 8월 1일 - "
-// 처럼 구분자만 남는 문제 (P1-1)
 // ── 줄 상세 (디스클로저) ─────────────────────────────────────────────────────
 // 좁은 화면에서는 기준 핸디·차월 핸디·결과 그룹 열이 숨는다. 회원 이름을
 // 누르면 그 회원의 값을 숨은 것까지 모아 보여 준다.
@@ -281,9 +279,17 @@ function attendanceLabel(row: MonthlyRow): { text: string; class: string } {
     : { text: '불참', class: 'text-muted-foreground font-normal' };
 }
 
+// 골프장이 아직 없으면 구분자('-')를 아예 붙이지 않는다 — "2026년 8월 1일 - "
+// 처럼 구분자만 남는 문제 (P1-1)
+// 한 줄짜리 표제. 빈 화면 문구와 상세 창의 부제에 쓴다.
 const heading = computed(() =>
   formatMeetingHeading(props.selectedMonth, props.meetingDate, props.courseName),
 );
+
+// h1 은 날짜가 주인공이고 골프장은 딸린 설명이다 — 나의 기록의
+// "나의 기록 — 홍길동 님" 과 같은 짜임으로 맞춘다.
+const headingDate = computed(() => formatDate(props.meetingDate) || formatYearMonth(props.selectedMonth));
+const headingCourse = computed(() => props.courseName?.trim() ?? '');
 
 const sortedMonthlyData = computed(() =>
   [...props.monthlyData].sort((a, b) => a.member_name.localeCompare(b.member_name, 'ko'))
@@ -377,36 +383,21 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
     <!-- 표제 줄. 한때 sticky 로 붙잡아 뒀는데, 붙잡힌 바 위로 표의 고정 셀이
          지나가 겹쳤다. 지금은 이 줄도 표와 함께 밀려 올라가고, 화면에 남는
          것은 표의 열 제목뿐이다. -->
-    <Card class="py-0 bg-linear-to-r from-green-200 to-green-100 text-gray-900 border-0 text-xs">
-      <div class="flex flex-wrap items-center gap-x-3 gap-y-2 py-2 px-3 sm:px-4">
-        <!-- 1. 연월 (제목) — 이 화면의 h1 이다. 사이트 이름은 헤더의 일반 텍스트다. -->
-        <CardTitle as="h1" class="px-0 text-lg font-bold text-foreground truncate min-w-0">
-          {{ heading }}
+    <!-- 표제 줄. 한때 초록 그라데이션 카드였는데, 연간 랭킹·나의 기록은
+         카드 없이 "제목 + 오른쪽 컨트롤" 한 줄이라 이 화면만 색이 튀었다.
+         지금은 세 화면이 같은 줄을 쓴다. -->
+    <div class="space-y-2 pt-1">
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- 연월 (제목) — 이 화면의 h1 이다. 사이트 이름은 헤더의 일반 텍스트다. -->
+        <CardTitle as="h1" class="px-0 min-w-0 truncate text-lg font-bold text-foreground">
+          {{ headingDate }}
+          <span v-if="headingCourse" class="text-sm font-medium text-muted-foreground">— {{ headingCourse }}</span>
         </CardTitle>
 
-        <!-- 2. 참석 예정 인원 (미래월) -->
-        <div v-if="isFutureMonth" class="flex items-center gap-1.5 text-xs shrink-0">
-          <span class="text-muted-foreground font-medium whitespace-nowrap">참석 예정 인원</span>
-          <span class="font-bold">{{ futureAttendedCount }}명</span>
-        </div>
-
-        <!-- 통계 (현재/과거월) -->
-        <div v-if="!isFutureMonth" class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
-          <div class="flex items-center gap-1.5 shrink-0">
-            <span class="text-muted-foreground font-medium whitespace-nowrap">참석인원</span>
-            <span class="font-bold">{{ stats.attendedCount }}명</span>
-          </div>
-          <div class="hidden lg:flex items-center gap-1.5 min-w-0">
-            <RankBadge rank="Winner" class="shrink-0" />
-            <span class="font-semibold truncate">{{ stats.winnerName }}</span>
-          </div>
-          <div class="hidden lg:flex items-center gap-1.5 min-w-0">
-            <RankBadge rank="Medalist" class="shrink-0" />
-            <span class="font-semibold truncate">{{ stats.medalistName }}</span>
-          </div>
-        </div>
-
-        <!-- 3. 연월 입력창 / 4. 골프장명 (미래달) / 저장·수정 (관리자) -->
+        <!-- 컨트롤은 한 덩어리다. 낱개로 두면 좁은 폭에서 줄이 접힐 때
+             왼쪽으로 흩어져 제목 아래에 아무렇게나 붙는다. -->
+        <div class="ml-auto flex flex-wrap items-center justify-end gap-2">
+        <!-- 연월 입력창 / 골프장명 (미래달) / 저장·수정 (관리자) -->
         <template v-if="canManage">
           <template v-if="isFutureMonth">
             <input
@@ -436,25 +427,35 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
               class="h-8 rounded-md border border-input bg-background px-2 text-xs focus:outline-none focus:ring-1 focus:ring-ring flex-1 min-w-0 sm:flex-initial sm:w-28"
             />
           </template>
-          <div class="flex gap-2 shrink-0">
-            <!-- 저장 중 재클릭은 meeting_results 를 지웠다 다시 넣는 과정을
-                 겹쳐 돌려 기록이 어긋날 수 있다. 끝날 때까지 잠근다. -->
-            <Button
-              v-if="isEditing"
-              size="xs"
-              :disabled="props.saveState === 'saving'"
-              @click="handleSave"
-            >{{ props.saveState === 'saving' ? '저장 중...' : '저장' }}</Button>
-            <Button v-else size="xs" variant="outline" @click="enterEdit">수정</Button>
-          </div>
+          <!-- 저장 중 재클릭은 meeting_results 를 지웠다 다시 넣는 과정을
+               겹쳐 돌려 기록이 어긋날 수 있다. 끝날 때까지 잠근다. -->
+          <Button
+            v-if="isEditing"
+            size="xs"
+            class="shrink-0"
+            :disabled="props.saveState === 'saving'"
+            @click="handleSave"
+          >{{ props.saveState === 'saving' ? '저장 중...' : '저장' }}</Button>
+          <Button v-else size="xs" variant="outline" class="shrink-0" @click="enterEdit">수정</Button>
         </template>
+
+        <!-- 월 선택. 연간 랭킹의 연도 선택과 같은 자리·같은 배색이다 -->
+        <label for="monthly-month" class="sr-only">조회할 월</label>
+        <Select
+          id="monthly-month"
+          v-model="localSelectedMonth"
+          :options="monthOptions"
+          placeholder="월 선택"
+          size="xs"
+          class="w-24 shrink-0"
+        />
 
         <!-- 엑셀(CSV) 다운로드 — 해당 연도 전체 기록.
              좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->
         <Button
           variant="outline"
           size="xs"
-          class="shrink-0 ml-auto gap-1"
+          class="shrink-0 gap-1"
           :title="`${exportYear}년 전체 기록 엑셀(CSV) 다운로드`"
           :aria-label="`${exportYear}년 전체 기록 엑셀 다운로드`"
           @click="exportYearlyRecords(props.selectedMonth)"
@@ -462,26 +463,35 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           <Download class="w-3.5 h-3.5" aria-hidden="true" />
           <span class="hidden sm:inline">엑셀</span>
         </Button>
-
-        <!-- 저장을 막은 이유는 저장 버튼 옆에 둔다. 표 아래에 있으면 화면이 긴
-             달에서는 눌러 놓고 아무 반응이 없는 것처럼 보인다. -->
-        <p v-if="validationError" class="w-full text-xs text-destructive" role="alert">
-          {{ validationError }}
-        </p>
-
-        <!-- 월 선택 -->
-        <div class="shrink-0 w-24">
-          <Select
-            v-model="localSelectedMonth"
-            :options="monthOptions"
-            placeholder="월 선택"
-            aria-label="조회할 월"
-            size="xs"
-            select-class="bg-green-50/60 border-green-400 text-green-900 font-semibold focus:ring-green-500 focus:border-green-500"
-          />
         </div>
       </div>
-    </Card>
+
+      <!-- 그달 요약. 제목과 같은 줄에 두면 좁은 화면에서 제목이 먼저 밀린다. -->
+      <div v-if="isFutureMonth" class="flex items-center gap-1.5 text-xs">
+        <span class="font-medium text-muted-foreground whitespace-nowrap">참석 예정 인원</span>
+        <span class="font-bold">{{ futureAttendedCount }}명</span>
+      </div>
+      <div v-else class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="font-medium text-muted-foreground whitespace-nowrap">참석인원</span>
+          <span class="font-bold">{{ stats.attendedCount }}명</span>
+        </div>
+        <div class="hidden sm:flex items-center gap-1.5 min-w-0">
+          <RankBadge rank="Winner" class="shrink-0" />
+          <span class="font-semibold truncate">{{ stats.winnerName }}</span>
+        </div>
+        <div class="hidden sm:flex items-center gap-1.5 min-w-0">
+          <RankBadge rank="Medalist" class="shrink-0" />
+          <span class="font-semibold truncate">{{ stats.medalistName }}</span>
+        </div>
+      </div>
+
+      <!-- 저장을 막은 이유는 저장 버튼 가까이 둔다. 표 아래에 있으면 화면이 긴
+           달에서는 눌러 놓고 아무 반응이 없는 것처럼 보인다. -->
+      <p v-if="validationError" class="text-xs text-destructive" role="alert">
+        {{ validationError }}
+      </p>
+    </div>
 
     <!-- 월별 기록 테이블 -->
     <!-- 카드가 표를 감싼다: 표는 좁은 화면에서 줄일 수 없는 최소 폭이 있고
