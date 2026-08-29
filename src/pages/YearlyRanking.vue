@@ -291,8 +291,8 @@ function stickyTint(rank: number | null): string {
 </script>
 
 <template>
-  <div class="w-full min-h-full bg-background">
-    <div class="container mx-auto px-4 py-2 max-w-7xl space-y-4 h-full flex flex-col">
+  <div class="w-full h-full min-h-0 bg-background">
+    <div class="container mx-auto px-4 py-2 max-w-7xl space-y-4 h-full min-h-0 flex flex-col">
       <!-- 연도·기준 선택 -->
       <div class="flex flex-wrap items-center gap-2">
         <h1 class="text-lg font-bold text-foreground mr-auto">연간 랭킹</h1>
@@ -406,7 +406,9 @@ function stickyTint(rank: number | null): string {
       </div>
 
       <!-- 전체 랭킹 테이블 -->
-      <Card class="flex flex-col flex-1 min-h-0">
+      <!-- min-h-56: 위쪽 카드·문구가 많은 좁은 화면에서 표가 한 줄도 못 남기고
+           짜부라지지 않게 바닥을 둔다. 그래도 모자라면 main 이 스크롤한다. -->
+      <Card class="flex flex-col flex-1 min-h-56">
         <CardContent class="flex-1 overflow-hidden min-h-0">
           <!-- Table 컴포넌트가 이미 스크롤 컨테이너다 (이중 스크롤 방지) -->
           <!-- 기록이 하나도 없으면 연도 목록 자체가 비어 selectedYear 도 빈 값이다.
@@ -422,7 +424,10 @@ function stickyTint(rank: number | null): string {
             container-class="mt-4"
             @retry="retryRanking"
           >
-          <div class="h-full min-h-0 mt-4">
+          <!-- 안내 문구를 표와 한 상자에 두면 표 밖으로 밀려나 잘린다.
+               세로 flex 로 나눠 표가 남는 높이를 갖게 한다. -->
+          <div class="h-full min-h-0 flex flex-col pt-4">
+            <div class="flex-1 min-h-0">
             <Table :caption="`${selectedYear}년 연간 랭킹 — ${rankBasisLabel} 낮은 순, 치른 ${yearMeetingCount}경기 중 50% 이상(${minRoundsNum}회) 참석자 대상`">
               <TableHeader>
                 <TableRow>
@@ -588,7 +593,8 @@ function stickyTint(rank: number | null): string {
                 </template>
               </TableBody>
             </Table>
-            <p v-if="setting('handicap_notice')" class="text-xs text-muted-foreground mt-2 px-4">
+            </div>
+            <p v-if="setting('handicap_notice')" class="shrink-0 text-xs text-muted-foreground mt-2 px-4">
               {{ setting('handicap_notice') }}
             </p>
           </div>

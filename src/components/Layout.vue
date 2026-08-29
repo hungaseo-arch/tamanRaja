@@ -46,8 +46,13 @@ function isActive(path: string): boolean {
 </script>
 
 <template>
-  <div class="min-h-screen bg-background pb-[calc(3.5rem+env(safe-area-inset-bottom))] sm:pb-0">
-    <header class="fixed top-0 left-0 right-0 z-30 bg-card border-b border-border shadow-sm">
+  <!-- 화면 높이에 딱 맞는 셸이다. 페이지가 통째로 스크롤되면 표의 열 제목을
+       고정할 수가 없다 — sticky 는 스크롤되는 상자 안에서만 걸리는데, 그
+       상자가 페이지면 표의 가로 스크롤 상자에 갇혀 아무 일도 하지 않는다.
+       높이를 여기서 확정해 main 아래의 h-full 사슬이 실제 값을 갖게 하고,
+       스크롤은 각 화면의 표가 자기 안에서 하게 한다. -->
+  <div class="h-dvh flex flex-col bg-background">
+    <header class="shrink-0 relative z-20 bg-card border-b border-border shadow-sm">
       <div class="w-full px-3 sm:px-4 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))]">
         <div class="flex items-center h-14 sm:h-16 gap-x-1.5 sm:gap-x-2">
 
@@ -111,17 +116,20 @@ function isActive(path: string): boolean {
       </div>
     </header>
 
-    <main class="pt-14 sm:pt-16 w-full max-w-5xl mx-auto min-h-[calc(100vh-4rem)]">
+    <!-- overflow-y-auto 는 안전망이다. 자기 높이를 스스로 못 맞추는 화면
+         (404 등)이 잘려 나가는 대신 여기서 스크롤된다. h-full 로 딱 맞는
+         화면에서는 넘칠 것이 없어 이 스크롤은 생기지 않는다. -->
+    <main class="flex-1 min-h-0 overflow-y-auto w-full max-w-5xl mx-auto">
       <slot />
     </main>
-    <footer class="text-center text-xs text-muted-foreground py-4 border-t border-border">
+    <footer class="shrink-0 text-center text-xs text-muted-foreground py-4 border-t border-border">
       Copyright © ASEOA
     </footer>
 
     <!-- 하단 탭 바 (sm 미만). 메뉴가 한 줄씩 세로로 깨지던 문제를 없애고
          각 항목에 균등한 폭을 준다. -->
     <nav
-      class="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-card border-t border-border pb-[env(safe-area-inset-bottom)]"
+      class="sm:hidden shrink-0 relative z-20 bg-card border-t border-border pb-[env(safe-area-inset-bottom)]"
       aria-label="주요 메뉴"
     >
       <div class="flex items-stretch h-14">

@@ -231,9 +231,9 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
 </script>
 
 <template>
-  <div class="w-full min-h-full bg-background">
-    <div class="container mx-auto px-4 py-2 max-w-7xl">
-        <p v-if="saveError" class="text-sm text-destructive px-1" role="alert">{{ saveError }}</p>
+  <div class="w-full h-full min-h-0 bg-background">
+    <div class="container mx-auto px-4 py-2 max-w-7xl h-full min-h-0 flex flex-col">
+        <p v-if="saveError" class="shrink-0 text-sm text-destructive px-1" role="alert">{{ saveError }}</p>
 
         <MonthlyTable
           :year-month="selectedMonth"

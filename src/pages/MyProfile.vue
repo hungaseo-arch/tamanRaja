@@ -170,8 +170,8 @@ function handleExport(): void {
 </script>
 
 <template>
-  <div class="w-full h-full min-h-full bg-background">
-    <div class="container mx-auto px-4 py-2 max-w-7xl space-y-2 h-full flex flex-col flex-1">
+  <div class="w-full h-full min-h-0 bg-background">
+    <div class="container mx-auto px-4 py-2 max-w-7xl space-y-2 h-full min-h-0 flex flex-col">
       <template v-if="currentMember">
         <div class="flex items-center gap-2 pt-1">
           <h1 class="text-lg font-bold text-foreground mr-auto">
@@ -233,14 +233,19 @@ function handleExport(): void {
         </div>
 
         <!-- 월별 히스토리 테이블 -->
-        <Card class="flex flex-col flex-1 min-h-0">
+        <!-- min-h-56: 위쪽 카드·문구가 많은 좁은 화면에서 표가 한 줄도 못 남기고
+             짜부라지지 않게 바닥을 둔다. 그래도 모자라면 main 이 스크롤한다. -->
+        <Card class="flex flex-col flex-1 min-h-56">
           <CardContent class="flex-1 overflow-hidden min-h-0">
             <AsyncState
               :empty="!hasRecord"
               empty-title="아직 기록이 없습니다"
               empty-hint="모임에 참석하고 스코어가 저장되면 여기에 쌓입니다."
             >
-            <div class="h-full min-h-0 mt-4">
+            <!-- 안내 문구를 표와 한 상자에 두면 표 밖으로 밀려나 잘린다.
+                 세로 flex 로 나눠 표가 남는 높이를 갖게 한다. -->
+            <div class="h-full min-h-0 flex flex-col pt-4">
+              <div class="flex-1 min-h-0">
               <Table caption="월별 참석·핸디·스코어 기록">
                 <TableHeader>
                   <TableRow>
@@ -325,7 +330,8 @@ function handleExport(): void {
                   </TableRow>
                 </TableBody>
               </Table>
-              <p v-if="setting('handicap_notice')" class="text-xs text-muted-foreground mt-2 px-4">
+              </div>
+              <p v-if="setting('handicap_notice')" class="shrink-0 text-xs text-muted-foreground mt-2 px-4">
                 {{ setting('handicap_notice') }}
               </p>
             </div>
