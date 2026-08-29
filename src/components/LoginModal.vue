@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { AlertCircle, CheckCircle2 } from 'lucide-vue-next';
+import { useRouter } from 'vue-router';
+import { AlertCircle, CheckCircle2, LogOut } from 'lucide-vue-next';
 import { describeChangePinError, describeLoginError, useAuth } from '@/composables/useAuth';
 import { MEMBERS, isDormantNow } from '@/data';
+import { ROUTE_PATHS } from '@/lib';
 import Dialog from '@/components/ui/Dialog.vue';
 import Button from '@/components/ui/Button.vue';
 import Select from '@/components/ui/Select.vue';
@@ -21,7 +23,8 @@ const emit = defineEmits<{
   (e: 'update:open', value: boolean): void;
 }>();
 
-const { login, changePin, isLoggedIn } = useAuth();
+const { login, changePin, logout, isLoggedIn, currentMember } = useAuth();
+const router = useRouter();
 
 // 로그인 폼 상태
 const selectedMember = ref<string>('');
@@ -136,12 +139,22 @@ async function handleChangePin(e: Event): Promise<void> {
     changePinLoading.value = false;
   }
 }
+
+// 로그아웃은 헤더가 아니라 이 창에 있다. 헤더 아이콘을 하나로 줄이면서 옮겨
+// 온 것으로, 하는 일은 그대로다 — 세션을 지우고 로그인 화면으로 보낸다.
+async function handleLogout(): Promise<void> {
+  isOpen.value = false;
+  await logout();
+  router.push(ROUTE_PATHS.HOME);
+}
 </script>
 
 <template>
-  <Dialog v-model:open="isOpen" content-class="sm:max-w-sm" :label="isLoggedIn ? 'PIN 변경' : '로그인'">
-    <!-- 로그인 상태 → PIN 변경 -->
+  <Dialog v-model:open="isOpen" content-class="sm:max-w-sm" :label="isLoggedIn ? '계정' : '로그인'">
+    <!-- 로그인 상태 → 계정(PIN 변경·로그아웃) -->
     <div v-if="isLoggedIn" class="w-full px-5 pt-4 space-y-4">
+      <p class="text-sm font-medium text-foreground">{{ currentMember?.name }} 님</p>
+
       <form class="space-y-6" @submit="handleChangePin">
           <div class="flex items-center gap-3">
             <Label for="old-pin" class="w-20 shrink-0 text-right">기존 PIN</Label>
@@ -196,6 +209,13 @@ async function handleChangePin(e: Event): Promise<void> {
             {{ changePinLoading ? '저장 중...' : 'PIN 변경' }}
           </Button>
       </form>
+
+      <div class="border-t border-border pt-4">
+        <Button variant="outline" class="w-full gap-2" @click="handleLogout">
+          <LogOut class="w-4 h-4 text-muted-foreground" aria-hidden="true" />
+          로그아웃
+        </Button>
+      </div>
     </div>
 
     <!-- 비로그인 → 로그인 폼 -->

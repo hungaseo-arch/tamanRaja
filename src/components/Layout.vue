@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue';
-import { RouterLink, useRoute, useRouter } from 'vue-router';
-import { LogOut, User, CalendarDays, Trophy, UserRound, ClipboardCheck } from 'lucide-vue-next';
+import { RouterLink, useRoute } from 'vue-router';
+import { User, CalendarDays, Trophy, UserRound, ClipboardCheck } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
 import { useAuth } from '@/composables/useAuth';
 import { ROUTE_PATHS } from '@/lib';
@@ -13,14 +13,8 @@ interface Props {
 
 defineProps<Props>();
 
-const { isLoggedIn, currentMember, logout } = useAuth();
+const { isLoggedIn, currentMember } = useAuth();
 const route = useRoute();
-const router = useRouter();
-
-async function handleLogout(): Promise<void> {
-  await logout();
-  router.push(ROUTE_PATHS.HOME);
-}
 
 // line1/line2 는 sm~xl 구간에서 두 줄로 접기 위한 것. 좁은 폭(<sm)에서는
 // 상단 nav 자체를 쓰지 않고 하단 탭 바로 내려가므로 label 만 쓴다.
@@ -91,21 +85,20 @@ function isActive(path: string): boolean {
           <div class="flex items-center gap-1 sm:gap-2 shrink-0">
             <!-- 좁은 폭에서는 글자가 숨겨져 아이콘만 남으므로 이름을 aria-label 로
                  따로 준다. 그림만 있는 버튼은 화면 낭독기에서 "버튼"으로만 읽힌다. -->
-            <template v-if="isLoggedIn && currentMember">
-              <Button
-                variant="outline"
-                size="sm"
-                class="gap-2"
-                :aria-label="`${currentMember.name} 님 계정`"
-                @click="onLoginClick"
-              >
-                <User class="w-4 h-4 text-primary" aria-hidden="true" />
-                <span class="hidden sm:inline font-medium">{{ currentMember.name }}</span>
-              </Button>
-              <Button variant="ghost" size="sm" class="px-2" aria-label="로그아웃" @click="handleLogout">
-                <LogOut class="w-4 h-4 text-muted-foreground" aria-hidden="true" />
-              </Button>
-            </template>
+            <!-- 계정과 관련된 일(PIN 변경·로그아웃)은 이 버튼 하나로 모은다.
+                 아이콘이 둘이면 이름이 숨는 좁은 폭에서 어느 쪽이 무엇인지
+                 그림만 보고 가려내야 했다. -->
+            <Button
+              v-if="isLoggedIn && currentMember"
+              variant="outline"
+              size="sm"
+              class="gap-2"
+              :aria-label="`${currentMember.name} 님 계정`"
+              @click="onLoginClick"
+            >
+              <User class="w-4 h-4 text-primary" aria-hidden="true" />
+              <span class="hidden sm:inline font-medium">{{ currentMember.name }}</span>
+            </Button>
             <Button v-else variant="default" size="sm" class="gap-1.5" aria-label="로그인" @click="onLoginClick">
               <User class="w-4 h-4" aria-hidden="true" />
               <span class="hidden sm:inline">로그인</span>
