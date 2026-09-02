@@ -8,6 +8,7 @@ import { isRankName } from '@/lib/rank';
 import { GOLF_COURSES, setting } from '@/data';
 import { useAttendance } from '@/composables/useAttendance';
 import { useRecordExport } from '@/composables/useRecordExport';
+import { useCompactTable } from '@/composables/useCompactTable';
 import Select from '@/components/ui/Select.vue';
 import type { SelectOption } from '@/components/ui/Select.vue';
 import Card from '@/components/ui/Card.vue';
@@ -255,8 +256,10 @@ watch(
 // ── 줄 상세 (디스클로저) ─────────────────────────────────────────────────────
 // 좁은 화면에서는 기준 핸디·차월 핸디·결과 그룹 열이 숨는다. 회원 이름을
 // 누르면 그 회원의 값을 숨은 것까지 모아 보여 준다.
+// md 부터는 열이 전부 보여 창을 열어도 표와 같은 내용이라 아예 열지 않는다.
 // detailRow 는 창을 닫아도 비우지 않는다 — 닫히는 동안 내용이 사라지면
 // 사라지는 애니메이션이 빈 상자로 보인다.
+const compact = useCompactTable('md');
 const detailRow = ref<MonthlyRow | null>(null);
 const detailOpen = ref(false);
 
@@ -264,6 +267,11 @@ function openDetail(row: MonthlyRow): void {
   detailRow.value = row;
   detailOpen.value = true;
 }
+
+// 창을 열어 둔 채 화면을 넓히면 뒤의 표에 같은 값이 드러난다 — 그때는 닫는다.
+watch(compact, (isCompact) => {
+  if (!isCompact) detailOpen.value = false;
+});
 
 // 참석 표기는 표와 상세가 같아야 한다.
 function attendanceLabel(row: MonthlyRow): { text: string; class: string } {
@@ -553,7 +561,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 >
                   <!-- 편집 중에는 열지 않는다. 상세는 저장된 값을 보여주므로
                        아직 저장하지 않은 입력값과 어긋나 보인다. -->
-                  <RowDetailButton v-if="!isEditing" :label="row.member_name" @click="openDetail(row)">{{ row.member_name }}</RowDetailButton>
+                  <RowDetailButton v-if="!isEditing" :label="row.member_name" :enabled="compact" @click="openDetail(row)">{{ row.member_name }}</RowDetailButton>
                   <template v-else>{{ row.member_name }}</template>
                 </TableCell>
 

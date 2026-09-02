@@ -17,6 +17,7 @@ import type { YearlySummary } from '@/lib';
 import { cn } from '@/lib/utils';
 import { RANK_STYLE } from '@/lib/rank';
 import { useRecordExport } from '@/composables/useRecordExport';
+import { useCompactTable } from '@/composables/useCompactTable';
 import AsyncState from '@/components/ui/AsyncState.vue';
 import RowDetailDialog from '@/components/ui/RowDetailDialog.vue';
 import RowDetailButton from '@/components/ui/RowDetailButton.vue';
@@ -253,6 +254,8 @@ const tableRows = computed<TableEntry[]>(() => {
 // ── 줄 상세 (디스클로저) ─────────────────────────────────────────────────────
 // 좁은 화면에서는 기준 핸디와 Winner/Medalist/Host 열이 숨는다. 회원 이름을
 // 누르면 그 회원의 한 해 성적을 숨은 것까지 모아 보여 준다.
+// md 부터는 열이 전부 보여 창을 열어도 표와 같은 내용이라 아예 열지 않는다.
+const compact = useCompactTable('md');
 const detailEntry = ref<TableEntry | null>(null);
 const detailOpen = ref(false);
 
@@ -260,6 +263,12 @@ function openDetail(entry: TableEntry): void {
   detailEntry.value = entry;
   detailOpen.value = true;
 }
+
+// 창을 열어 둔 채 화면을 넓히면(회전·창 크기 조절) 뒤의 표에 같은 값이
+// 드러난다 — 그때는 창을 닫는다.
+watch(compact, (isCompact) => {
+  if (!isCompact) detailOpen.value = false;
+});
 
 // ── 엑셀(CSV) 다운로드 ────────────────────────────────────────────────────────
 // 파일에는 화면에 보이는 그대로를 담는다 — 선택한 연도·최소 참석 기준·정렬 순서.
@@ -563,7 +572,7 @@ function stickyTint(rank: number | null): string {
                       </div>
                     </TableCell>
                     <TableCell :class="cn('font-medium whitespace-nowrap left-14', STICKY_BASE, stickyTint(entry.rank))">
-                      <RowDetailButton :label="entry.row.member_name" @click="openDetail(entry)">{{ entry.row.member_name }}</RowDetailButton>
+                      <RowDetailButton :label="entry.row.member_name" :enabled="compact" @click="openDetail(entry)">{{ entry.row.member_name }}</RowDetailButton>
                     </TableCell>
                     <TableCell class="text-center whitespace-nowrap">{{ entry.row.attended_count }}회</TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell">{{ stdHcMap.get(entry.row.member_id) ?? '-' }}</TableCell>

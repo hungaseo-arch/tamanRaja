@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { Download } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { useRecordExport } from '@/composables/useRecordExport';
+import { useCompactTable } from '@/composables/useCompactTable';
 import { MEETINGS, MEETING_RESULTS, MONTHLY_HANDICAPS, GOLF_COURSES, resolveHandicap, setting } from '@/data';
 import { ROUTE_PATHS } from '@/lib';
 import { formatPending, formatValue } from '@/lib/format';
@@ -63,6 +64,8 @@ const historyYear = computed(() => {
 // ── 줄 상세 (디스클로저) ─────────────────────────────────────────────────────
 // 좁은 화면에서는 기준·당월·차월 핸디 열이 숨는다. 월을 누르면 그달 기록을
 // 숨은 것까지 모아 보여 준다. 경기가 없던 달은 보여 줄 것이 없어 열지 않는다.
+// sm 부터는 열이 전부 보여 창을 열어도 표와 같은 내용이라 아예 열지 않는다.
+const compact = useCompactTable('sm');
 const detailRow = ref<HistoryRow | null>(null);
 const detailOpen = ref(false);
 
@@ -70,6 +73,11 @@ function openDetail(row: HistoryRow): void {
   detailRow.value = row;
   detailOpen.value = true;
 }
+
+// 창을 열어 둔 채 화면을 넓히면 뒤의 표에 같은 값이 드러난다 — 그때는 닫는다.
+watch(compact, (isCompact) => {
+  if (!isCompact) detailOpen.value = false;
+});
 
 const history = computed<HistoryRow[]>(() => {
   if (!currentMember.value) return [];
@@ -283,6 +291,7 @@ function handleExport(): void {
                       <RowDetailButton
                         v-if="row.course_name"
                         :label="formatMonth(row.year_month)"
+                        :enabled="compact"
                         @click="openDetail(row)"
                       >{{ formatMonth(row.year_month) }}</RowDetailButton>
                       <template v-else>{{ formatMonth(row.year_month) }}</template>
