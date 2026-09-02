@@ -582,7 +582,9 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 </TableCell>
 
                 <!-- Score -->
-                <TableCell class="text-center font-mono">
+                <!-- 편집 칸이 든 셀은 여백을 줄인다 — 칸 높이(h-7)와 기본 여백(py-2)이
+                     겹치면 그 줄만 연간 랭킹 표보다 한참 두꺼워진다. -->
+                <TableCell :class="cn('text-center font-mono', isEditing && 'py-1')">
                   <template v-if="isEditing">
                     <!-- type="number" 는 모바일에서 스피너가 붙어 스크롤 한 번에
                          값이 바뀐다. 숫자 자판은 inputmode 로 부르고 스피너는 뗀다. -->
@@ -595,7 +597,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                       placeholder="-"
                       :aria-label="`${row.member_name} 스코어`"
                       :aria-invalid="isScoreInvalid(row.member_id) || undefined"
-                      :class="cn('h-8 w-16 text-center border rounded px-1 py-0 text-sm bg-background focus:outline-none focus:ring-1',
+                      :class="cn('h-7 w-16 text-center border rounded px-1 py-0 text-sm bg-background focus:outline-none focus:ring-1',
                         isScoreInvalid(row.member_id)
                           ? 'border-destructive text-destructive focus:ring-destructive'
                           : 'border-input focus:ring-ring')"
@@ -632,12 +634,12 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 </TableCell>
 
                 <!-- 결과 Group -->
-                <TableCell class="text-center hidden md:table-cell">
+                <TableCell :class="cn('text-center hidden md:table-cell', isEditing && 'py-1')">
                   <template v-if="isEditing">
                     <select
                       :value="localGroups[row.member_id] ?? ''"
                       :aria-label="`${row.member_name} 결과 조`"
-                      class="h-8 w-20 text-center border border-input rounded px-1 py-0 text-xs bg-background focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer"
+                      class="h-7 w-20 text-center border border-input rounded px-1 py-0 text-xs bg-background focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer"
                       @change="(e) => { localGroups[row.member_id] = (e.target as HTMLSelectElement).value; }"
                     >
                       <option value="">-</option>
@@ -653,12 +655,12 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 </TableCell>
 
                 <!-- 결과 -->
-                <TableCell class="text-center">
+                <TableCell :class="cn('text-center', isEditing && 'py-1')">
                   <template v-if="isEditing">
                     <select
                       :value="localRanks[row.member_id] ?? ''"
                       :aria-label="`${row.member_name} 시상`"
-                      class="h-8 w-24 text-center border border-input rounded px-1 py-0 text-xs bg-background focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer"
+                      class="h-7 w-24 text-center border border-input rounded px-1 py-0 text-xs bg-background focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer"
                       @change="(e) => { localRanks[row.member_id] = (e.target as HTMLSelectElement).value; }"
                     >
                       <option value="">-</option>
