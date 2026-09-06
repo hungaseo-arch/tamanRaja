@@ -74,6 +74,7 @@ export interface MonthlyRow {
   // 그 값도 비어 있는 경우). 이때 Net·조 편성은 계산하지 않는다.
   app_hc: number | null;
   next_hc: number | null;
+  /** 마지막으로 조에 편성된 달의 조 (불참한 달은 건너뛴다). 차월 핸디 판정 기준. */
   prev_result_group: ResultGroup;
   attended: boolean;
   score: number | null;
@@ -84,8 +85,6 @@ export interface MonthlyRow {
   yearly_rank: number | null;
   /** meeting_results.note 원문 (비고 열) */
   note: string | null;
-  // 기준핸디 재적용(리셋) 월 여부 — 이 달은 조 변경 리셋 없이 ±1만 적용
-  is_reset_month: boolean;
 }
 
 export interface YearlySummary {

@@ -9,6 +9,7 @@ import type {
   MonthlyHandicap,
   MeetingResult,
   MonthlyRow,
+  ResultGroup,
   YearlySummary,
 } from '@/lib/index';
 
@@ -323,24 +324,28 @@ export function resolveHandicap(
   return { std_hc: prev.std_hc, app_hc: appSettled ? prev.next_hc : null, next_hc: null };
 }
 
+/**
+ * 그 회원이 **마지막으로 조에 편성된 달**의 조.
+ *
+ * 규칙표의 "계속 1등조가 되어 … 단 1회라도 2등조에 들면" 은 달력이 아니라
+ * 라운드를 세는 말이다. 직전 '달'만 보면 그 달 쉬었던 사람은 비교할 조가
+ * 없어 전부 조 변경으로 몰리고, 실제로는 이어지던 1등조 행진이 기준핸디로
+ * 되돌아가 버린다. 그래서 불참한 달은 건너뛰고 직전 라운드와 견준다.
+ */
+function lastResultGroup(memberId: string, yearMonth: string): ResultGroup {
+  const past = MEETINGS.filter((m) => m.year_month < yearMonth).sort((a, b) =>
+    a.year_month > b.year_month ? -1 : 1
+  );
+  for (const m of past) {
+    const r = MEETING_RESULTS.find((x) => x.meeting_id === m.id && x.member_id === memberId);
+    if (r?.result_group) return r.result_group;
+  }
+  return null;
+}
+
 // ── 대시보드 데이터 ───────────────────────────────────────────────────────────
 export function getMonthlyData(yearMonth: string): MonthlyRow[] {
   const meeting = MEETINGS.find((m) => m.year_month === yearMonth);
-
-  const prevYM = prevYearMonth(yearMonth);
-  const prevMeeting = MEETINGS.find((m) => m.year_month === prevYM);
-
-  // 기준핸디 재적용(리셋) 월: 1월이거나, 직전 달 대비 std_hc가 바뀐 회원이 있으면 리셋 월.
-  // 이 달은 직전 달과 조를 비교할 수 없어 조 변경 리셋 없이 ±1만 적용한다.
-  const isResetMonth =
-    yearMonth.endsWith('-01') ||
-    MONTHLY_HANDICAPS.some((cur) => {
-      if (cur.year_month !== yearMonth) return false;
-      const prv = MONTHLY_HANDICAPS.find(
-        (h) => h.member_id === cur.member_id && h.year_month === prevYM
-      );
-      return prv !== undefined && prv.std_hc !== cur.std_hc;
-    });
 
   const rows: MonthlyRow[] = [];
 
@@ -390,9 +395,6 @@ export function getMonthlyData(yearMonth: string): MonthlyRow[] {
         ? yearlyNetScores.reduce((a, b) => a + b, 0) / yearlyNetScores.length
         : null;
 
-    const prevResult = prevMeeting
-      ? MEETING_RESULTS.find((r) => r.meeting_id === prevMeeting.id && r.member_id === member.id)
-      : undefined;
 
     rows.push({
       member_id: member.id,
@@ -401,7 +403,7 @@ export function getMonthlyData(yearMonth: string): MonthlyRow[] {
       std_hc: stdHc,
       app_hc: appHc,
       next_hc: baseHandicap.next_hc,
-      prev_result_group: prevResult?.result_group ?? null,
+      prev_result_group: lastResultGroup(member.id, yearMonth),
       attended: result?.attended ?? false,
       score: result?.score ?? null,
       net_score: netScore,
@@ -410,7 +412,6 @@ export function getMonthlyData(yearMonth: string): MonthlyRow[] {
       yearly_net: yearlyNet,
       yearly_rank: null,
       note: result?.note ?? null,
-      is_reset_month: isResetMonth,
     });
   }
 
