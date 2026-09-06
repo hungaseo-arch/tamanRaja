@@ -161,20 +161,20 @@ function computeAutoFields(): void {
   if (scored.length === 0) return;
 
   const topCount = Math.floor(scored.length / 2);
-  // 1월은 그 해 기준핸디를 새로 정하는 달이라 전월 조와 견주지 않고 당월
-  // 결과만으로 ±1 한다. 연중에 기준핸디를 다시 매긴 달은 특례가 아니다.
-  const isJanuary = props.yearMonth.endsWith('-01');
 
   scored.forEach((row, idx) => {
     const group: ResultGroup = idx < topCount ? '1등조' : '2등조';
     localGroups[row.member_id] = group;
 
     // 차월핸디:
-    //  - 1월이거나 직전 라운드와 같은 조 → 1등조 app-1 / 2등조 app+1
+    //  - 당월핸디가 기준핸디와 같은 달(1월·기준핸디 재설정·조 변경 복귀 직후)은
+    //    초기화 상태라 직전 조와 견주지 않고 당월 결과만으로 ±1
+    //  - 그 외 직전 라운드와 같은 조 → 1등조 app-1 / 2등조 app+1
     //  - 조가 바뀐 경우 → 기준핸디(std_hc)로 복귀
+    const fresh = row.app_hc === row.std_hc;
     const adjust = group === '1등조' ? row.app_hc - 1 : row.app_hc + 1;
     localNextHc[row.member_id] =
-      isJanuary || (row.prev_result_group !== null && row.prev_result_group === group)
+      fresh || (row.prev_result_group !== null && row.prev_result_group === group)
         ? adjust
         : row.std_hc;
   });
@@ -804,7 +804,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
             <li>홀수 핸디도 그대로 인정한다.</li>
             <li>계속 1등조라 핸디가 내려가 있어도 <b class="text-foreground">단 한 번</b> 2등조에 들면 기준 핸디로 돌아온다. 2등조도 반대로 같다.</li>
-            <li><b class="text-foreground">매년 1월</b>은 그 해 기준 핸디를 새로 정하는 달이라 직전 라운드와 견주지 않고, 1월 결과만으로 2월 핸디를 ±1 한다.</li>
+            <li><b class="text-foreground">기준 핸디로 복귀하면 모든 것이 초기화된다.</b> 당월 핸디가 기준 핸디와 같은 달(매년 1월, 기준 핸디를 새로 정한 달, 조 변경으로 복귀한 다음 달)은 직전 라운드와 견주지 않고 그 달 결과만으로 ±1 한다.</li>
             <li>"직전 라운드"는 마지막으로 조에 편성된 달이다. 불참한 달은 건너뛰고 비교한다.</li>
             <li>불참한 달은 당월 핸디가 그대로 다음 달로 이어진다.</li>
           </ul>
