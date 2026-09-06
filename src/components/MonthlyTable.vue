@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue';
-import { Download } from 'lucide-vue-next';
+import { CircleHelp, Download } from 'lucide-vue-next';
 import type { MonthlyRow, ResultRank, ResultGroup } from '@/lib';
 import { formatDate, formatMeetingHeading, formatYearMonth } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -27,6 +27,7 @@ import AsyncState from '@/components/ui/AsyncState.vue';
 import RowDetailDialog from '@/components/ui/RowDetailDialog.vue';
 import RowDetailButton from '@/components/ui/RowDetailButton.vue';
 import DetailItem from '@/components/ui/DetailItem.vue';
+import Dialog from '@/components/ui/Dialog.vue';
 
 export interface SavePayload {
   scores: Record<string, string>;
@@ -160,18 +161,20 @@ function computeAutoFields(): void {
   if (scored.length === 0) return;
 
   const topCount = Math.floor(scored.length / 2);
-  const isResetMonth = props.monthlyData[0]?.is_reset_month ?? false;
+  // 1월은 그 해 기준핸디를 새로 정하는 달이라 전월 조와 견주지 않고 당월
+  // 결과만으로 ±1 한다. 연중에 기준핸디를 다시 매긴 달은 특례가 아니다.
+  const isJanuary = props.yearMonth.endsWith('-01');
 
   scored.forEach((row, idx) => {
     const group: ResultGroup = idx < topCount ? '1등조' : '2등조';
     localGroups[row.member_id] = group;
 
     // 차월핸디:
-    //  - 리셋 월(기준핸디 재적용) 또는 전월과 같은 조 → 1등조 app-1 / 2등조 app+1
-    //  - 조가 바뀐 경우 → 기준핸디(std_hc)로 리셋
+    //  - 1월이거나 직전 라운드와 같은 조 → 1등조 app-1 / 2등조 app+1
+    //  - 조가 바뀐 경우 → 기준핸디(std_hc)로 복귀
     const adjust = group === '1등조' ? row.app_hc - 1 : row.app_hc + 1;
     localNextHc[row.member_id] =
-      isResetMonth || (row.prev_result_group !== null && row.prev_result_group === group)
+      isJanuary || (row.prev_result_group !== null && row.prev_result_group === group)
         ? adjust
         : row.std_hc;
   });
@@ -260,6 +263,10 @@ watch(
 // detailRow 는 창을 닫아도 비우지 않는다 — 닫히는 동안 내용이 사라지면
 // 사라지는 애니메이션이 빈 상자로 보인다.
 const compact = useCompactTable('md');
+
+// 핸디 규칙 도움말. 차월 핸디 열은 좁은 화면에서 숨겨지므로 열 제목이 아니라
+// 항상 보이는 컨트롤 줄에 둔다.
+const showHcHelp = ref(false);
 const detailRow = ref<MonthlyRow | null>(null);
 const detailOpen = ref(false);
 
@@ -493,6 +500,19 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         >
           <Download class="w-3.5 h-3.5" aria-hidden="true" />
           <span class="hidden sm:inline">엑셀</span>
+        </Button>
+
+        <!-- 핸디 규칙 도움말 -->
+        <Button
+          variant="outline"
+          size="xs"
+          class="shrink-0 gap-1"
+          title="핸디 규칙 보기"
+          aria-label="핸디 규칙 보기"
+          @click="showHcHelp = true"
+        >
+          <CircleHelp class="w-3.5 h-3.5" aria-hidden="true" />
+          <span class="hidden sm:inline">핸디 규칙</span>
         </Button>
         </div>
       </div>
@@ -734,5 +754,62 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         </DetailItem>
       </template>
     </RowDetailDialog>
+
+    <!-- 핸디 규칙 도움말. 모임 규정표를 그대로 옮긴 것이다. 계산 로직
+         (src/data/index.ts, DB recompute_next_hc) 과 어긋나면 이쪽을 고친다. -->
+    <Dialog v-model:open="showHcHelp" label="핸디 규칙" content-class="sm:max-w-lg">
+      <h2 class="text-base font-bold pr-8">핸디 규칙</h2>
+      <div class="mt-3 space-y-4 text-sm">
+        <section class="space-y-1.5">
+          <h3 class="font-semibold">용어</h3>
+          <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
+            <li><b class="text-foreground">기준 핸디</b> — 매년 1월에 새로 정하는 그 해의 기본 핸디.</li>
+            <li><b class="text-foreground">당월 핸디</b> — 이달 경기에 적용하는 핸디. NET = 스코어 − 당월 핸디.</li>
+            <li><b class="text-foreground">차월 핸디</b> — 이달 결과로 정해지는 다음 달의 당월 핸디.</li>
+            <li><b class="text-foreground">조 편성</b> — NET 이 낮은 순으로 참석자 절반이 1등조, 나머지가 2등조.</li>
+          </ul>
+        </section>
+
+        <section class="space-y-1.5">
+          <h3 class="font-semibold">차월 핸디 정하기</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs border-collapse">
+              <thead>
+                <tr class="border-b">
+                  <th class="py-1 pr-2 text-left font-semibold">직전 라운드</th>
+                  <th class="py-1 pr-2 text-left font-semibold">이번 달</th>
+                  <th class="py-1 text-left font-semibold">차월 핸디</th>
+                </tr>
+              </thead>
+              <tbody class="text-muted-foreground">
+                <tr class="border-b">
+                  <td class="py-1 pr-2">1등조</td><td class="py-1 pr-2">1등조</td>
+                  <td class="py-1 text-foreground">당월 핸디 − 1</td>
+                </tr>
+                <tr class="border-b">
+                  <td class="py-1 pr-2">2등조</td><td class="py-1 pr-2">2등조</td>
+                  <td class="py-1 text-foreground">당월 핸디 + 1</td>
+                </tr>
+                <tr class="border-b">
+                  <td class="py-1 pr-2">1등조</td><td class="py-1 pr-2">2등조</td>
+                  <td class="py-1 text-foreground">기준 핸디로 복귀</td>
+                </tr>
+                <tr>
+                  <td class="py-1 pr-2">2등조</td><td class="py-1 pr-2">1등조</td>
+                  <td class="py-1 text-foreground">기준 핸디로 복귀</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
+            <li>홀수 핸디도 그대로 인정한다.</li>
+            <li>계속 1등조라 핸디가 내려가 있어도 <b class="text-foreground">단 한 번</b> 2등조에 들면 기준 핸디로 돌아온다. 2등조도 반대로 같다.</li>
+            <li><b class="text-foreground">매년 1월</b>은 그 해 기준 핸디를 새로 정하는 달이라 직전 라운드와 견주지 않고, 1월 결과만으로 2월 핸디를 ±1 한다.</li>
+            <li>"직전 라운드"는 마지막으로 조에 편성된 달이다. 불참한 달은 건너뛰고 비교한다.</li>
+            <li>불참한 달은 당월 핸디가 그대로 다음 달로 이어진다.</li>
+          </ul>
+        </section>
+      </div>
+    </Dialog>
   </div>
 </template>
