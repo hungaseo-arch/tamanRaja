@@ -24,6 +24,9 @@ if (typeof window !== 'undefined') {
   });
 }
 
+/** 서버 인증 이력에 남길 로그아웃 사유. 'idle' 은 30분 무활동 자동 로그아웃. */
+export type LogoutReason = 'idle';
+
 export type LoginResult =
   | { ok: true }
   | { ok: false; reason: 'invalid'; remainingAttempts: number | null }
@@ -84,7 +87,7 @@ export interface UseAuthReturn {
   isAdmin: ComputedRef<boolean>;
   currentMember: Ref<SessionMember | null>;
   login: (memberId: string, pin: string, remember?: boolean) => Promise<LoginResult>;
-  logout: () => Promise<void>;
+  logout: (reason?: LogoutReason) => Promise<void>;
   changePin: (oldPin: string, newPin: string) => Promise<ChangePinResult>;
   revalidate: () => Promise<boolean>;
 }
@@ -123,15 +126,20 @@ export function useAuth(): UseAuthReturn {
       name: res.member.name,
       role: res.member.role,
     };
-    saveSession({ token: res.token, expiresAt: res.expires_at ?? '', member }, remember);
+    saveSession(
+      { token: res.token, expiresAt: res.expires_at ?? '', member, lastActiveAt: new Date().toISOString() },
+      remember,
+    );
     currentMember.value = member;
     return { ok: true };
   };
 
-  const logout = async (): Promise<void> => {
+  // reason 은 서버 기록에만 쓰인다 ('idle' → 자동 로그아웃). 값을 넘기지 않으면
+  // 본인이 누른 로그아웃으로 남는다.
+  const logout = async (reason?: LogoutReason): Promise<void> => {
     // 서버 세션을 먼저 지운다. 실패하더라도 로컬은 반드시 정리한다.
     try {
-      await supabase.rpc('logout');
+      await supabase.rpc('logout', reason ? { p_reason: reason } : {});
     } catch {
       /* 네트워크 실패 시에도 로컬 로그아웃은 진행 */
     }

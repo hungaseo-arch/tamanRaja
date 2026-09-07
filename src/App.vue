@@ -7,13 +7,14 @@ import Toaster from '@/components/ui/Toaster.vue';
 import AsyncState from '@/components/ui/AsyncState.vue';
 import { loadData, loadMembers, clearData, dataLoading, dataInitialized, dataError, getMonthlyData } from '@/data';
 import { useAuth } from '@/composables/useAuth';
+import { useIdleLogout, IDLE_TIMEOUT_MINUTES } from '@/composables/useIdleLogout';
 import { useAttendance } from '@/composables/useAttendance';
 import { useToast } from '@/composables/useToast';
 import { ROUTE_PATHS } from '@/lib';
 
 const router = useRouter();
 const route = useRoute();
-const { currentMember, isLoggedIn, revalidate } = useAuth();
+const { currentMember, isLoggedIn, revalidate, logout } = useAuth();
 const { setAttendance, getAttendance } = useAttendance();
 const { toast } = useToast();
 
@@ -91,6 +92,21 @@ async function handleSaveAttendance(attended: boolean | null): Promise<void> {
   // 저장이 안 된 줄 알고 또 누르게 된다.
   router.replace({ path: ROUTE_PATHS.MONTHLY, query: { month: nextYM } });
 }
+
+// 30분 동안 아무 조작이 없으면 스스로 로그아웃한다. 라운드 중 스코어를 보다
+// 자리를 뜬 기기가 그대로 열려 있지 않게 하려는 것이라, "이 기기에서 로그인
+// 유지"를 켠 경우에도 똑같이 걸린다. 서버도 같은 규칙을 갖고 있고(P6-1),
+// 여기서는 그 사실을 사용자에게 알리는 일까지 한다.
+useIdleLogout(async () => {
+  await logout('idle');
+  loginModalOpen.value = false;
+  router.replace(ROUTE_PATHS.HOME);
+  toast({
+    title: '자동 로그아웃되었습니다',
+    description: `${IDLE_TIMEOUT_MINUTES}분 동안 사용하지 않아 로그아웃했습니다. 다시 로그인해 주세요.`,
+    duration: 6000,
+  });
+});
 
 // 로그인 전에는 members(id, name) 만 가져온다. 나머지 테이블은 세션이 생긴
 // 뒤에야 요청한다 — 서버 RLS 도 같은 규칙으로 막는다. (P1-2)
