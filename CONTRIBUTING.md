@@ -65,6 +65,10 @@ fix(auth): PIN 검증을 서버 RPC로 이전하고 member_pins 노출 차단
   만들거나 상태를 바꾸는 함수라면 그대로 위조 통로가 된다.
 - 인증 이력(`app.member_auth_events`)에 PIN·IP 를 넣지 않는다. 기기 문자열까지가
   모임 운영에 필요한 전부다.
+- 회원을 지우는 경로를 새로 만들지 않는다. `members` 를 참조하는 FK 가 전부
+  `on delete cascade` 라, 한 번의 delete 가 그 회원의 점수·핸디를 함께 가져간다.
+  `delete_member()` 가 기록 있는 회원을 거절하는 이유이고, 명단에서 빼는 정상
+  경로는 휴면(`set_member_dormant()`)이다.
 
 ## 5. 프런트엔드
 

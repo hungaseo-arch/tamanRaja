@@ -98,6 +98,7 @@ tamanRaja/
         ├── YearlyRanking.vue # 연간 랭킹
         ├── MyProfile.vue     # 나의 기록
         ├── AdminLogs.vue     # 접속 기록 (관리자 전용)
+        ├── AdminMembers.vue  # 회원 관리 (관리자 전용)
         └── NotFound.vue      # 404
 ```
 
@@ -117,6 +118,7 @@ HashHistory(`#/path`) 기반이다. GitHub Pages 는 임의 경로를 index.html
 | `/profile` | `MyProfile.vue` | 필요 |
 | `/attendance` | `Monthly.vue` + 참석 확인 창 | 필요 |
 | `/admin/logs` | `AdminLogs.vue` — 접속 기록 | 필요 (관리자) |
+| `/admin/members` | `AdminMembers.vue` — 회원 관리 | 필요 (관리자) |
 | 그 외 | `NotFound.vue` | 불필요 |
 
 - `/monthlyRecord/` 는 예전 경로다. 북마크·공유 링크가 살아 있도록 쿼리를
@@ -142,6 +144,10 @@ HashHistory(`#/path`) 기반이다. GitHub Pages 는 임의 경로를 index.html
   로그인 · PIN 실패 · 잠금 · 로그아웃 · 자동 로그아웃 · 세션 만료를 시간순으로
   본다. 로그인과 그 세션의 종료를 짝지어 체류 시간도 함께 낸다. 메뉴를 감추는
   것은 편의일 뿐이고, 실제 차단은 조회 RPC 안의 `app.is_admin()` 이 한다.
+- **회원 관리 (`/admin/members`)** — 관리자에게만 보인다. 회원 추가 · 등급 변경
+  (관리자 ↔ 회원) · 휴면/복귀 · 삭제를 한 화면에서 한다. 회원을 추가하면
+  로그인 정보와 시작월의 기준핸디가 함께 생긴다. **경기 기록이 있는 회원은
+  삭제되지 않는다** — 명단에서 빼는 정상 경로는 휴면이다.
 - **엑셀(CSV) 내려받기** — 월간 기록·연간 랭킹·나의 기록 각 화면에서 지원한다.
 - **PWA** — 홈 화면에 설치할 수 있고, 새 버전이 올라오면 토스트로 물어본다.
   점수를 입력하는 중에 말없이 새로고침되지 않도록 `prompt` 방식을 쓴다.
@@ -258,6 +264,11 @@ Supabase Auth 를 쓰지 않는다. 회원 선택 + 4자리 PIN 방식이며, �
 | `logout(reason?)` | 세션 폐기. `reason='idle'` 이면 자동 로그아웃으로 기록 |
 | `touch_session()` | 활동 보고. 유휴 시계를 되돌리고, 끝난 세션이면 `{ok:false}` |
 | `auth_events(...)` | 접속 기록 조회. 관리자가 아니면 거절(42501) |
+| `admin_members()` | 관리자용 회원 목록(등급·기록 수·마지막 로그인) |
+| `add_member(...)` | 회원 추가 + 로그인 정보 + 시작월 기준핸디 |
+| `set_member_role(id, role)` | 등급 변경. 본인·마지막 관리자 강등은 막는다 |
+| `set_member_dormant(id, from?)` | 휴면 시작월 지정, `null` 이면 복귀 |
+| `delete_member(id)` | 기록 없는 회원만 삭제 |
 
 - PIN 은 `app.member_credentials` 에 bcrypt 해시로만 있다. 평문 PIN 테이블
   (`member_pins`)은 제거했다.

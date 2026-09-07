@@ -71,6 +71,12 @@ Supabase Auth 를 쓰지 않는다. 회원 15명이 4자리 PIN 으로 들어오
 | `public.logout(reason)` | 세션 행 삭제 + 사유 기록 |
 | `public.touch_session()` | 활동 보고 — `last_seen_at` 갱신 |
 | `public.auth_events(...)` | 접속 기록 조회 (관리자 전용) |
+| `app.require_admin()` | 관리자가 아니면 42501 로 끊는다 (회원 관리 RPC 의 첫 줄) |
+| `public.admin_members()` | 관리자용 회원 목록 |
+| `public.add_member(...)` | 회원 + 자격 증명 + 시작월 핸디를 한 트랜잭션으로 |
+| `public.set_member_role(...)` | 등급 변경 |
+| `public.set_member_dormant(...)` | 휴면 시작월 지정 / 복귀 |
+| `public.delete_member(...)` | 기록 없는 회원만 삭제 |
 
 `app` 스키마는 PostgREST 가 노출하지 않는다(`public` 과 `graphql_public` 만
 노출된다). 자격 증명·세션·이력 테이블은 REST 로 아예 닿을 수 없고, 셋 모두
@@ -145,6 +151,11 @@ PUBLIC 이다. `app.record_auth_event()` 처럼 기록을 만드는 함수는 �
 인증 이력은 관리자만 본다. 테이블 자체가 `app` 에 있어 REST 로 닿지 않고,
 `public.auth_events()` 가 `app.is_admin()` 을 확인한 뒤 아니면 42501 로
 거절한다. 화면에서 메뉴를 감추는 것은 편의일 뿐 경계가 아니다.
+
+회원 명단도 마찬가지다. 관리자 화면은 `members` 를 직접 select 하지 않고
+`public.admin_members()` 를 부른다 — 익명에게 `role` 의 SELECT 권한이 없어
+등급을 볼 방법이 그것뿐이고, 모든 회원 관리 RPC 는 첫 줄에서
+`app.require_admin()` 을 지난다.
 
 ### 쓰기
 
@@ -330,9 +341,9 @@ HashHistory 를 쓴다. GitHub Pages 는 임의 경로를 `index.html` 로 돌�
   링크로 바로 들어왔으면 갈 곳이 없으므로 그 달 기록으로 바꿔 준다.
 - 없는 경로는 홈으로 튕기지 않고 404 를 보여준다. 튕기면 주소가 틀렸다는
   사실 자체를 알 수 없다.
-- `/admin/logs` 는 로그인만 가드한다. 관리자 여부까지 라우터에서 막지는
-  않는다 — 어차피 서버가 거절하고, 화면은 그 오류를 그대로 보여주므로
-  "왜 안 보이는지" 가 드러난다. 조용히 튕기면 그마저 알 수 없다.
+- `/admin/logs` 와 `/admin/members` 는 로그인만 가드한다. 관리자 여부까지
+  라우터에서 막지는 않는다 — 어차피 서버가 거절하고, 화면은 그 오류를 그대로
+  보여주므로 "왜 안 보이는지" 가 드러난다. 조용히 튕기면 그마저 알 수 없다.
 - `Layout.vue` 는 고정 높이 셸이다. 본문만 스크롤되므로 긴 표에서도 열 제목이
   항상 보인다.
 
