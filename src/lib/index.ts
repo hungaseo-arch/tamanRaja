@@ -10,6 +10,9 @@ export const ROUTE_PATHS = {
   // 참석 확인은 모달이지만 주소를 갖는다 — 단톡방에 링크로 돌리고,
   // 뒤로가기로 닫을 수 있어야 한다.
   ATTENDANCE: '/attendance',
+  // 관리자 전용 접속 기록. 화면을 감추는 것은 편의일 뿐이고, 실제 차단은
+  // auth_events RPC 안의 app.is_admin() 이 한다.
+  ADMIN_LOGS: '/admin/logs',
 } as const;
 
 // 예전 경로(끝 슬래시 포함). 북마크·공유 링크가 살아 있도록 리다이렉트만 남긴다.
