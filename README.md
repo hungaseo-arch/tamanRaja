@@ -69,7 +69,7 @@ tamanRaja/
     ├── lib/
     │   ├── index.ts          # 도메인 타입 · ROUTE_PATHS · LEGACY_ROUTE_PATHS
     │   ├── supabase.ts       # x-taman-session 헤더를 붙이는 클라이언트
-    │   ├── session.ts        # 세션 토큰 보관 (taman: 접두사)
+    │   ├── session.ts        # 세션 토큰 보관 (taman: 접두사) · 마지막 활동 시각
     │   ├── csv.ts            # CSV 생성·다운로드
     │   ├── rank.ts           # 순위 표기 규칙
     │   ├── errors.ts         # 사용자에게 보일 오류 문구
@@ -83,6 +83,7 @@ tamanRaja/
     │   ├── useAuth.ts        # verify_pin / logout / change_pin / session_member
     │   ├── useAttendance.ts  # 익월 참석 확인
     │   ├── useRecordExport.ts# 월간·랭킹·개인 기록 CSV 내보내기
+    │   ├── useIdleLogout.ts   # 30분 무활동 자동 로그아웃 · 활동 보고
     │   ├── useCompactTable.ts# 화면 폭에 따른 표 축약
     │   └── useToast.ts       # 토스트 상태
     ├── components/
@@ -96,6 +97,7 @@ tamanRaja/
         ├── Monthly.vue       # 월간 기록
         ├── YearlyRanking.vue # 연간 랭킹
         ├── MyProfile.vue     # 나의 기록
+        ├── AdminLogs.vue     # 접속 기록 (관리자 전용)
         └── NotFound.vue      # 404
 ```
 
@@ -114,6 +116,7 @@ HashHistory(`#/path`) 기반이다. GitHub Pages 는 임의 경로를 index.html
 | `/ranking` | `YearlyRanking.vue` | 필요 |
 | `/profile` | `MyProfile.vue` | 필요 |
 | `/attendance` | `Monthly.vue` + 참석 확인 창 | 필요 |
+| `/admin/logs` | `AdminLogs.vue` — 접속 기록 | 필요 (관리자) |
 | 그 외 | `NotFound.vue` | 불필요 |
 
 - `/monthlyRecord/` 는 예전 경로다. 북마크·공유 링크가 살아 있도록 쿼리를
@@ -135,6 +138,10 @@ HashHistory(`#/path`) 기반이다. GitHub Pages 는 임의 경로를 index.html
   순위는 그 해 이미 치른 경기의 50% 이상 참석한 회원에게만 부여한다.
 - **나의 기록 (`/profile`)** — 본인의 1월~12월 기록과 통산 집계, PIN 변경.
 - **참석 확인** — 계정 창의 탭. 익월 참석/불참/미정을 고른다.
+- **접속 기록 (`/admin/logs`)** — 관리자에게만 보인다. 회원·기간·구분으로 걸러
+  로그인 · PIN 실패 · 잠금 · 로그아웃 · 자동 로그아웃 · 세션 만료를 시간순으로
+  본다. 로그인과 그 세션의 종료를 짝지어 체류 시간도 함께 낸다. 메뉴를 감추는
+  것은 편의일 뿐이고, 실제 차단은 조회 RPC 안의 `app.is_admin()` 이 한다.
 - **엑셀(CSV) 내려받기** — 월간 기록·연간 랭킹·나의 기록 각 화면에서 지원한다.
 - **PWA** — 홈 화면에 설치할 수 있고, 새 버전이 올라오면 토스트로 물어본다.
   점수를 입력하는 중에 말없이 새로고침되지 않도록 `prompt` 방식을 쓴다.
@@ -155,8 +162,10 @@ HashHistory(`#/path`) 기반이다. GitHub Pages 는 임의 경로를 index.html
 | `attendance_confirmations` | 익월 참석 확인 |
 | `app_settings` | 코드 배포 없이 바꾸는 화면 문구 (key/value) |
 
-`app` 스키마에는 `member_credentials`(PIN 해시)와 `member_sessions`(세션 해시)가
-있다. PostgREST 는 `public` 만 노출하므로 이 두 테이블은 REST 로 접근할 수 없다.
+`app` 스키마에는 `member_credentials`(PIN 해시), `member_sessions`(세션 해시),
+`member_auth_events`(인증 이력)가 있다. PostgREST 는 `public` 만 노출하므로 이
+세 테이블은 REST 로 접근할 수 없고, RLS 도 정책을 하나도 두지 않은 채 켜 두어
+SECURITY DEFINER 함수를 거치지 않으면 아무도 읽지 못한다.
 
 ### 뷰·함수
 
@@ -246,7 +255,9 @@ Supabase Auth 를 쓰지 않는다. 회원 선택 + 4자리 PIN 방식이며, �
 | `verify_pin(member_id, pin, ...)` | PIN 대조 후 세션 토큰 발급. 실패가 쌓이면 잠근다 |
 | `session_member()` | 지금 토큰의 회원과 권한을 돌려준다 |
 | `change_pin(old, new)` | PIN 변경 |
-| `logout()` | 세션 폐기 |
+| `logout(reason?)` | 세션 폐기. `reason='idle'` 이면 자동 로그아웃으로 기록 |
+| `touch_session()` | 활동 보고. 유휴 시계를 되돌리고, 끝난 세션이면 `{ok:false}` |
+| `auth_events(...)` | 접속 기록 조회. 관리자가 아니면 거절(42501) |
 
 - PIN 은 `app.member_credentials` 에 bcrypt 해시로만 있다. 평문 PIN 테이블
   (`member_pins`)은 제거했다.
@@ -256,6 +267,15 @@ Supabase Auth 를 쓰지 않는다. 회원 선택 + 4자리 PIN 방식이며, �
 - 브라우저 보관 위치는 기본이 `sessionStorage`(탭을 닫으면 사라짐), "이 기기에서
   로그인 유지"를 고르면 `localStorage`. 키는 전부 `taman:` 접두사를 쓰고
   로그아웃 때 한 번에 지운다. 서버 토큰 자체는 30일짜리다.
+- 그 30일과 별개로 **마지막 조작 이후 30분이 지나면 자동으로 로그아웃**한다.
+  "로그인 유지"를 켰든 껐든 똑같이 걸린다 — 켜 둔 기기가 그대로 열려 있지
+  않게 하려는 것이라 예외를 두면 의미가 없다. 30분을 재는 것은 프런트
+  (`useIdleLogout`)이고, 서버는 `app.idle_timeout()`(35분)으로 뒷단속만 한다.
+  프런트가 활동을 5분에 한 번씩 묶어 보고하므로 서버가 정확히 30분에 자르면
+  실제로 쓰고 있는 사람이 끊긴다.
+- 로그인 · PIN 실패 · 잠금 · 로그아웃 · 자동 로그아웃 · 세션 만료는
+  `app.member_auth_events` 에 남는다. PIN 값과 IP 는 남기지 않고 기기 문자열만
+  적으며, 180일이 지난 기록은 다음 로그인 때 함께 지워진다.
 - RLS 안에서는 `app.current_member_id()` 가 헤더의 토큰으로 호출자를 식별한다.
   로그인하지 않으면 기록 테이블은 0행이 나온다. `members` 만 로그인 화면의
   회원 목록용으로 열려 있고, 노출 컬럼은 `id`·`name`·`dormant_from` 뿐이다.
