@@ -46,6 +46,11 @@ const routes: RouteRecordRaw[] = [
     name: 'admin-logs',
     component: () => import('@/pages/AdminLogs.vue'),
   },
+  {
+    path: ROUTE_PATHS.ADMIN_MEMBERS,
+    name: 'admin-members',
+    component: () => import('@/pages/AdminMembers.vue'),
+  },
   // 예전 경로 → 새 경로. 쿼리(?month=...)는 그대로 넘긴다.
   ...LEGACY_ROUTE_PATHS.MONTHLY.map((path, i) => ({
     path,
@@ -70,6 +75,7 @@ const AUTH_REQUIRED = new Set<string>([
   ROUTE_PATHS.PROFILE,
   ROUTE_PATHS.ATTENDANCE,
   ROUTE_PATHS.ADMIN_LOGS,
+  ROUTE_PATHS.ADMIN_MEMBERS,
 ]);
 
 router.beforeEach((to) => {

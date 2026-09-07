@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
-import { User, CalendarDays, Trophy, UserRound, History } from 'lucide-vue-next';
+import { User, CalendarDays, Trophy, UserRound, History, Users } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
 import { useAuth } from '@/composables/useAuth';
 import { ROUTE_PATHS } from '@/lib';
@@ -34,6 +34,7 @@ const navItems = computed<NavItem[]>(() => {
   // 경계가 아니다 — 주소를 직접 쳐도 서버 RPC 가 거절한다.
   if (isAdmin.value) {
     items.push({ path: ROUTE_PATHS.ADMIN_LOGS, label: '접속 기록', line1: '접속', line2: '기록', icon: History });
+    items.push({ path: ROUTE_PATHS.ADMIN_MEMBERS, label: '회원 관리', line1: '회원', line2: '관리', icon: Users });
   }
   return items;
 });
