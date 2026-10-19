@@ -250,7 +250,7 @@ async function _fetchAll(): Promise<void> {
       (attendances ?? []).map((a) => ({
         year_month: a.year_month as string,
         member_id: (a as { member_id: number }).member_id,
-        attending: a.attending as boolean,
+        attending: (a.attending as boolean | null) ?? null,
       }))
     );
 }

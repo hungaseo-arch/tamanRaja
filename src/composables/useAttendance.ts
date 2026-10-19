@@ -72,16 +72,11 @@ export function useAttendance() {
     state[yearMonth][memberId] = attending;
     persist();
 
-    const mid = parseInt(memberId, 10);
-    const { error } = attending === null
-      ? await supabase
-          .from('attendance_confirmations')
-          .delete()
-          .eq('year_month', yearMonth)
-          .eq('member_id', mid)
-      : await supabase
-          .from('attendance_confirmations')
-          .upsert({ year_month: yearMonth, member_id: mid, attending });
+    // '미정'(null) 도 행으로 남긴다. 예전처럼 행을 지우면 로그아웃 뒤
+    // (localStorage 가 비워진 뒤) '미응답' 으로 되돌아간다.
+    const { error } = await supabase
+      .from('attendance_confirmations')
+      .upsert({ year_month: yearMonth, member_id: parseInt(memberId, 10), attending });
 
     if (error) {
       if (hadValue) state[yearMonth][memberId] = previous;
