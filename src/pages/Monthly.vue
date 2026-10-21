@@ -143,80 +143,38 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
   saveError.value = null;
   saveState.value = 'saving';
   try {
-    // 1. 골프장 조회 or 생성 (RLS로 생성 불가 시 null 처리)
-    let courseId: number | null = null;
-    const existing = GOLF_COURSES.find((c) => c.name === manualCourse.value);
-    if (existing) {
-      courseId = parseInt(existing.id);
-    } else if (manualCourse.value) {
-      const { data: nc } = await supabase
-        .from('golf_courses').insert({ name: manualCourse.value }).select('id').single();
-      if (nc) courseId = (nc as { id: number }).id;
-    }
-
-    // 2. 호스트 회원 id
+    // 골프장·모임·결과를 한 트랜잭션으로 저장한다(save_meeting_results). 도중에
+    // 실패하면 서버가 전부 되돌리므로, 그 달 결과가 비는 일이 없다.
+    // 스코어가 있으면 참석으로 보는 규칙·입력 검증은 서버가 다시 한다.
+    const courseName = manualCourse.value.trim();
+    const existingCourse = GOLF_COURSES.find((c) => c.name.trim() === courseName);
     const hostMemberId = Object.entries(payload.ranks).find(([, v]) => v === 'Host')?.[0] ?? null;
 
-    // 3. meeting 생성 또는 업데이트 (미래월에서 날짜/골프장 먼저 저장 후 재저장 가능)
-    const existingMeeting = MEETINGS.find((m) => m.year_month === selectedMonth.value);
-    let meetingId: number;
-    if (existingMeeting) {
-      const { error: eUpd } = await supabase
-        .from('meetings')
-        .update({
-          meeting_date: manualDate.value || null,
-          course_id: courseId,
-          host_member_id: hostMemberId ? parseInt(hostMemberId) : null,
-        })
-        .eq('id', existingMeeting.id);
-      if (eUpd) throw new Error(eUpd.message);
-      meetingId = parseInt(existingMeeting.id);
+    const rows = monthlyData.value.map((row) => ({
+      member_id: parseInt(row.member_id),
+      attended: payload.attendance[row.member_id] ?? false,
+      score: payload.scores[row.member_id] ?? '',
+      result_group: payload.groups[row.member_id] || null,
+      result_rank: payload.ranks[row.member_id] || null,
+    }));
 
-      // 기존 결과 삭제 후 재생성 (재저장 시 중복 방지)
-      const { error: eDel } = await supabase
-        .from('meeting_results')
-        .delete()
-        .eq('meeting_id', meetingId);
-      if (eDel) throw new Error(eDel.message);
-    } else {
-      const { data: meeting, error: e2 } = await supabase
-        .from('meetings')
-        .insert({
-          year_month: selectedMonth.value,
-          meeting_date: manualDate.value || null,
-          course_id: courseId,
-          host_member_id: hostMemberId ? parseInt(hostMemberId) : null,
-        })
-        .select('id').single();
-      if (e2) throw new Error(e2.message);
-      meetingId = (meeting as { id: number }).id;
-    }
-
-    // 4. meeting_results 생성 (전체 회원)
-    const results = monthlyData.value.map((row) => {
-      const scoreStr = payload.scores[row.member_id];
-      const parsedScore = scoreStr != null && scoreStr !== '' ? parseInt(scoreStr, 10) : NaN;
-      const hasScore = !isNaN(parsedScore);
-      // 점수가 입력됐으면 참석으로 간주 (참석 컬럼이 없는 당월 수정 케이스 대응)
-      const attended = (payload.attendance[row.member_id] ?? false) || hasScore;
-      const score = attended && hasScore ? parsedScore : null;
-      return {
-        meeting_id: meetingId,
-        member_id: parseInt(row.member_id),
-        attended,
-        score,
-        result_group: attended ? (payload.groups[row.member_id] || null) : null,
-        result_rank: attended ? (payload.ranks[row.member_id] || null) : null,
-      };
+    const { data, error } = await supabase.rpc('save_meeting_results', {
+      p_year_month: selectedMonth.value,
+      p_meeting_date: manualDate.value || null,
+      p_course_id: existingCourse ? parseInt(existingCourse.id) : null,
+      p_new_course_name: existingCourse ? null : courseName || null,
+      p_host_member_id: hostMemberId ? parseInt(hostMemberId) : null,
+      p_rows: rows,
     });
-    const { error: e3 } = await supabase.from('meeting_results').insert(results);
-    if (e3) throw new Error(e3.message);
+    if (error) throw error;
+    const res = data as { ok: boolean; message?: string; saved?: number };
+    if (!res.ok) throw new Error(res.message ?? '저장하지 못했습니다.');
 
     await loadData();
     saveState.value = 'idle';
     toast({
       title: '저장 완료',
-      description: `${selectedMonth.value} 기록 ${results.length}건을 저장했습니다.`,
+      description: `${selectedMonth.value} 기록 ${res.saved ?? rows.length}건을 저장했습니다.`,
     });
   } catch (err) {
     // 인라인 문구는 남겨 둔다 — 토스트는 몇 초 뒤 사라지는데, 저장에 실패했다는

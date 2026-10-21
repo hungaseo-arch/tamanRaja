@@ -181,7 +181,8 @@ SECURITY DEFINER 함수를 거치지 않으면 아무도 읽지 못한다.
 | `v_member_stats` | 뷰 | 연도별 + 통산 집계 (`year IS NULL` 행이 통산) |
 | `v_yearly_summary` | 뷰 | 연간 요약 |
 | `yearly_ranking(year)` | 함수 | 연간 랭킹 집계 |
-| `recompute_next_hc()` | 트리거 | `meeting_results` 저장 시 차월핸디 산출·이월 |
+| `save_meeting_results(...)` | RPC | 월 기록(골프장·모임·결과) 저장을 한 트랜잭션으로. `security invoker` 라 권한은 기존 RLS. 입력 검증(스코어 -20~60, 시상, Host 1명, 당월 핸디 유무) |
+| `recompute_next_hc_stmt()` | 트리거 | `meeting_results` 저장 시 차월핸디 산출·이월. 문장 단위 — 본문은 `app.recompute_next_hc_for_meeting()` |
 
 뷰는 모두 `security_invoker = on` 이다. 끄면 뷰가 읽기 RLS 를 통째로 우회해
 익명 키만으로 전 회원 기록이 새어 나간다.
@@ -214,7 +215,7 @@ Net = 스코어(score) − 당월 핸디(app_hc)      낮을수록 우수
 
 ### 자동 보정
 
-스코어를 저장하면 DB 트리거 `recompute_next_hc` 가 차월핸디를 계산해 저장하고,
+스코어를 저장하면 DB 트리거(`recompute_next_hc_stmt` → `app.recompute_next_hc_for_meeting`)가 차월핸디를 계산해 저장하고,
 그 값을 다음 달 `app_hc` 로 이월한다 (다음 달에 아직 결과가 없을 때만).
 `MonthlyTable.vue` 의 `computeAutoFields()` 는 같은 규칙의 실시간 미리보기다.
 두 곳은 반드시 같은 규칙이어야 한다.
@@ -338,8 +339,6 @@ npm run deploy            # = npm run build && gh-pages -d dist
 
 ## 알려진 제한
 
-- 월 기록 저장은 기존 `meeting_results` 를 지우고 다시 넣는다. 이 두 단계가
-  한 트랜잭션이 아니라, 중간에 네트워크가 끊기면 그 달 결과가 빌 수 있다.
 - 골프장 이름은 자유 입력이라 표기가 갈릴 수 있다.
 - 자동화된 테스트가 없다. 검증은 타입 검사(`npm run type-check`)와 수동 확인에 의존한다.
 
