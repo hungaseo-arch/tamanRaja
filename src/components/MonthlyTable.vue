@@ -34,6 +34,8 @@ export interface SavePayload {
   groups: Record<string, string>;
   ranks: Record<string, string>;
   attendance: Record<string, boolean | null>;
+  /** 잠금 해제 후 수정일 때 그 사유 (4-2). 저장이 끝나면 meetings.notes 에 덧붙인다. */
+  unlockReason?: string;
 }
 
 interface Props {
@@ -44,6 +46,8 @@ interface Props {
   isFutureMonth?: boolean;
   isEditable?: boolean;
   isManager?: boolean;
+  /** 기한(경기일+3일)이 지난 달을 잠금 해제해 고칠 수 있는지 — 관리자 한정 (4-2). */
+  canUnlock?: boolean;
   selectedMonth: string;
   monthOptions: SelectOption[];
   selectedYear: string;
@@ -89,7 +93,11 @@ const localAttendance = reactive<Record<string, boolean | null>>({});
 const { getAttendance } = useAttendance();
 
 // 편집 가능 여부: 미래월(기획) 또는 경기일 +3일 이내(당월 수정) — 관리자 한정
-const canManage = computed(() => (props.isEditable ?? props.isFutureMonth ?? false) && (props.isManager ?? false));
+// 잠금 해제(4-2): 기한이 지난 달을 관리자가 사유를 남기고 다시 연다. 달을 바꾸면 다시 잠긴다.
+const unlockReason = ref<string | null>(null);
+const canManage = computed(() =>
+  ((props.isEditable ?? props.isFutureMonth ?? false) || unlockReason.value !== null) && (props.isManager ?? false)
+);
 
 function clearLocal(): void {
   [localScores, localGroups, localRanks, localNextHc].forEach((map) =>
@@ -97,6 +105,9 @@ function clearLocal(): void {
   );
   Object.keys(localAttendance).forEach((k) => delete localAttendance[k]);
 }
+
+// 다른 달로 옮기면 잠금 해제도 풀린다 — 사유는 그 달 하나에 대한 것이다.
+watch(() => props.yearMonth, () => { unlockReason.value = null; });
 
 watch(
   () => [props.yearMonth, props.isFutureMonth, canManage.value] as const,
@@ -269,6 +280,7 @@ function handleSave(): void {
     groups: { ...localGroups },
     ranks: { ...localRanks },
     attendance: { ...localAttendance },
+    unlockReason: unlockReason.value ?? undefined,
   });
 }
 
@@ -276,9 +288,42 @@ function handleSave(): void {
 watch(
   () => props.saveState,
   (now, before) => {
-    if (before === 'saving' && now === 'idle') isEditing.value = false;
+    if (before === 'saving' && now === 'idle') {
+      isEditing.value = false;
+      unlockReason.value = null; // 한 번 저장하면 다시 잠근다. 또 고치려면 사유를 새로 적는다.
+    }
   },
 );
+
+// ── 잠금 해제 (4-2) ──────────────────────────────────────────────────────────
+const unlockOpen = ref(false);
+const unlockInput = ref('');
+const unlockError = ref<string | null>(null);
+const showUnlock = computed(() => !!props.canUnlock && (props.isManager ?? false) && unlockReason.value === null);
+
+function openUnlock(): void {
+  unlockInput.value = '';
+  unlockError.value = null;
+  unlockOpen.value = true;
+}
+
+function confirmUnlock(): void {
+  const reason = unlockInput.value.trim();
+  if (!reason) {
+    unlockError.value = '수정 사유 필요';
+    return;
+  }
+  unlockReason.value = reason;
+  unlockOpen.value = false;
+  // canManage 가 참이 된 뒤 watch 가 입력값을 비우므로, 그다음에 시드한다.
+  void nextTick(enterEdit);
+}
+
+function cancelEdit(): void {
+  clearLocal();
+  isEditing.value = false;
+  unlockReason.value = null;
+}
 
 // ── 줄 상세 (디스클로저) ─────────────────────────────────────────────────────
 // 좁은 화면에서는 기준 핸디·차월 핸디·결과 그룹 열이 숨는다. 회원 이름을
@@ -509,8 +554,19 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             :aria-describedby="isEditing && missingHcNames.length > 0 ? 'monthly-missing-hc' : undefined"
             @click="handleSave"
           >{{ props.saveState === 'saving' ? '저장 중...' : '저장' }}</Button>
-          <Button v-else size="xs" variant="outline" class="shrink-0" @click="enterEdit">수정</Button>
+          <Button
+            v-if="isEditing && unlockReason !== null"
+            size="xs"
+            variant="outline"
+            class="shrink-0"
+            :disabled="props.saveState === 'saving'"
+            @click="cancelEdit"
+          >취소</Button>
+          <Button v-else-if="!isEditing" size="xs" variant="outline" class="shrink-0" @click="enterEdit">수정</Button>
         </template>
+        <Button v-else-if="showUnlock" size="xs" variant="outline" class="shrink-0" @click="openUnlock">
+          잠금 해제 후 수정
+        </Button>
 
         <!-- 연도·월 선택. 연간 랭킹의 연도 선택과 같은 자리·같은 배색이다.
              고를 연도가 하나뿐이면 연도 상자는 띄우지 않는다 (연간 랭킹과 같다). -->
@@ -888,6 +944,35 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           </ul>
         </section>
       </div>
+    </Dialog>
+
+    <!-- 잠금 해제 사유 (4-2) -->
+    <Dialog v-model:open="unlockOpen" label="잠금 해제 후 수정" content-class="sm:max-w-sm">
+      <form class="px-1 pt-1 space-y-3" @submit.prevent="confirmUnlock">
+        <h2 class="text-base font-bold">잠금 해제 후 수정</h2>
+        <p class="text-sm">확정된 기록 · 수정 사유 입력 필요</p>
+        <p class="text-xs text-muted-foreground">
+          사유는 저장 시 모임 메모에 <span class="whitespace-nowrap">[날짜 수정: 사유]</span> 로 누적
+        </p>
+        <div class="space-y-1">
+          <label for="unlock-reason" class="text-sm font-medium">수정 사유</label>
+          <textarea
+            id="unlock-reason"
+            v-model="unlockInput"
+            rows="3"
+            maxlength="200"
+            class="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            placeholder="예: 홍길동 스코어 오기 정정"
+            :aria-invalid="!!unlockError"
+            :aria-describedby="unlockError ? 'unlock-error' : undefined"
+          />
+          <p v-if="unlockError" id="unlock-error" class="text-xs text-destructive" role="alert">{{ unlockError }}</p>
+        </div>
+        <div class="flex justify-end gap-2 pt-1">
+          <Button type="button" variant="outline" size="sm" @click="unlockOpen = false">취소</Button>
+          <Button type="submit" size="sm">잠금 해제</Button>
+        </div>
+      </form>
     </Dialog>
   </div>
 </template>

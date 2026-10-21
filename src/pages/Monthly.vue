@@ -167,6 +167,27 @@ const isEditableMonth = computed(() => {
   return new Date() <= deadline;
 });
 
+// 기한이 지난(확정된) 달도 관리자는 사유를 남기고 고칠 수 있다 (4-2). 서버
+// can_manage_month 는 원래 관리자에게 기한을 두지 않으므로 화면 가드만 푼다.
+// 전월 Host 는 기존 3일 규칙 그대로다.
+const canUnlock = computed(() => isAdmin.value && !!selectedMeeting.value && !isEditableMonth.value);
+
+// 사유를 meetings.notes 끝에 [YYYY-MM-DD 수정: 사유] 로 덧붙인다. 결과 저장이
+// 끝난 뒤에 붙인다 — 먼저 붙이면 저장이 실패해도 수정했다는 기록이 남는다.
+async function appendEditNote(yearMonth: string, reason: string): Promise<void> {
+  const { data, error } = await supabase.from('meetings').select('notes').eq('year_month', yearMonth).single();
+  if (error) throw error;
+  const d = new Date();
+  const stamp = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const line = `[${stamp} 수정: ${reason}]`;
+  const prev = (data?.notes as string | null)?.trim();
+  const { error: upErr } = await supabase
+    .from('meetings')
+    .update({ notes: prev ? `${prev}\n${line}` : line })
+    .eq('year_month', yearMonth);
+  if (upErr) throw upErr;
+}
+
 const saveError = ref<string | null>(null);
 const saveState = ref<'idle' | 'saving' | 'error'>('idle');
 
@@ -202,8 +223,21 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
     const res = data as { ok: boolean; message?: string; saved?: number };
     if (!res.ok) throw new Error(res.message ?? '저장 실패');
 
+    // 결과는 이미 저장됐으니 사유를 못 붙여도 저장 실패로 돌리지 않는다. 대신 알린다.
+    let noteFailed = false;
+    if (payload.unlockReason) {
+      try {
+        await appendEditNote(selectedMonth.value, payload.unlockReason);
+      } catch {
+        noteFailed = true;
+      }
+    }
+
     await loadData();
     saveState.value = 'idle';
+    if (noteFailed) {
+      toast({ title: '수정 사유 기록 실패', description: '결과는 저장 완료 · 사유는 관리자가 따로 기록 필요', variant: 'destructive' });
+    }
     toast({
       title: '저장 완료',
       description: `${selectedMonth.value} 기록 ${res.saved ?? rows.length}건 저장 완료`,
@@ -231,6 +265,7 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
           :meeting-date="effectiveMeetingDate"
           :course-name="effectiveCourseName"
           :is-manager="isManager"
+          :can-unlock="canUnlock"
           :is-future-month="isFutureMonth"
           :is-editable="isEditableMonth"
           v-model:selected-month="selectedMonth"
