@@ -340,7 +340,7 @@ npm run deploy            # = npm run build && gh-pages -d dist
 ## 알려진 제한
 
 - 골프장 이름은 자유 입력이라 표기가 갈릴 수 있다.
-- 자동화된 테스트가 없다. 검증은 타입 검사(`npm run type-check`)와 수동 확인에 의존한다.
+- 자동화된 테스트는 최소 세트뿐이다 (`npm test` — 조 편성·시상·차월 핸디 계산, 표기 함수, `resolveHandicap()`). 화면·DB 함수·RLS 는 타입 검사(`npm run type-check`)와 수동 확인에 의존한다.
 
 ---
 

@@ -4,7 +4,7 @@ import { CircleHelp, Download } from 'lucide-vue-next';
 import type { MonthlyRow, ResultRank, ResultGroup } from '@/lib';
 import { formatDate, formatMeetingHeading, formatYearMonth } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { isRankName } from '@/lib/rank';
+import { computeResults, isRankName, type ScoredRow } from '@/lib/rank';
 import { GOLF_COURSES, setting } from '@/data';
 import { useAttendance } from '@/composables/useAttendance';
 import { useRecordExport } from '@/composables/useRecordExport';
@@ -147,7 +147,7 @@ function getLocalNet(row: MonthlyRow): string {
 }
 
 function computeAutoFields(): void {
-  const scored = props.monthlyData
+  const scored: ScoredRow[] = props.monthlyData
     .filter((row) => {
       // 적용 핸디가 없으면 Net 을 낼 수 없다. 0 으로 두고 계산하면 Net 이
       // 스코어와 같아져 조 편성·Winner 판정까지 어긋나므로 아예 뺀다.
@@ -155,19 +155,13 @@ function computeAutoFields(): void {
       const val = localScores[row.member_id];
       return val !== undefined && val !== '' && !isNaN(parseInt(val, 10));
     })
-    .map((row) => {
-      const appHc = row.app_hc as number;
-      const score = parseInt(localScores[row.member_id], 10);
-      return {
-        member_id: row.member_id,
-        std_hc: row.std_hc,
-        app_hc: appHc,
-        prev_result_group: row.prev_result_group,
-        score,
-        netScore: score - appHc,
-      };
-    })
-    .sort((a, b) => a.netScore - b.netScore);
+    .map((row) => ({
+      member_id: row.member_id,
+      std_hc: row.std_hc,
+      app_hc: row.app_hc as number,
+      prev_result_group: row.prev_result_group,
+      score: parseInt(localScores[row.member_id], 10),
+    }));
 
   // 점수 없는 회원의 자동 계산값 초기화
   for (const row of props.monthlyData) {
@@ -178,47 +172,10 @@ function computeAutoFields(): void {
     }
   }
 
-  if (scored.length === 0) return;
-
-  const topCount = Math.floor(scored.length / 2);
-
-  scored.forEach((row, idx) => {
-    const group: ResultGroup = idx < topCount ? '1등조' : '2등조';
-    localGroups[row.member_id] = group;
-
-    // 차월핸디:
-    //  - 당월핸디가 기준핸디와 같은 달(1월·기준핸디 재설정·조 변경 복귀 직후)은
-    //    초기화 상태라 직전 조와 견주지 않고 당월 결과만으로 ±1
-    //  - 그 외 직전 라운드와 같은 조 → 1등조 app-1 / 2등조 app+1
-    //  - 조가 바뀐 경우 → 기준핸디(std_hc)로 복귀
-    const fresh = row.app_hc === row.std_hc;
-    const adjust = group === '1등조' ? row.app_hc - 1 : row.app_hc + 1;
-    localNextHc[row.member_id] =
-      fresh || (row.prev_result_group !== null && row.prev_result_group === group)
-        ? adjust
-        : row.std_hc;
-  });
-
-  // Winner: 최저 Net Score
-  const winnerRow = scored[0];
-  // Host: 최고 Net Score (Winner와 다른 경우)
-  const hostRow = scored[scored.length - 1].member_id !== winnerRow.member_id
-    ? scored[scored.length - 1]
-    : undefined;
-  // Medalist: 최저 Raw Score (Winner 제외)
-  const byRaw = [...scored].sort((a, b) => a.score - b.score);
-  const medalistRow = byRaw.find((r) => r.member_id !== winnerRow.member_id);
-
-  for (const row of scored) {
-    if (row.member_id === winnerRow.member_id) {
-      localRanks[row.member_id] = 'Winner';
-    } else if (row.member_id === medalistRow?.member_id) {
-      localRanks[row.member_id] = 'Medalist';
-    } else if (row.member_id === hostRow?.member_id) {
-      localRanks[row.member_id] = 'Host';
-    } else {
-      localRanks[row.member_id] = '';
-    }
+  for (const [memberId, r] of Object.entries(computeResults(scored))) {
+    localGroups[memberId] = r.result_group;
+    localNextHc[memberId] = r.next_hc;
+    localRanks[memberId] = r.result_rank;
   }
 }
 
