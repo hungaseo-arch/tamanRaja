@@ -48,6 +48,8 @@ interface AuthEventRow {
   user_agent: string | null;
   /** 세션이 끝난 기록에만 있다. 그 세션이 열려 있던 시간(초). */
   duration_seconds: number | null;
+  /** 본인이 아닌 사람이 일으킨 기록(pin_reset)의 행위자. 그때 기기는 행위자의 것이다. */
+  actor_name?: string | null;
 }
 
 // 화면 문구와 색을 한 곳에 모은다. 서버가 새 값을 보내와도 뱃지가 비어
@@ -59,6 +61,7 @@ const EVENT_META = {
   expired:      { label: '세션 만료',    variant: 'outline'     },
   login_failed: { label: 'PIN 실패',     variant: 'destructive' },
   locked:       { label: '잠금',         variant: 'destructive' },
+  pin_reset:    { label: 'PIN 초기화',   variant: 'secondary'   },
 } as const;
 
 type EventKey = keyof typeof EVENT_META;
@@ -288,7 +291,7 @@ watch(compact, (isCompact) => {
                       {{ formatDuration(row.duration_seconds) }}
                     </TableCell>
                     <TableCell class="text-center whitespace-nowrap hidden sm:table-cell text-muted-foreground">
-                      {{ formatDevice(row.user_agent) }}
+                      <template v-if="row.actor_name">{{ row.actor_name }} 처리 · </template>{{ formatDevice(row.user_agent) }}
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -321,7 +324,8 @@ watch(compact, (isCompact) => {
           <DetailItem label="접속 시간">
             <span class="font-mono">{{ formatDuration(detailRow.duration_seconds) }}</span>
           </DetailItem>
-          <DetailItem label="기기">{{ formatDevice(detailRow.user_agent) }}</DetailItem>
+          <DetailItem v-if="detailRow.actor_name" label="처리한 관리자">{{ detailRow.actor_name }}</DetailItem>
+          <DetailItem :label="detailRow.actor_name ? '처리 기기' : '기기'">{{ formatDevice(detailRow.user_agent) }}</DetailItem>
           <DetailItem label="기기 원문">
             <span class="text-xs text-muted-foreground wrap-break-word">{{ detailRow.user_agent ?? DASH }}</span>
           </DetailItem>

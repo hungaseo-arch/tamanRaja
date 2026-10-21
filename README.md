@@ -269,6 +269,7 @@ Supabase Auth 를 쓰지 않는다. 회원 선택 + 4자리 PIN 방식이며, �
 | `set_member_role(id, role)` | 등급 변경. 본인·마지막 관리자 강등은 막는다 |
 | `set_member_dormant(id, from?)` | 휴면 시작월 지정, `null` 이면 복귀 |
 | `delete_member(id)` | 기록 없는 회원만 삭제 |
+| `reset_member_pin(id)` | 임시 PIN 재발급 + 변경 강제 + 그 회원 세션 전부 폐기. 본인은 거절 |
 
 - PIN 은 `app.member_credentials` 에 bcrypt 해시로만 있다. 평문 PIN 테이블
   (`member_pins`)은 제거했다.
@@ -288,8 +289,8 @@ Supabase Auth 를 쓰지 않는다. 회원 선택 + 4자리 PIN 방식이며, �
   (`useIdleLogout`)이고, 서버는 `app.idle_timeout()`(35분)으로 뒷단속만 한다.
   프런트가 활동을 5분에 한 번씩 묶어 보고하므로 서버가 정확히 30분에 자르면
   실제로 쓰고 있는 사람이 끊긴다.
-- 로그인 · PIN 실패 · 잠금 · 로그아웃 · 자동 로그아웃 · 세션 만료는
-  `app.member_auth_events` 에 남는다. PIN 값과 IP 는 남기지 않고 기기 문자열만
+- 로그인 · PIN 실패 · 잠금 · 로그아웃 · 자동 로그아웃 · 세션 만료 · PIN 초기화는
+  `app.member_auth_events` 에 남는다. PIN 초기화는 처리한 관리자(`actor_member_id`)도 남는다. PIN 값과 IP 는 남기지 않고 기기 문자열만
   적으며, 180일이 지난 기록은 다음 로그인 때 함께 지워진다.
 - RLS 안에서는 `app.current_member_id()` 가 헤더의 토큰으로 호출자를 식별한다.
   로그인하지 않으면 기록 테이블은 0행이 나온다. `members` 만 로그인 화면의

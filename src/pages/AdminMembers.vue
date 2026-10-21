@@ -94,7 +94,7 @@ const REASONS: Record<string, string> = {
   invalid_month: '월은 YYYY-MM 형식이어야 합니다.',
   invalid_role: '등급 값이 올바르지 않습니다.',
   not_found: '이미 삭제된 회원입니다.',
-  self: '본인 계정은 삭제할 수 없습니다.',
+  self: '본인 계정에는 쓸 수 없습니다.',
   self_demote: '본인 등급은 스스로 내릴 수 없습니다.',
   last_admin: '마지막 관리자입니다. 다른 회원을 먼저 관리자로 올려주세요.',
 };
@@ -316,6 +316,43 @@ async function restore(row: AdminMemberRow): Promise<void> {
   await load();
 }
 
+// ── PIN 초기화 ───────────────────────────────────────────────────────────────
+// 새 임시 PIN 을 만들고 그 회원의 로그인을 전부 끊는다. 되돌릴 수 없으므로
+// 확인을 한 번 받는다. 본인은 계정 창에서 바꾸므로 버튼을 잠근다.
+const resetOpen = ref(false);
+const resetRow = ref<AdminMemberRow | null>(null);
+const resetSaving = ref(false);
+const resetError = ref<string | null>(null);
+
+function isSelf(row: AdminMemberRow): boolean {
+  return String(row.id) === currentMember.value?.id;
+}
+
+function openReset(row: AdminMemberRow): void {
+  resetRow.value = row;
+  resetError.value = null;
+  resetOpen.value = true;
+}
+
+async function submitReset(): Promise<void> {
+  const row = resetRow.value;
+  if (!row) return;
+
+  resetError.value = null;
+  resetSaving.value = true;
+  const res = await callRpc('reset_member_pin', { p_member_id: row.id }, 'PIN을 초기화하지 못했습니다.');
+  resetSaving.value = false;
+
+  if (!res) return;
+  if (!res.ok) {
+    resetError.value = describeReason(res.reason, 'PIN을 초기화하지 못했습니다.');
+    return;
+  }
+
+  resetOpen.value = false;
+  showTempPin(row.name, res.temp_pin);
+}
+
 // ── 삭제 ─────────────────────────────────────────────────────────────────────
 // 기록이 하나라도 있으면 서버가 거절한다. members 를 참조하는 FK 가 전부
 // cascade 라, 막지 않으면 삭제 한 번에 그 회원의 점수·핸디가 함께 사라진다.
@@ -511,6 +548,13 @@ watch(compact, (isCompact) => {
                           @click="openDormant(row)"
                         >휴면</Button>
                         <Button
+                          variant="outline"
+                          size="xs"
+                          :disabled="busyId === row.id || isSelf(row)"
+                          :title="isSelf(row) ? '본인 PIN 은 계정 창에서 바꿉니다' : '임시 PIN 을 새로 발급'"
+                          @click="openReset(row)"
+                        >PIN 초기화</Button>
+                        <Button
                           variant="destructive"
                           size="xs"
                           :disabled="busyId === row.id || !deletable(row)"
@@ -595,6 +639,28 @@ watch(compact, (isCompact) => {
             <Button variant="outline" :disabled="dormantSaving" @click="dormantOpen = false">취소</Button>
             <Button :disabled="dormantSaving" @click="submitDormant()">
               {{ dormantSaving ? '저장하는 중…' : '휴면 처리' }}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      <!-- PIN 초기화 -->
+      <Dialog v-model:open="resetOpen" label="PIN 초기화" content-class="sm:max-w-sm">
+        <div class="px-1 pt-1 space-y-3">
+          <h2 class="text-base font-bold">PIN 초기화</h2>
+          <p class="text-sm">
+            <span class="font-medium">{{ resetRow?.name }}</span> 회원의 PIN 을 초기화합니다.
+            기존 로그인은 모두 끊깁니다.
+          </p>
+          <p class="text-xs text-muted-foreground">
+            새 임시 PIN 이 한 번만 표시됩니다. 본인에게 전달하면 첫 로그인에서 새 PIN 을 정합니다.
+          </p>
+          <p v-if="resetError" class="text-xs text-destructive">{{ resetError }}</p>
+
+          <div class="flex justify-end gap-2 pt-1">
+            <Button variant="outline" :disabled="resetSaving" @click="resetOpen = false">취소</Button>
+            <Button :disabled="resetSaving" @click="submitReset()">
+              {{ resetSaving ? '초기화하는 중…' : '초기화' }}
             </Button>
           </div>
         </div>
