@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { AlertCircle, CheckCircle2, LogOut } from 'lucide-vue-next';
-import { describeChangePinError, describeLoginError, useAuth } from '@/composables/useAuth';
+import { AlertCircle, LogOut } from 'lucide-vue-next';
+import { describeLoginError, useAuth } from '@/composables/useAuth';
 import { MEMBERS, isDormantNow } from '@/data';
 import { ROUTE_PATHS } from '@/lib';
 import Dialog from '@/components/ui/Dialog.vue';
@@ -18,6 +18,7 @@ import TabsList from '@/components/ui/TabsList.vue';
 import TabsTrigger from '@/components/ui/TabsTrigger.vue';
 import TabsContent from '@/components/ui/TabsContent.vue';
 import AttendancePanel from '@/components/AttendancePanel.vue';
+import PinChangeForm from '@/components/PinChangeForm.vue';
 
 /**
  * 로그인 전에는 로그인 폼, 로그인 뒤에는 [참석 확인]·[계정] 두 탭을 가진 창.
@@ -39,7 +40,7 @@ const emit = defineEmits<{
   (e: 'save-attendance', attended: boolean | null): void;
 }>();
 
-const { login, changePin, logout, isLoggedIn, currentMember } = useAuth();
+const { login, logout, isLoggedIn, currentMember } = useAuth();
 const router = useRouter();
 
 // 로그인 폼 상태
@@ -51,13 +52,8 @@ const loginLoading = ref<boolean>(false);
 // 켜는 건 본인이 정하게 한다.
 const remember = ref<boolean>(false);
 
-// PIN 변경 폼 상태
-const oldPin = ref<string>('');
-const newPin = ref<string>('');
-const confirmPin = ref<string>('');
-const changePinError = ref<string>('');
-const changePinSuccess = ref<boolean>(false);
-const changePinLoading = ref<boolean>(false);
+// PIN 변경 폼은 PinChangeForm 이 들고 있다. 창을 닫을 때 key 를 바꿔 입력값을 비운다.
+const pinFormKey = ref(0);
 
 const isOpen = computed({
   get: () => props.open,
@@ -78,12 +74,7 @@ function resetState(): void {
   loginError.value = '';
   loginLoading.value = false;
   remember.value = false;
-  oldPin.value = '';
-  newPin.value = '';
-  confirmPin.value = '';
-  changePinError.value = '';
-  changePinSuccess.value = false;
-  changePinLoading.value = false;
+  pinFormKey.value++;
 }
 
 // 계정 창을 열 때 먼저 보이는 것은 참석 확인이다. PIN 변경·로그아웃보다
@@ -127,40 +118,6 @@ async function handleLogin(e: Event): Promise<void> {
   }
 }
 
-async function handleChangePin(e: Event): Promise<void> {
-  e.preventDefault();
-  changePinError.value = '';
-  changePinSuccess.value = false;
-
-  if (oldPin.value.length !== 4 || newPin.value.length !== 4 || confirmPin.value.length !== 4) {
-    changePinError.value = 'PIN은 4자리 숫자여야 합니다.';
-    return;
-  }
-  if (newPin.value !== confirmPin.value) {
-    changePinError.value = '새 PIN이 일치하지 않습니다.';
-    return;
-  }
-
-  changePinLoading.value = true;
-  try {
-    // 기존 PIN 대조와 동일성 검사 모두 서버(change_pin RPC)가 판정한다.
-    const result = await changePin(oldPin.value, newPin.value);
-    if (result.ok) {
-      changePinSuccess.value = true;
-      oldPin.value = '';
-      newPin.value = '';
-      confirmPin.value = '';
-      setTimeout(() => { changePinSuccess.value = false; }, 3000);
-    } else {
-      changePinError.value = describeChangePinError(result);
-    }
-  } catch {
-    changePinError.value = '저장 중 오류가 발생했습니다.';
-  } finally {
-    changePinLoading.value = false;
-  }
-}
-
 // 로그아웃은 헤더가 아니라 이 창에 있다. 헤더 아이콘을 하나로 줄이면서 옮겨
 // 온 것으로, 하는 일은 그대로다 — 세션을 지우고 로그인 화면으로 보낸다.
 async function handleLogout(): Promise<void> {
@@ -196,60 +153,7 @@ async function handleLogout(): Promise<void> {
         </TabsContent>
 
         <TabsContent value="account" class="pt-3 space-y-4">
-          <form class="space-y-6" @submit="handleChangePin">
-            <div class="flex items-center gap-3">
-              <Label for="old-pin" class="w-20 shrink-0 text-right">기존 PIN</Label>
-              <Input
-                id="old-pin"
-                type="password"
-                inputmode="numeric"
-                :maxlength="4"
-                :model-value="oldPin"
-                class="w-40" placeholder="4자리 숫자"
-                @update:model-value="(v: string) => (oldPin = onlyDigits(v))"
-              />
-            </div>
-
-            <div class="flex items-center gap-3">
-              <Label for="new-pin" class="w-20 shrink-0 text-right">새 PIN</Label>
-              <Input
-                id="new-pin"
-                type="password"
-                inputmode="numeric"
-                :maxlength="4"
-                :model-value="newPin"
-                class="w-40" placeholder="4자리 숫자"
-                @update:model-value="(v: string) => (newPin = onlyDigits(v))"
-              />
-            </div>
-
-            <div class="flex items-center gap-3">
-              <Label for="confirm-pin" class="w-20 shrink-0 text-right">새 PIN 확인</Label>
-              <Input
-                id="confirm-pin"
-                type="password"
-                inputmode="numeric"
-                :maxlength="4"
-                :model-value="confirmPin"
-                class="w-40" placeholder="4자리 숫자 확인"
-                @update:model-value="(v: string) => (confirmPin = onlyDigits(v))"
-              />
-            </div>
-
-            <Alert v-if="changePinError" variant="destructive">
-              <AlertCircle class="h-4 w-4" />
-              <AlertDescription>{{ changePinError }}</AlertDescription>
-            </Alert>
-
-            <Alert v-if="changePinSuccess" class="border-primary bg-primary/10">
-              <CheckCircle2 class="h-4 w-4 text-primary" />
-              <AlertDescription class="text-primary">PIN이 성공적으로 변경되었습니다.</AlertDescription>
-            </Alert>
-
-            <Button type="submit" class="w-full" :disabled="changePinLoading">
-              {{ changePinLoading ? '저장 중...' : 'PIN 변경' }}
-            </Button>
-          </form>
+          <PinChangeForm :key="pinFormKey" />
 
           <div class="border-t border-border pt-4">
             <Button variant="outline" class="w-full gap-2" @click="handleLogout">

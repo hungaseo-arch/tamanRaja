@@ -258,20 +258,24 @@ Supabase Auth 를 쓰지 않는다. 회원 선택 + 4자리 PIN 방식이며, �
 
 | RPC | 하는 일 |
 |-----|---------|
-| `verify_pin(member_id, pin, ...)` | PIN 대조 후 세션 토큰 발급. 실패가 쌓이면 잠근다 |
-| `session_member()` | 지금 토큰의 회원과 권한을 돌려준다 |
-| `change_pin(old, new)` | PIN 변경 |
+| `verify_pin(member_id, pin, ...)` | PIN 대조 후 세션 토큰 발급. 실패가 쌓이면 잠근다. 임시 PIN 이면 `must_change: true` |
+| `session_member()` | 지금 토큰의 회원과 권한, `must_change` 를 돌려준다 |
+| `change_pin(old, new)` | PIN 변경. 쉬운 PIN 은 `weak` 로 거절, 성공하면 `must_change` 해제 |
 | `logout(reason?)` | 세션 폐기. `reason='idle'` 이면 자동 로그아웃으로 기록 |
 | `touch_session()` | 활동 보고. 유휴 시계를 되돌리고, 끝난 세션이면 `{ok:false}` |
 | `auth_events(...)` | 접속 기록 조회. 관리자가 아니면 거절(42501) |
 | `admin_members()` | 관리자용 회원 목록(등급·기록 수·마지막 로그인) |
-| `add_member(...)` | 회원 추가 + 로그인 정보 + 시작월 기준핸디 |
+| `add_member(...)` | 회원 추가 + 로그인 정보 + 시작월 기준핸디. 무작위 임시 PIN 을 응답에 한 번만 싣는다 |
 | `set_member_role(id, role)` | 등급 변경. 본인·마지막 관리자 강등은 막는다 |
 | `set_member_dormant(id, from?)` | 휴면 시작월 지정, `null` 이면 복귀 |
 | `delete_member(id)` | 기록 없는 회원만 삭제 |
 
 - PIN 은 `app.member_credentials` 에 bcrypt 해시로만 있다. 평문 PIN 테이블
   (`member_pins`)은 제거했다.
+- **공통 초기 PIN 은 없다.** 회원 추가 때 서버가 무작위 4자리 임시 PIN 을 만들어
+  관리자 화면에 한 번만 보여주고, 해시만 남긴다. 임시 PIN 상태
+  (`member_credentials.must_change`)인 회원은 로그인하자마자 닫을 수 없는 PIN
+  변경 창을 만난다. 같은 숫자 반복·연속 숫자·옛 공통 기본값은 새 PIN 으로 쓸 수 없다.
 - 세션 토큰은 서버가 발급한 불투명 문자열이다. 저장은 sha256 해시로 하며,
   프런트는 요청 헤더 `x-taman-session` 에 실어 보내기만 한다.
   `src/lib/supabase.ts` 가 fetch 를 감싸 매 요청에 붙인다.

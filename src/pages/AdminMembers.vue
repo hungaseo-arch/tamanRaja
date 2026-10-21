@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { RefreshCw, UserPlus } from 'lucide-vue-next';
+import { Copy, RefreshCw, UserPlus } from 'lucide-vue-next';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/composables/useAuth';
 import { useCompactTable } from '@/composables/useCompactTable';
@@ -108,6 +108,41 @@ interface RpcResult {
   reason?: string;
   result_count?: number;
   hosted_count?: number;
+  /** add_member · reset_member_pin 성공 시에만. 화면에 한 번 보여주고 버린다. */
+  temp_pin?: string;
+}
+
+// ── 임시 PIN 1회 표시 ────────────────────────────────────────────────────────
+// 서버는 해시만 남기므로 이 창을 닫으면 누구도 다시 볼 수 없다. 값은 이 ref
+// 에만 있다가 창을 닫는 순간 지운다 — 콘솔·토스트·저장소 어디에도 싣지 않는다.
+const tempPin = ref<{ name: string; pin: string } | null>(null);
+const tempPinOpen = computed({
+  get: () => tempPin.value !== null,
+  set: (open: boolean) => { if (!open) tempPin.value = null; },
+});
+const tempPinCopied = ref(false);
+
+function showTempPin(name: string, pin: string | undefined): void {
+  if (!pin) {
+    toast({
+      title: '임시 PIN을 받지 못했습니다.',
+      description: '서버가 아직 이전 버전입니다. PIN 초기화로 다시 발급해 주세요.',
+      variant: 'destructive',
+    });
+    return;
+  }
+  tempPinCopied.value = false;
+  tempPin.value = { name, pin };
+}
+
+async function copyTempPin(): Promise<void> {
+  if (!tempPin.value) return;
+  try {
+    await navigator.clipboard.writeText(tempPin.value.pin);
+    tempPinCopied.value = true;
+  } catch {
+    toast({ title: '복사하지 못했습니다.', description: '숫자를 직접 옮겨 적어 주세요.', variant: 'destructive' });
+  }
 }
 
 /**
@@ -187,10 +222,7 @@ async function submitAdd(): Promise<void> {
   }
 
   addOpen.value = false;
-  toast({
-    title: `${addName.value} 회원을 추가했습니다.`,
-    description: '초기 PIN 은 기본값입니다. 본인에게 첫 로그인 후 변경을 안내해주세요.',
-  });
+  showTempPin(addName.value, res.temp_pin);
   await load();
 }
 
@@ -530,8 +562,8 @@ watch(compact, (isCompact) => {
           </div>
 
           <p class="text-xs text-muted-foreground">
-            시작월부터 월간 기록 표에 나옵니다. 초기 PIN 은 기본값이며, 첫 로그인 후
-            계정 창에서 본인이 바꾸도록 안내해주세요.
+            시작월부터 월간 기록 표에 나옵니다. 임시 PIN 이 한 번만 표시됩니다.
+            본인에게 전달하면 첫 로그인에서 새 PIN 을 정합니다.
           </p>
 
           <p v-if="addError" class="text-xs text-destructive">{{ addError }}</p>
@@ -587,6 +619,27 @@ watch(compact, (isCompact) => {
               {{ deleteSaving ? '삭제하는 중…' : '삭제' }}
             </Button>
           </div>
+        </div>
+      </Dialog>
+
+      <!-- 임시 PIN (회원 추가 · PIN 초기화 공통) -->
+      <Dialog v-model:open="tempPinOpen" label="임시 PIN" content-class="sm:max-w-sm">
+        <div v-if="tempPin" class="px-1 pt-1 space-y-4 text-center">
+          <h2 class="text-base font-bold">{{ tempPin.name }} 님의 임시 PIN</h2>
+          <p class="font-mono text-5xl font-bold tracking-[0.3em] select-all" aria-live="polite">
+            {{ tempPin.pin }}
+          </p>
+          <Button variant="outline" size="sm" class="gap-1.5" @click="copyTempPin()">
+            <Copy class="w-4 h-4" aria-hidden="true" />
+            {{ tempPinCopied ? '복사했습니다' : '복사' }}
+          </Button>
+          <p class="text-sm text-destructive font-medium">
+            이 창을 닫으면 다시 볼 수 없습니다.
+          </p>
+          <p class="text-xs text-muted-foreground">
+            본인에게 전달하면 첫 로그인에서 새 PIN 을 정하게 됩니다.
+          </p>
+          <Button class="w-full" @click="tempPinOpen = false">전달했습니다 · 닫기</Button>
         </div>
       </Dialog>
 

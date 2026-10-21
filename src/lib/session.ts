@@ -43,6 +43,8 @@ export interface SessionMember {
   id: string;
   name: string;
   role: MemberRole;
+  /** 관리자가 정한 임시 PIN 상태. true 면 PIN 을 바꾸기 전까지 변경 창이 닫히지 않는다. */
+  mustChange?: boolean;
 }
 
 export interface StoredSession {

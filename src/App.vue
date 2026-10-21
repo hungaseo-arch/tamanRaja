@@ -3,6 +3,9 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Layout from '@/components/Layout.vue';
 import LoginModal from '@/components/LoginModal.vue';
+import PinChangeForm from '@/components/PinChangeForm.vue';
+import Dialog from '@/components/ui/Dialog.vue';
+import Button from '@/components/ui/Button.vue';
 import Toaster from '@/components/ui/Toaster.vue';
 import AsyncState from '@/components/ui/AsyncState.vue';
 import { loadData, loadMembers, clearData, dataLoading, dataInitialized, dataError, getMonthlyData } from '@/data';
@@ -93,6 +96,21 @@ async function handleSaveAttendance(attended: boolean | null): Promise<void> {
   router.replace({ path: ROUTE_PATHS.MONTHLY, query: { month: nextYM } });
 }
 
+// 임시 PIN(관리자가 새로 만들었거나 초기화한 PIN, 또는 옛 공통 기본값)으로
+// 들어온 회원은 PIN 을 바꾸기 전까지 이 창을 닫을 수 없다. 서버가 세션마다
+// must_change 를 알려주므로 새로고침해도 다시 뜬다. 공용 기기에서 남의 계정을
+// 열어 둔 채 떠나지 않도록 로그아웃만은 열어 둔다.
+const mustChangePin = computed(() => isLoggedIn.value && currentMember.value?.mustChange === true);
+
+async function logoutFromPinChange(): Promise<void> {
+  await logout();
+  router.replace(ROUTE_PATHS.HOME);
+}
+
+function onForcedPinChanged(): void {
+  toast({ title: 'PIN을 바꿨습니다', description: '다음 로그인부터 새 PIN을 쓰세요.' });
+}
+
 // 30분 동안 아무 조작이 없으면 스스로 로그아웃한다. 라운드 중 스코어를 보다
 // 자리를 뜬 기기가 그대로 열려 있지 않게 하려는 것이라, "이 기기에서 로그인
 // 유지"를 켠 경우에도 똑같이 걸린다. 서버도 같은 규칙을 갖고 있고(P6-1),
@@ -152,5 +170,25 @@ onMounted(async () => {
     :saving-attendance="savingAttendance"
     @save-attendance="handleSaveAttendance"
   />
+  <Dialog
+    :open="mustChangePin"
+    :dismissible="false"
+    label="새 PIN 정하기"
+    content-class="sm:max-w-sm"
+  >
+    <div class="w-full px-1 pt-1 space-y-4">
+      <h2 class="text-base font-bold">새 PIN을 정해 주세요</h2>
+      <p class="text-sm text-muted-foreground">
+        지금 PIN은 관리자가 정한 임시 PIN입니다. 본인만 아는 4자리로 바꾼 뒤
+        이용할 수 있습니다.
+      </p>
+      <PinChangeForm old-label="지금 PIN" @changed="onForcedPinChanged" />
+      <div class="border-t border-border pt-3">
+        <Button variant="ghost" size="sm" class="w-full" @click="logoutFromPinChange">
+          나중에 바꾸기 (로그아웃)
+        </Button>
+      </div>
+    </div>
+  </Dialog>
   <Toaster />
 </template>

@@ -17,9 +17,14 @@ interface Props {
   contentClass?: string;
   /** 모달의 이름. 화면 낭독기가 열릴 때 읽어준다. */
   label?: string;
+  /**
+   * false 면 닫기 버튼·Esc·바깥 클릭으로 닫히지 않는다. 사용자가 반드시
+   * 끝내야 하는 일(임시 PIN 변경)에만 쓴다 — 닫는 길은 부모가 open 을 내릴 때뿐.
+   */
+  dismissible?: boolean;
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), { dismissible: true });
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void;
@@ -38,10 +43,11 @@ watchEffect(() => {
 });
 
 onKeyStroke('Escape', () => {
-  if (isOpen.value) isOpen.value = false;
+  if (isOpen.value) close();
 });
 
 function close(): void {
+  if (!props.dismissible) return;
   isOpen.value = false;
 }
 
@@ -135,6 +141,7 @@ function onTab(e: KeyboardEvent): void {
             @keydown.tab="onTab"
           >
             <button
+              v-if="dismissible"
               type="button"
               aria-label="닫기"
               class="absolute right-2 top-2 inline-flex h-9 w-9 items-center justify-center rounded-md opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
