@@ -4,12 +4,24 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 
-    <!-- 브라우저 UI(안드로이드 주소창 등) 색. 이 앱은 밝은 화면만 쓰므로
-         prefers-color-scheme 로 나누지 않고 흰색 하나로 고정한다. -->
-    <meta name="theme-color" content="#ffffff" />
+    <!-- 브라우저 UI(안드로이드 주소창 등) 색. manifest(vite.config.ts)의
+         theme_color 와 같아야 한다 — 다르면 설치 앱과 브라우저에서 주소창 색이
+         달라진다. 밝은 화면만 쓰므로 prefers-color-scheme 로 나누지 않는다. -->
+    <meta name="theme-color" content="#1f8a3b" />
     <!-- OS 가 어둡더라도 폼 컨트롤·스크롤바까지 밝게 그리게 한다. 이걸 빼면
          입력창과 셀렉트만 검게 나와 화면이 반쯤 어두워진 것처럼 보인다. -->
     <meta name="color-scheme" content="light" />
+
+    <!-- 회원 전용 사이트라 검색에 올리지 않는다. robots.txt 와 함께 둔다 —
+         robots.txt 는 크롤링만 막고, 다른 곳에 걸린 링크로 들어온 색인은 이 메타가 막는다. -->
+    <meta name="robots" content="noindex, nofollow" />
+    <!-- CSP. GitHub Pages 는 응답 헤더를 못 바꾸므로 메타로 건다. frame-ancestors 는
+         메타에서 무시되므로 넣지 않는다. 빌드 결과에 인라인 스크립트가 생기면 여기서
+         막히니 dist/index.html 을 확인할 것. Supabase 주소가 바뀌면 connect-src 도 고친다. -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' https://kixozxisuxcajsbldjul.supabase.co; base-uri 'self'; form-action 'self'"
+    />
 
     <title>따만라자 모임</title>
     <meta name="description" content="따만라자 골프모임 대시보드" />
@@ -41,8 +53,8 @@
     <meta name="twitter:title" content="따만라자 골프모임" />
     <meta name="twitter:description" content="월간 기록 · 연간 랭킹 · 핸디캡 관리" />
     <meta name="twitter:image" content="https://hungaseo-arch.github.io/tamanRaja/og-image.png" />
-    <script type="module" crossorigin src="/tamanRaja/assets/index-Ubv4tSLX.js"></script>
-    <link rel="stylesheet" crossorigin href="/tamanRaja/assets/index-35prH9NC.css">
+    <script type="module" crossorigin src="/tamanRaja/assets/index-BEUTsw1l.js"></script>
+    <link rel="stylesheet" crossorigin href="/tamanRaja/assets/index-DqLNcVLw.css">
   <link rel="manifest" href="/tamanRaja/manifest.webmanifest"></head>
   <body>
     <div id="app"></div>
