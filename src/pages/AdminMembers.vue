@@ -51,7 +51,10 @@ interface AdminMemberRow {
   enrollment_year: number | null;
   /** 휴면 시작월(YYYY-MM). 현역이면 null. */
   dormant_from: string | null;
+  /** meeting_results 전체 행 수(불참·미기록 포함). 삭제 가능 판단에 쓴다. */
   result_count: number;
+  /** 스코어가 있는 참석 횟수. 표의 "참석" 열. */
+  attended_count: number;
   hosted_count: number;
   last_login_at: string | null;
 }
@@ -424,7 +427,7 @@ function statusLabel(row: AdminMemberRow): string {
 }
 
 // ── 줄 상세 ──────────────────────────────────────────────────────────────────
-// 좁은 화면에서는 가입·기록·마지막 로그인 열이 숨는다. 이름을 누르면 통째로 본다.
+// 좁은 화면에서는 가입·참석·마지막 로그인 열이 숨는다. 이름을 누르면 통째로 본다.
 const compact = useCompactTable('sm');
 const detailRow = ref<AdminMemberRow | null>(null);
 const detailOpen = ref(false);
@@ -487,7 +490,7 @@ watch(compact, (isCompact) => {
                     <TableHead class="font-bold text-center whitespace-nowrap">등급</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap">상태</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">가입</TableHead>
-                    <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">기록</TableHead>
+                    <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">참석</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">마지막 로그인</TableHead>
                     <TableHead class="font-bold text-right whitespace-nowrap">관리</TableHead>
                   </TableRow>
@@ -515,7 +518,7 @@ watch(compact, (isCompact) => {
                       {{ row.enrollment_year ?? DASH }}
                     </TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell">
-                      {{ row.result_count }}
+                      {{ row.attended_count }}
                     </TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell text-muted-foreground">
                       {{ formatLastLogin(row.last_login_at) }}
@@ -719,7 +722,10 @@ watch(compact, (isCompact) => {
           <DetailItem label="가입연도">
             <span class="font-mono">{{ detailRow.enrollment_year ?? DASH }}</span>
           </DetailItem>
-          <DetailItem label="경기 기록">
+          <DetailItem label="참석">
+            <span class="font-mono">{{ detailRow.attended_count }}회</span>
+          </DetailItem>
+          <DetailItem label="기록(불참 포함)">
             <span class="font-mono">{{ detailRow.result_count }}건</span>
           </DetailItem>
           <DetailItem label="기획 이력">
