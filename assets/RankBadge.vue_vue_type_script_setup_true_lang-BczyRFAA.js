@@ -1,4 +1,4 @@
-import{z as p,ag as b,ah as k,a0 as x,d as v,k as m,w as R,A as w,n as E,B as M,v as h,f as y,D as $,g as N,t as C}from"./index-BqHFPBR4.js";import{g as H}from"./DetailItem.vue_vue_type_script_setup_true_lang-CW9OD9vS.js";/**
+import{z as p,ag as b,ah as k,a0 as x,d as v,k as m,w as R,A as w,n as E,B as M,v as h,f as y,D as $,g as N,t as C}from"./index-D_ozM5z7.js";import{g as H}from"./DetailItem.vue_vue_type_script_setup_true_lang-BNkFDWuq.js";/**
  * @license lucide-vue-next v0.462.0 - ISC
  *
  * This source code is licensed under the ISC license.
