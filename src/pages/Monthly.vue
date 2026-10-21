@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { getMonthlyData, getAvailableMonths, GOLF_COURSES, MEETINGS, MEETING_RESULTS, MEMBERS, loadData } from '@/data';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/composables/useToast';
@@ -94,6 +94,17 @@ const isFutureMonth = computed(() => {
 
 const { currentMember, isAdmin } = useAuth();
 const { toast } = useToast();
+const router = useRouter();
+
+// 참석 창(App.vue, #/attendance)은 익월 본인 참석만 바꾼다. 익월을 볼 때만 본인
+// 줄의 이름·참석 칸을 그 창으로 잇는다.
+const attendanceMemberId = computed(() =>
+  selectedMonth.value === nextYM ? currentMember.value?.id ?? null : null
+);
+
+function openAttendance(): void {
+  router.push(ROUTE_PATHS.ATTENDANCE);
+}
 
 // 화면 노출 조건일 뿐 권한 경계가 아니다. 실제 쓰기 허용 여부는 서버 RLS 가
 // app.can_manage_month() 로 동일한 규칙(관리자 또는 전월 Host)을 재검증한다.
@@ -206,7 +217,9 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
           v-model:manual-date="manualDate"
           v-model:manual-course="manualCourse"
           :save-state="saveState"
+          :attendance-member-id="attendanceMemberId"
           @save="handleSaveMonth"
+          @open-attendance="openAttendance"
         />
       
     </div>

@@ -54,6 +54,11 @@ interface Props {
    * 저장에 실패했는데 화면이 읽기 모드로 돌아가면 방금 친 값이 사라진 것처럼 보인다.
    */
   saveState?: 'idle' | 'saving' | 'error';
+  /**
+   * 참석 창을 열 수 있는 줄(로그인한 본인)의 회원 id. 참석 창은 익월 본인 참석만
+   * 바꾸므로, 부모가 익월을 보고 있을 때만 넘긴다. 그 외에는 null.
+   */
+  attendanceMemberId?: string | null;
 }
 
 const props = defineProps<Props>();
@@ -63,6 +68,7 @@ const emit = defineEmits<{
   (e: 'update:selectedMonth', value: string): void;
   (e: 'update:manualDate', value: string): void;
   (e: 'update:manualCourse', value: string): void;
+  (e: 'open-attendance'): void;
 }>();
 
 // 편집 모드. 미래 달은 기본 편집 상태로 열리지만, 편집 권한이 있을 때만이다.
@@ -269,6 +275,10 @@ const compact = useCompactTable('md');
 const showHcHelp = ref(false);
 const detailRow = ref<MonthlyRow | null>(null);
 const detailOpen = ref(false);
+
+// 본인 줄의 이름·참석 칸. RowDetailButton 과 같은 점선 밑줄로 눌리는 곳임을 알린다.
+const ATTENDANCE_BUTTON_CLASS =
+  '-mx-1 rounded-sm px-1 py-1 underline decoration-dotted decoration-muted-foreground/70 underline-offset-4 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 function openDetail(row: MonthlyRow): void {
   detailRow.value = row;
@@ -581,13 +591,31 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 >
                   <!-- 편집 중에는 열지 않는다. 상세는 저장된 값을 보여주므로
                        아직 저장하지 않은 입력값과 어긋나 보인다. -->
-                  <RowDetailButton v-if="!isEditing" :label="row.member_name" :enabled="compact" @click="openDetail(row)">{{ row.member_name }}</RowDetailButton>
+                  <!-- 본인 줄은 상세 대신 참석 창을 연다. 참석 창은 저장된 값만
+                       다루므로 편집 중에도 연다. -->
+                  <button
+                    v-if="row.member_id === attendanceMemberId"
+                    type="button"
+                    aria-haspopup="dialog"
+                    :aria-label="`${row.member_name} 참석 여부 바꾸기`"
+                    :class="ATTENDANCE_BUTTON_CLASS"
+                    @click="emit('open-attendance')"
+                  >{{ row.member_name }}</button>
+                  <RowDetailButton v-else-if="!isEditing" :label="row.member_name" :enabled="compact" @click="openDetail(row)">{{ row.member_name }}</RowDetailButton>
                   <template v-else>{{ row.member_name }}</template>
                 </TableCell>
 
                 <!-- 참석여부 (미래월만) -->
                 <TableCell v-if="isFutureMonth" class="text-center">
-                  <span :class="cn('text-xs font-semibold whitespace-nowrap', attendanceLabel(row).class)">{{ attendanceLabel(row).text }}</span>
+                  <button
+                    v-if="row.member_id === attendanceMemberId"
+                    type="button"
+                    aria-haspopup="dialog"
+                    :aria-label="`참석 여부 ${attendanceLabel(row).text} — 바꾸기`"
+                    :class="cn(ATTENDANCE_BUTTON_CLASS, 'text-xs font-semibold whitespace-nowrap', attendanceLabel(row).class)"
+                    @click="emit('open-attendance')"
+                  >{{ attendanceLabel(row).text }}</button>
+                  <span v-else :class="cn('text-xs font-semibold whitespace-nowrap', attendanceLabel(row).class)">{{ attendanceLabel(row).text }}</span>
                 </TableCell>
 
                 <TableCell class="text-center font-mono hidden sm:table-cell">{{ row.std_hc }}</TableCell>
