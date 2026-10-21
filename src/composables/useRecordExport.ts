@@ -9,8 +9,8 @@ function download(filename: string, headers: string[], body: CsvValue[][], label
 
   if (body.length === 0) {
     toast({
-      title: '내려받을 기록이 없습니다',
-      description: `${label} 기록이 없습니다.`,
+      title: '내려받을 기록 없음',
+      description: `${label} 기록 없음`,
       variant: 'destructive',
     });
     return 0;
@@ -18,8 +18,8 @@ function download(filename: string, headers: string[], body: CsvValue[][], label
 
   downloadCsv(filename, toCsv(headers, body));
   toast({
-    title: '엑셀 다운로드 완료',
-    description: `${label} ${body.length}건을 내려받았습니다.`,
+    title: 'CSV 다운로드 완료',
+    description: `${label} ${body.length}건 내려받기 완료`,
   });
   return body.length;
 }
@@ -99,7 +99,7 @@ export function useRecordExport() {
       r.yearly_rank,
     ]);
 
-    return download(`타만라자_기록_${year}.csv`, YEARLY_HEADERS, body, `${year}년 전체`);
+    return download(`따만라자_기록_${year}.csv`, YEARLY_HEADERS, body, `${year}년 전체`);
   }
 
   /**
@@ -121,11 +121,11 @@ export function useRecordExport() {
       r.rank === null ? `50% 미만 참석(${minRounds}회 미만)` : '',
     ]);
 
-    return download(`타만라자_연간랭킹_${year}.csv`, RANKING_HEADERS, body, `${year}년 랭킹`);
+    return download(`따만라자_연간랭킹_${year}.csv`, RANKING_HEADERS, body, `${year}년 랭킹`);
   }
 
-  /** 로그인한 본인의 월별 기록. */
-  function exportMyRecords(memberName: string, rows: ProfileExportRow[]): number {
+  /** 로그인한 본인의 월별 기록 (한 해치). */
+  function exportMyRecords(memberName: string, year: string, rows: ProfileExportRow[]): number {
     const body: CsvValue[][] = rows.map((r) => [
       r.year_month,
       r.course_name,
@@ -139,7 +139,7 @@ export function useRecordExport() {
     ]);
 
     return download(
-      `타만라자_${safeName(memberName)}_기록.csv`,
+      `따만라자_${safeName(memberName)}_기록_${year}.csv`,
       PROFILE_HEADERS,
       body,
       `${memberName} 님의`

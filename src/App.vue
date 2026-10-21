@@ -3,6 +3,9 @@ import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import Layout from '@/components/Layout.vue';
 import LoginModal from '@/components/LoginModal.vue';
+import PinChangeForm from '@/components/PinChangeForm.vue';
+import Dialog from '@/components/ui/Dialog.vue';
+import Button from '@/components/ui/Button.vue';
 import Toaster from '@/components/ui/Toaster.vue';
 import AsyncState from '@/components/ui/AsyncState.vue';
 import { loadData, loadMembers, clearData, dataLoading, dataInitialized, dataError, getMonthlyData } from '@/data';
@@ -72,9 +75,9 @@ async function handleSaveAttendance(attended: boolean | null): Promise<void> {
 
   if (!result.ok) {
     toast({
-      title: '저장하지 못했습니다',
+      title: '저장 실패',
       // 화면 값은 setAttendance 안에서 이미 원래대로 돌아갔다.
-      description: result.message ?? '네트워크 상태를 확인한 뒤 다시 시도해 주세요.',
+      description: result.message ?? '네트워크 상태 확인 후 다시 시도',
       variant: 'destructive',
     });
     return;
@@ -82,7 +85,7 @@ async function handleSaveAttendance(attended: boolean | null): Promise<void> {
 
   toast({
     title: '저장 완료',
-    description: `${nextYM} ${ATTENDANCE_LABEL[String(attended)]}(으)로 저장되었습니다.`,
+    description: `${nextYM} ${ATTENDANCE_LABEL[String(attended)]}(으)로 저장`,
   });
 
   // 전체 페이지 리로드 대신 데이터만 다시 읽는다 (번들 재다운로드·세션 재검증 회피)
@@ -91,6 +94,21 @@ async function handleSaveAttendance(attended: boolean | null): Promise<void> {
   // push 가 아니라 replace — 이미 저장한 뒤라 뒤로가기로 확인 창이 다시 열리면
   // 저장이 안 된 줄 알고 또 누르게 된다.
   router.replace({ path: ROUTE_PATHS.MONTHLY, query: { month: nextYM } });
+}
+
+// 임시 PIN(관리자가 새로 만들었거나 초기화한 PIN, 또는 옛 공통 기본값)으로
+// 들어온 회원은 PIN 을 바꾸기 전까지 이 창을 닫을 수 없다. 서버가 세션마다
+// must_change 를 알려주므로 새로고침해도 다시 뜬다. 공용 기기에서 남의 계정을
+// 열어 둔 채 떠나지 않도록 로그아웃만은 열어 둔다.
+const mustChangePin = computed(() => isLoggedIn.value && currentMember.value?.mustChange === true);
+
+async function logoutFromPinChange(): Promise<void> {
+  await logout();
+  router.replace(ROUTE_PATHS.HOME);
+}
+
+function onForcedPinChanged(): void {
+  toast({ title: 'PIN 변경 완료', description: '다음 로그인부터 새 PIN 사용' });
 }
 
 // 30분 동안 아무 조작이 없으면 스스로 로그아웃한다. 라운드 중 스코어를 보다
@@ -102,8 +120,8 @@ useIdleLogout(async () => {
   loginModalOpen.value = false;
   router.replace(ROUTE_PATHS.HOME);
   toast({
-    title: '자동 로그아웃되었습니다',
-    description: `${IDLE_TIMEOUT_MINUTES}분 동안 사용하지 않아 로그아웃했습니다. 다시 로그인해 주세요.`,
+    title: '자동 로그아웃',
+    description: `${IDLE_TIMEOUT_MINUTES}분 동안 사용 없음 · 다시 로그인 필요`,
     duration: 6000,
   });
 });
@@ -152,5 +170,31 @@ onMounted(async () => {
     :saving-attendance="savingAttendance"
     @save-attendance="handleSaveAttendance"
   />
+  <Dialog
+    :open="mustChangePin"
+    :dismissible="false"
+    label="새 PIN 정하기"
+    content-class="sm:max-w-sm"
+  >
+    <div class="w-full px-1 pt-1 space-y-4">
+      <h2 class="text-base font-bold">새 PIN 설정 필요</h2>
+      <!-- 회원 단체 공지 대신 이 창이 안내를 맡는다 (공통 초기 PIN 폐지). -->
+      <div class="rounded-md bg-muted px-3 py-2 text-sm space-y-1">
+        <p class="font-medium">보안 강화 안내</p>
+        <ul class="list-disc pl-4 text-muted-foreground space-y-0.5">
+          <li>공통 초기 PIN·관리자 임시 PIN 사용 중단</li>
+          <li>본인만 아는 4자리로 변경 후 이용 가능</li>
+          <li>다음 로그인부터 새 PIN 사용</li>
+          <li>PIN 분실 시 관리자에게 초기화 요청</li>
+        </ul>
+      </div>
+      <PinChangeForm old-label="지금 PIN" @changed="onForcedPinChanged" />
+      <div class="border-t border-border pt-3">
+        <Button variant="ghost" size="sm" class="w-full" @click="logoutFromPinChange">
+          나중에 바꾸기 (로그아웃)
+        </Button>
+      </div>
+    </div>
+  </Dialog>
   <Toaster />
 </template>

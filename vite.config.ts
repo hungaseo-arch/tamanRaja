@@ -57,7 +57,10 @@ export default defineConfig({
             handler: 'CacheFirst',
             options: {
               cacheName: 'google-fonts-webfonts',
-              expiration: { maxEntries: 20, maxAgeSeconds: 60 * 60 * 24 * 365 },
+              // Noto Sans KR 은 굵기마다 글자 범위별 조각 수십 개로 나뉘어 온다.
+              // 20 이면 앞서 받은 조각이 밀려나 오프라인에서 일부 글자만 시스템
+              // 폰트로 보인다. 화면이 실제로 쓰는 조각 수보다 넉넉하게 둔다. (5-2)
+              expiration: { maxEntries: 80, maxAgeSeconds: 60 * 60 * 24 * 365 },
               cacheableResponse: { statuses: [0, 200] },
             },
           },

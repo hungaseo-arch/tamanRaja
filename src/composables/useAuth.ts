@@ -35,8 +35,17 @@ export type LoginResult =
 
 export type ChangePinResult =
   | { ok: true }
-  | { ok: false; reason: 'invalid' | 'same' | 'invalid_format' | 'locked' | 'unauthenticated' }
+  | { ok: false; reason: ChangePinFailure }
   | { ok: false; reason: 'error'; message: string };
+
+type ChangePinFailure = 'invalid' | 'same' | 'weak' | 'invalid_format' | 'locked' | 'unauthenticated';
+
+interface SessionMemberResponse {
+  id: number;
+  name: string;
+  role: 'admin' | 'member';
+  must_change?: boolean;
+}
 
 interface VerifyPinResponse {
   ok: boolean;
@@ -45,7 +54,12 @@ interface VerifyPinResponse {
   expires_at?: string;
   remaining_attempts?: number;
   retry_after_seconds?: number;
+  must_change?: boolean;
   member?: { id: number; name: string; role: 'admin' | 'member' };
+}
+
+function toSessionMember(m: SessionMemberResponse, mustChange = m.must_change): SessionMember {
+  return { id: String(m.id), name: m.name, role: m.role, mustChange: mustChange === true };
 }
 
 /** 로그인 실패 사유를 사용자 문구로 옮긴다. PIN 값 자체는 어디에도 노출하지 않는다. */
@@ -53,14 +67,14 @@ export function describeLoginError(result: Exclude<LoginResult, { ok: true }>): 
   switch (result.reason) {
     case 'locked': {
       const minutes = Math.max(1, Math.ceil(result.retryAfterSeconds / 60));
-      return `PIN을 5회 잘못 입력해 로그인이 잠겼습니다. 약 ${minutes}분 후 다시 시도해주세요.`;
+      return `PIN 5회 오입력으로 로그인 잠김 · 약 ${minutes}분 후 다시 시도`;
     }
     case 'invalid':
       return result.remainingAttempts !== null
-        ? `PIN이 올바르지 않습니다. (남은 시도 ${result.remainingAttempts}회)`
-        : 'PIN이 올바르지 않습니다.';
+        ? `PIN 불일치 (남은 시도 ${result.remainingAttempts}회)`
+        : 'PIN 불일치';
     default:
-      return `로그인 중 오류가 발생했습니다. ${result.message}`;
+      return `로그인 중 오류 발생 — ${result.message}`;
   }
 }
 
@@ -68,17 +82,19 @@ export function describeLoginError(result: Exclude<LoginResult, { ok: true }>): 
 export function describeChangePinError(result: Exclude<ChangePinResult, { ok: true }>): string {
   switch (result.reason) {
     case 'invalid':
-      return '기존 PIN이 올바르지 않습니다.';
+      return '기존 PIN 불일치';
     case 'same':
-      return '새 PIN은 기존 PIN과 달라야 합니다.';
+      return '새 PIN이 기존 PIN과 같음';
+    case 'weak':
+      return '같은 숫자 반복(1111)·연속 숫자(1234) 같은 쉬운 PIN 사용 불가';
     case 'invalid_format':
-      return 'PIN은 4자리 숫자여야 합니다.';
+      return 'PIN은 4자리 숫자만 가능';
     case 'locked':
-      return '로그인이 일시적으로 잠겨 있습니다. 잠시 후 다시 시도해주세요.';
+      return '로그인 일시 잠김 · 잠시 후 다시 시도';
     case 'unauthenticated':
-      return '세션이 만료되었습니다. 다시 로그인해주세요.';
+      return '세션 만료 · 다시 로그인 필요';
     default:
-      return `저장 중 오류가 발생했습니다. ${result.message}`;
+      return `저장 중 오류 발생 — ${result.message}`;
   }
 }
 
@@ -108,7 +124,7 @@ export function useAuth(): UseAuthReturn {
     if (error) return { ok: false, reason: 'error', message: error.message };
 
     const res = data as VerifyPinResponse | null;
-    if (!res) return { ok: false, reason: 'error', message: '서버 응답이 비어 있습니다.' };
+    if (!res) return { ok: false, reason: 'error', message: '서버 응답 없음' };
 
     if (!res.ok) {
       if (res.reason === 'locked') {
@@ -118,14 +134,10 @@ export function useAuth(): UseAuthReturn {
     }
 
     if (!res.token || !res.member) {
-      return { ok: false, reason: 'error', message: '세션 발급에 실패했습니다.' };
+      return { ok: false, reason: 'error', message: '세션 발급 실패' };
     }
 
-    const member: SessionMember = {
-      id: String(res.member.id),
-      name: res.member.name,
-      role: res.member.role,
-    };
+    const member = toSessionMember(res.member, res.must_change);
     saveSession(
       { token: res.token, expiresAt: res.expires_at ?? '', member, lastActiveAt: new Date().toISOString() },
       remember,
@@ -157,13 +169,19 @@ export function useAuth(): UseAuthReturn {
     if (error) return { ok: false, reason: 'error', message: error.message };
 
     const res = data as { ok: boolean; reason?: string } | null;
-    if (!res) return { ok: false, reason: 'error', message: '서버 응답이 비어 있습니다.' };
-    if (res.ok) return { ok: true };
+    if (!res) return { ok: false, reason: 'error', message: '서버 응답 없음' };
+    if (res.ok) {
+      // 서버가 must_change 를 내렸다. 변경 창이 바로 닫히도록 여기서도 맞춘다.
+      if (currentMember.value?.mustChange) {
+        const member = { ...currentMember.value, mustChange: false };
+        const stored = loadSession();
+        if (stored) saveSession({ ...stored, member });
+        currentMember.value = member;
+      }
+      return { ok: true };
+    }
 
-    return {
-      ok: false,
-      reason: (res.reason ?? 'invalid') as 'invalid' | 'same' | 'invalid_format' | 'locked' | 'unauthenticated',
-    };
+    return { ok: false, reason: (res.reason ?? 'invalid') as ChangePinFailure };
   };
 
   // 저장된 토큰이 서버에서도 아직 유효한지 확인한다. 만료·폐기된 세션으로
@@ -177,15 +195,15 @@ export function useAuth(): UseAuthReturn {
     const { data, error } = await supabase.rpc('session_member');
     if (error) return currentMember.value !== null; // 네트워크 오류면 기존 상태 유지
 
-    const res = data as { id: number; name: string; role: 'admin' | 'member' } | null;
+    const res = data as SessionMemberResponse | null;
     if (!res) {
       clearSession();
       currentMember.value = null;
       return false;
     }
 
-    // 서버가 알려준 역할이 최종 권위 — 저장된 값이 낡았으면 갱신한다.
-    const member: SessionMember = { id: String(res.id), name: res.name, role: res.role };
+    // 서버가 알려준 역할·must_change 가 최종 권위 — 저장된 값이 낡았으면 갱신한다.
+    const member = toSessionMember(res);
     const stored = loadSession();
     if (stored) saveSession({ ...stored, member });
     currentMember.value = member;

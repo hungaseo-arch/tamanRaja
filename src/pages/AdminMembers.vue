@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { RefreshCw, UserPlus } from 'lucide-vue-next';
+import { Copy, RefreshCw, UserPlus } from 'lucide-vue-next';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/composables/useAuth';
 import { useCompactTable } from '@/composables/useCompactTable';
@@ -27,6 +27,7 @@ import TableCell from '@/components/ui/TableCell.vue';
 import RowDetailDialog from '@/components/ui/RowDetailDialog.vue';
 import RowDetailButton from '@/components/ui/RowDetailButton.vue';
 import DetailItem from '@/components/ui/DetailItem.vue';
+import DropdownMenu, { type DropdownMenuItem } from '@/components/ui/DropdownMenu.vue';
 
 /**
  * 회원 관리 (관리자 전용).
@@ -51,7 +52,10 @@ interface AdminMemberRow {
   enrollment_year: number | null;
   /** 휴면 시작월(YYYY-MM). 현역이면 null. */
   dormant_from: string | null;
+  /** meeting_results 전체 행 수(불참·미기록 포함). 삭제 가능 판단에 쓴다. */
   result_count: number;
+  /** 스코어가 있는 참석 횟수. 표의 "참석" 열. */
+  attended_count: number;
   hosted_count: number;
   last_login_at: string | null;
 }
@@ -72,7 +76,7 @@ async function load(): Promise<void> {
   if (rpcError) {
     // 권한 없음(42501)도 그대로 보여준다. 빈 표로 두면 회원이 없는 것과
     // 구분되지 않는다.
-    error.value = describeError(rpcError, '회원 목록을 불러오지 못했습니다.');
+    error.value = describeError(rpcError, '회원 목록 불러오기 실패');
     rows.value = [];
   } else {
     rows.value = (data ?? []) as AdminMemberRow[];
@@ -84,19 +88,31 @@ onMounted(() => void load());
 
 const adminCount = computed(() => rows.value.filter((r) => r.role === 'admin').length);
 
+// 표시 순서 (5-3): 현역을 이름순으로 먼저, 그 아래 휴면을 최근에 쉰 순서로.
+// 서버는 id 순으로 주지만, 회원을 찾을 때는 이름으로 찾는다.
+const sortedRows = computed(() =>
+  [...rows.value].sort((a, b) => {
+    if (!a.dormant_from !== !b.dormant_from) return a.dormant_from ? 1 : -1;
+    if (a.dormant_from && b.dormant_from && a.dormant_from !== b.dormant_from) {
+      return a.dormant_from < b.dormant_from ? 1 : -1;
+    }
+    return a.name.localeCompare(b.name, 'ko');
+  })
+);
+
 // ── 실패 사유 문구 ───────────────────────────────────────────────────────────
 // 서버가 돌려주는 reason 을 사람 말로 옮긴다. 사유를 감추고 "실패했습니다" 만
 // 띄우면 왜 막혔는지 알 수 없어 같은 시도를 반복하게 된다.
 const REASONS: Record<string, string> = {
-  invalid_name: '이름을 확인해주세요. (1~50자)',
-  duplicate_name: '같은 이름의 회원이 이미 있습니다.',
-  invalid_std_hc: '기준핸디는 0~54 사이의 숫자여야 합니다.',
-  invalid_month: '월은 YYYY-MM 형식이어야 합니다.',
-  invalid_role: '등급 값이 올바르지 않습니다.',
-  not_found: '이미 삭제된 회원입니다.',
-  self: '본인 계정은 삭제할 수 없습니다.',
-  self_demote: '본인 등급은 스스로 내릴 수 없습니다.',
-  last_admin: '마지막 관리자입니다. 다른 회원을 먼저 관리자로 올려주세요.',
+  invalid_name: '이름 확인 필요 (1~50자)',
+  duplicate_name: '같은 이름의 회원 이미 있음',
+  invalid_std_hc: '기준핸디는 0~54 사이 숫자만 가능',
+  invalid_month: '월은 YYYY-MM 형식만 가능',
+  invalid_role: '잘못된 등급 값',
+  not_found: '이미 삭제된 회원',
+  self: '본인 계정에는 사용 불가',
+  self_demote: '본인 등급은 스스로 내리기 불가',
+  last_admin: '마지막 관리자 · 다른 회원을 먼저 관리자로 올리기 필요',
 };
 
 function describeReason(reason: string | undefined, fallback: string): string {
@@ -108,6 +124,41 @@ interface RpcResult {
   reason?: string;
   result_count?: number;
   hosted_count?: number;
+  /** add_member · reset_member_pin 성공 시에만. 화면에 한 번 보여주고 버린다. */
+  temp_pin?: string;
+}
+
+// ── 임시 PIN 1회 표시 ────────────────────────────────────────────────────────
+// 서버는 해시만 남기므로 이 창을 닫으면 누구도 다시 볼 수 없다. 값은 이 ref
+// 에만 있다가 창을 닫는 순간 지운다 — 콘솔·토스트·저장소 어디에도 싣지 않는다.
+const tempPin = ref<{ name: string; pin: string } | null>(null);
+const tempPinOpen = computed({
+  get: () => tempPin.value !== null,
+  set: (open: boolean) => { if (!open) tempPin.value = null; },
+});
+const tempPinCopied = ref(false);
+
+function showTempPin(name: string, pin: string | undefined): void {
+  if (!pin) {
+    toast({
+      title: '임시 PIN 수신 실패',
+      description: '서버가 아직 이전 버전 · PIN 초기화로 다시 발급 필요',
+      variant: 'destructive',
+    });
+    return;
+  }
+  tempPinCopied.value = false;
+  tempPin.value = { name, pin };
+}
+
+async function copyTempPin(): Promise<void> {
+  if (!tempPin.value) return;
+  try {
+    await navigator.clipboard.writeText(tempPin.value.pin);
+    tempPinCopied.value = true;
+  } catch {
+    toast({ title: '복사 실패', description: '숫자를 직접 옮겨 적기 필요', variant: 'destructive' });
+  }
 }
 
 /**
@@ -128,7 +179,7 @@ async function callRpc(
 
   const res = (data ?? null) as RpcResult | null;
   if (!res) {
-    toast({ title: fallback, description: '서버 응답이 비어 있습니다.', variant: 'destructive' });
+    toast({ title: fallback, description: '서버 응답 없음', variant: 'destructive' });
     return null;
   }
   return res;
@@ -175,22 +226,19 @@ async function submitAdd(): Promise<void> {
       p_start_month: addMonth.value,
       p_role: addRole.value,
     },
-    '회원을 추가하지 못했습니다.'
+    '회원 추가 실패'
   );
   addSaving.value = false;
 
   if (!res) return;
   if (!res.ok) {
     // 모달 안에 남긴다. 토스트는 몇 초 뒤 사라져 무엇을 고쳐야 할지 잊힌다.
-    addError.value = describeReason(res.reason, '회원을 추가하지 못했습니다.');
+    addError.value = describeReason(res.reason, '회원 추가 실패');
     return;
   }
 
   addOpen.value = false;
-  toast({
-    title: `${addName.value} 회원을 추가했습니다.`,
-    description: '초기 PIN 은 기본값입니다. 본인에게 첫 로그인 후 변경을 안내해주세요.',
-  });
+  showTempPin(addName.value, res.temp_pin);
   await load();
 }
 
@@ -202,21 +250,21 @@ async function toggleRole(row: AdminMemberRow): Promise<void> {
   const res = await callRpc(
     'set_member_role',
     { p_member_id: row.id, p_role: next },
-    '등급을 바꾸지 못했습니다.'
+    '등급 변경 실패'
   );
   busyId.value = null;
 
   if (!res) return;
   if (!res.ok) {
     toast({
-      title: '등급을 바꾸지 못했습니다.',
+      title: '등급 변경 실패',
       description: describeReason(res.reason, ''),
       variant: 'destructive',
     });
     return;
   }
 
-  toast({ title: `${row.name} · ${next === 'admin' ? '관리자' : '회원'}로 바꿨습니다.` });
+  toast({ title: `${row.name} · ${next === 'admin' ? '관리자' : '회원'}로 변경 완료` });
   await load();
 }
 
@@ -245,18 +293,18 @@ async function submitDormant(): Promise<void> {
   const res = await callRpc(
     'set_member_dormant',
     { p_member_id: row.id, p_from: dormantMonth.value },
-    '휴면 처리를 하지 못했습니다.'
+    '휴면 처리 실패'
   );
   dormantSaving.value = false;
 
   if (!res) return;
   if (!res.ok) {
-    dormantError.value = describeReason(res.reason, '휴면 처리를 하지 못했습니다.');
+    dormantError.value = describeReason(res.reason, '휴면 처리 실패');
     return;
   }
 
   dormantOpen.value = false;
-  toast({ title: `${row.name} · ${dormantMonth.value}부터 휴면으로 바꿨습니다.` });
+  toast({ title: `${row.name} · ${dormantMonth.value}부터 휴면 처리 완료` });
   await load();
 }
 
@@ -266,22 +314,76 @@ async function restore(row: AdminMemberRow): Promise<void> {
   const res = await callRpc(
     'set_member_dormant',
     { p_member_id: row.id, p_from: null },
-    '복귀 처리를 하지 못했습니다.'
+    '복귀 처리 실패'
   );
   busyId.value = null;
 
   if (!res) return;
   if (!res.ok) {
     toast({
-      title: '복귀 처리를 하지 못했습니다.',
+      title: '복귀 처리 실패',
       description: describeReason(res.reason, ''),
       variant: 'destructive',
     });
     return;
   }
 
-  toast({ title: `${row.name} 회원을 현역으로 되돌렸습니다.` });
+  toast({ title: `${row.name} 회원 현역 복귀 완료` });
   await load();
+}
+
+// ── PIN 초기화 ───────────────────────────────────────────────────────────────
+// 새 임시 PIN 을 만들고 그 회원의 로그인을 전부 끊는다. 되돌릴 수 없으므로
+// 확인을 한 번 받는다. 본인은 계정 창에서 바꾸므로 버튼을 잠근다.
+const resetOpen = ref(false);
+const resetRow = ref<AdminMemberRow | null>(null);
+const resetSaving = ref(false);
+const resetError = ref<string | null>(null);
+
+function isSelf(row: AdminMemberRow): boolean {
+  return String(row.id) === currentMember.value?.id;
+}
+
+// ── 버튼 막힘 규칙 (5-3) ─────────────────────────────────────────────────────
+// 서버가 어차피 거절하는 조작은 미리 잠근다. 눌러 보고 나서야 안 된다는 걸
+// 알게 하지 않는다. 최종 판정은 여전히 서버(self_demote·self·last_admin)다.
+const SELF_LOCKED = '본인 계정 변경 불가';
+
+/** 등급 버튼을 막는 이유. 막히지 않으면 null. */
+function roleBlock(row: AdminMemberRow): string | null {
+  if (isSelf(row)) return SELF_LOCKED;
+  if (row.role === 'admin' && adminCount.value <= 1) return REASONS.last_admin;
+  return null;
+}
+
+/** 휴면 회원을 관리자로 올리는 버튼은 보이지 않는다 — 쉬는 회원이 관리할 일은 없다. */
+function showRoleButton(row: AdminMemberRow): boolean {
+  return row.role === 'admin' || !row.dormant_from;
+}
+
+function openReset(row: AdminMemberRow): void {
+  resetRow.value = row;
+  resetError.value = null;
+  resetOpen.value = true;
+}
+
+async function submitReset(): Promise<void> {
+  const row = resetRow.value;
+  if (!row) return;
+
+  resetError.value = null;
+  resetSaving.value = true;
+  const res = await callRpc('reset_member_pin', { p_member_id: row.id }, 'PIN 초기화 실패');
+  resetSaving.value = false;
+
+  if (!res) return;
+  if (!res.ok) {
+    resetError.value = describeReason(res.reason, 'PIN 초기화 실패');
+    return;
+  }
+
+  resetOpen.value = false;
+  showTempPin(row.name, res.temp_pin);
 }
 
 // ── 삭제 ─────────────────────────────────────────────────────────────────────
@@ -316,7 +418,7 @@ async function submitDelete(): Promise<void> {
   const res = await callRpc(
     'delete_member',
     { p_member_id: row.id },
-    '회원을 삭제하지 못했습니다.'
+    '회원 삭제 실패'
   );
   deleteSaving.value = false;
 
@@ -324,13 +426,13 @@ async function submitDelete(): Promise<void> {
   if (!res.ok) {
     deleteError.value =
       res.reason === 'has_records'
-        ? `경기 기록이 ${res.result_count ?? 0}건 있어 삭제할 수 없습니다. 휴면 처리를 쓰세요.`
-        : describeReason(res.reason, '회원을 삭제하지 못했습니다.');
+        ? `경기 기록 ${res.result_count ?? 0}건 있음 · 삭제 불가 (휴면 처리 사용)`
+        : describeReason(res.reason, '회원 삭제 실패');
     return;
   }
 
   deleteOpen.value = false;
-  toast({ title: `${row.name} 회원을 삭제했습니다.` });
+  toast({ title: `${row.name} 회원 삭제 완료` });
   await load();
 }
 
@@ -354,8 +456,39 @@ function statusLabel(row: AdminMemberRow): string {
   return row.dormant_from ? `휴면 ${row.dormant_from}~` : '현역';
 }
 
+// ── 좁은 화면의 관리 메뉴 ────────────────────────────────────────────────────
+// 넓은 화면의 버튼 넷과 같은 동작·같은 막힘 조건이다. 막힌 이유는 title 대신
+// hint 로 보인다 — 손가락으로는 title 이 뜨지 않는다.
+function menuItems(row: AdminMemberRow): DropdownMenuItem[] {
+  const items: DropdownMenuItem[] = [];
+  if (showRoleButton(row)) {
+    items.push({
+      label: row.role === 'admin' ? '회원으로 내리기' : '관리자로 올리기',
+      onSelect: () => void toggleRole(row),
+      disabled: roleBlock(row) !== null,
+      hint: roleBlock(row) ?? undefined,
+    });
+  }
+  items.push(
+    row.dormant_from
+      ? { label: '현역으로 복귀', onSelect: () => void restore(row), disabled: isSelf(row), hint: SELF_LOCKED }
+      : { label: '휴면 처리', onSelect: () => openDormant(row), disabled: isSelf(row), hint: SELF_LOCKED },
+    {
+      label: 'PIN 초기화',
+      onSelect: () => openReset(row),
+      disabled: isSelf(row),
+      hint: '본인 PIN은 계정 창에서 변경',
+    },
+  );
+  // 지울 수 없는 회원에게는 삭제를 아예 내놓지 않는다. 이유는 표 아래 안내문에 있다.
+  if (deletable(row)) {
+    items.push({ label: '삭제', onSelect: () => openDelete(row), destructive: true });
+  }
+  return items;
+}
+
 // ── 줄 상세 ──────────────────────────────────────────────────────────────────
-// 좁은 화면에서는 가입·기록·마지막 로그인 열이 숨는다. 이름을 누르면 통째로 본다.
+// 좁은 화면에서는 가입·참석·마지막 로그인 열이 숨는다. 이름을 누르면 통째로 본다.
 const compact = useCompactTable('sm');
 const detailRow = ref<AdminMemberRow | null>(null);
 const detailOpen = ref(false);
@@ -394,7 +527,9 @@ watch(compact, (isCompact) => {
         </Button>
       </div>
 
-      <Card class="w-min min-w-full">
+      <!-- 넓은 화면: 카드가 표의 최소 폭을 따라간다(w-min, 남으면 min-w-full).
+           좁은 화면(compact): 표가 스스로 옆으로 밀고 카드는 화면 폭에 머문다. (3-3) -->
+      <Card :class="compact ? 'w-full' : 'w-min min-w-full'">
         <CardContent class="px-2 sm:px-6">
           <AsyncState
             :loading="loading"
@@ -402,30 +537,33 @@ watch(compact, (isCompact) => {
             :empty="rows.length === 0"
             label="회원 목록"
             :skeleton-rows="8"
-            empty-title="회원이 없습니다"
+            empty-title="회원 없음"
             container-class="py-6"
             @retry="load()"
           >
             <div class="pt-4">
               <Table
-                :scroll="false"
+                :scroll="compact"
                 class="text-xs sm:text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
                 caption="회원 명단과 등급"
               >
                 <TableHeader>
                   <TableRow>
-                    <TableHead class="font-bold text-foreground whitespace-nowrap">이름</TableHead>
+                    <TableHead class="font-bold text-foreground whitespace-nowrap sticky left-0 z-30 bg-card">이름</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap">등급</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap">상태</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">가입</TableHead>
-                    <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">기록</TableHead>
+                    <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">참석</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">마지막 로그인</TableHead>
                     <TableHead class="font-bold text-right whitespace-nowrap">관리</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow v-for="row in rows" :key="row.id" class="hover:bg-muted/50 transition-colors">
-                    <TableCell class="font-medium whitespace-nowrap">
+                  <TableRow v-for="row in sortedRows" :key="row.id" class="group hover:bg-muted/50 transition-colors">
+                    <!-- 고정 열: 불투명 bg-card 위에 hover 틴트를 ::before 로 다시 얹는다 -->
+                    <TableCell
+                      class="font-medium whitespace-nowrap sticky left-0 z-10 bg-card isolate before:absolute before:inset-0 before:-z-10 before:transition-colors group-hover:before:bg-muted/50"
+                    >
                       <RowDetailButton
                         :label="`${row.name} 상세`"
                         :enabled="compact"
@@ -446,18 +584,27 @@ watch(compact, (isCompact) => {
                       {{ row.enrollment_year ?? DASH }}
                     </TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell">
-                      {{ row.result_count }}
+                      {{ row.attended_count }}
                     </TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell text-muted-foreground">
                       {{ formatLastLogin(row.last_login_at) }}
                     </TableCell>
                     <TableCell class="text-right whitespace-nowrap">
-                      <div class="inline-flex gap-1">
+                      <!-- 좁은 화면에서는 버튼 넷을 "⋯" 하나로 접는다. 늘어놓으면
+                           이 열 하나가 화면 폭의 절반을 넘는다. (3-3) -->
+                      <DropdownMenu
+                        v-if="compact"
+                        :label="`${row.name} 관리`"
+                        :disabled="busyId === row.id"
+                        :items="menuItems(row)"
+                      />
+                      <div v-else class="inline-flex gap-1">
                         <Button
+                          v-if="showRoleButton(row)"
                           variant="outline"
                           size="xs"
-                          :disabled="busyId === row.id"
-                          :title="row.role === 'admin' ? '회원으로 내리기' : '관리자로 올리기'"
+                          :disabled="busyId === row.id || roleBlock(row) !== null"
+                          :title="roleBlock(row) ?? (row.role === 'admin' ? '회원으로 내리기' : '관리자로 올리기')"
                           @click="toggleRole(row)"
                         >
                           {{ row.role === 'admin' ? '회원으로' : '관리자로' }}
@@ -466,23 +613,33 @@ watch(compact, (isCompact) => {
                           v-if="row.dormant_from"
                           variant="outline"
                           size="xs"
-                          :disabled="busyId === row.id"
-                          title="현역으로 되돌리기"
+                          :disabled="busyId === row.id || isSelf(row)"
+                          :title="isSelf(row) ? SELF_LOCKED : '현역으로 되돌리기'"
                           @click="restore(row)"
                         >복귀</Button>
                         <Button
                           v-else
                           variant="outline"
                           size="xs"
-                          :disabled="busyId === row.id"
-                          title="이 달부터 집계에서 제외"
+                          :disabled="busyId === row.id || isSelf(row)"
+                          :title="isSelf(row) ? SELF_LOCKED : '이 달부터 집계에서 제외'"
                           @click="openDormant(row)"
                         >휴면</Button>
                         <Button
+                          variant="outline"
+                          size="xs"
+                          :disabled="busyId === row.id || isSelf(row)"
+                          :title="isSelf(row) ? '본인 PIN은 계정 창에서 변경' : '임시 PIN 을 새로 발급'"
+                          @click="openReset(row)"
+                        >PIN 초기화</Button>
+                        <!-- 지울 수 없는 회원에게는 버튼을 아예 두지 않는다 (5-3).
+                             이유는 표 아래 안내문에 있다. -->
+                        <Button
+                          v-if="deletable(row)"
                           variant="destructive"
                           size="xs"
-                          :disabled="busyId === row.id || !deletable(row)"
-                          :title="deletable(row) ? '회원 삭제' : '기록이 있어 삭제할 수 없습니다 (휴면을 쓰세요)'"
+                          :disabled="busyId === row.id"
+                          title="회원 삭제"
                           @click="openDelete(row)"
                         >삭제</Button>
                       </div>
@@ -493,7 +650,7 @@ watch(compact, (isCompact) => {
 
               <p class="text-xs text-muted-foreground mt-2 px-4">
                 {{ rows.length }}명 · 관리자 {{ adminCount }}명 ·
-                기록이 있는 회원은 삭제되지 않습니다. 명단에서 빼려면 휴면을 쓰세요.
+                기록이 있는 회원은 삭제 불가 · 명단에서 빼려면 휴면 사용
               </p>
             </div>
           </AsyncState>
@@ -530,8 +687,8 @@ watch(compact, (isCompact) => {
           </div>
 
           <p class="text-xs text-muted-foreground">
-            시작월부터 월간 기록 표에 나옵니다. 초기 PIN 은 기본값이며, 첫 로그인 후
-            계정 창에서 본인이 바꾸도록 안내해주세요.
+            시작월부터 월간 기록 표에 표시 · 임시 PIN은 한 번만 표시 ·
+            본인에게 전달하면 첫 로그인에서 새 PIN 설정
           </p>
 
           <p v-if="addError" class="text-xs text-destructive">{{ addError }}</p>
@@ -539,7 +696,7 @@ watch(compact, (isCompact) => {
           <div class="flex justify-end gap-2 pt-1">
             <Button variant="outline" :disabled="addSaving" @click="addOpen = false">취소</Button>
             <Button :disabled="addSaving" @click="submitAdd()">
-              {{ addSaving ? '추가하는 중…' : '추가' }}
+              {{ addSaving ? '추가 중…' : '추가' }}
             </Button>
           </div>
         </div>
@@ -551,7 +708,7 @@ watch(compact, (isCompact) => {
           <h2 class="text-base font-bold">휴면 처리</h2>
           <p class="text-sm">
             <span class="font-medium">{{ dormantRow?.name }}</span> 회원을 아래 달부터
-            집계·랭킹·로그인 목록에서 제외합니다. 지난 기록은 그대로 남습니다.
+            집계·랭킹·로그인 목록에서 제외 · 지난 기록은 그대로 유지
           </p>
           <div class="space-y-1">
             <Label for="dormant-month">휴면 시작월</Label>
@@ -562,7 +719,29 @@ watch(compact, (isCompact) => {
           <div class="flex justify-end gap-2 pt-1">
             <Button variant="outline" :disabled="dormantSaving" @click="dormantOpen = false">취소</Button>
             <Button :disabled="dormantSaving" @click="submitDormant()">
-              {{ dormantSaving ? '저장하는 중…' : '휴면 처리' }}
+              {{ dormantSaving ? '저장 중…' : '휴면 처리' }}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+
+      <!-- PIN 초기화 -->
+      <Dialog v-model:open="resetOpen" label="PIN 초기화" content-class="sm:max-w-sm">
+        <div class="px-1 pt-1 space-y-3">
+          <h2 class="text-base font-bold">PIN 초기화</h2>
+          <p class="text-sm">
+            <span class="font-medium">{{ resetRow?.name }}</span> 회원의 PIN 초기화 ·
+            기존 로그인 모두 해제
+          </p>
+          <p class="text-xs text-muted-foreground">
+            새 임시 PIN은 한 번만 표시 · 본인에게 전달하면 첫 로그인에서 새 PIN 설정
+          </p>
+          <p v-if="resetError" class="text-xs text-destructive">{{ resetError }}</p>
+
+          <div class="flex justify-end gap-2 pt-1">
+            <Button variant="outline" :disabled="resetSaving" @click="resetOpen = false">취소</Button>
+            <Button :disabled="resetSaving" @click="submitReset()">
+              {{ resetSaving ? '초기화 중…' : '초기화' }}
             </Button>
           </div>
         </div>
@@ -574,19 +753,40 @@ watch(compact, (isCompact) => {
           <h2 class="text-base font-bold">회원 삭제</h2>
           <p class="text-sm">
             <span class="font-medium">{{ deleteRow?.name }}</span> 회원을 명단에서
-            완전히 지웁니다. 로그인 정보와 접속 기록도 함께 사라지며 되돌릴 수 없습니다.
+            완전히 삭제 · 로그인 정보와 접속 기록도 함께 삭제되며 되돌리기 불가
           </p>
           <p class="text-xs text-muted-foreground">
-            경기 기록이 있는 회원은 서버가 삭제를 거절합니다. 그런 경우에는 휴면 처리를 쓰세요.
+            경기 기록이 있는 회원은 서버가 삭제 거절 · 이 경우 휴면 처리 사용
           </p>
           <p v-if="deleteError" class="text-xs text-destructive">{{ deleteError }}</p>
 
           <div class="flex justify-end gap-2 pt-1">
             <Button variant="outline" :disabled="deleteSaving" @click="deleteOpen = false">취소</Button>
             <Button variant="destructive" :disabled="deleteSaving" @click="submitDelete()">
-              {{ deleteSaving ? '삭제하는 중…' : '삭제' }}
+              {{ deleteSaving ? '삭제 중…' : '삭제' }}
             </Button>
           </div>
+        </div>
+      </Dialog>
+
+      <!-- 임시 PIN (회원 추가 · PIN 초기화 공통) -->
+      <Dialog v-model:open="tempPinOpen" label="임시 PIN" content-class="sm:max-w-sm">
+        <div v-if="tempPin" class="px-1 pt-1 space-y-4 text-center">
+          <h2 class="text-base font-bold">{{ tempPin.name }} 님의 임시 PIN</h2>
+          <p class="font-mono text-5xl font-bold tracking-[0.3em] select-all" aria-live="polite">
+            {{ tempPin.pin }}
+          </p>
+          <Button variant="outline" size="sm" class="gap-1.5" @click="copyTempPin()">
+            <Copy class="w-4 h-4" aria-hidden="true" />
+            {{ tempPinCopied ? '복사 완료' : '복사' }}
+          </Button>
+          <p class="text-sm text-destructive font-medium">
+            이 창을 닫으면 다시 볼 수 없음
+          </p>
+          <p class="text-xs text-muted-foreground">
+            본인에게 전달하면 첫 로그인에서 새 PIN 설정
+          </p>
+          <Button class="w-full" @click="tempPinOpen = false">전달 완료 · 닫기</Button>
         </div>
       </Dialog>
 
@@ -600,7 +800,10 @@ watch(compact, (isCompact) => {
           <DetailItem label="가입연도">
             <span class="font-mono">{{ detailRow.enrollment_year ?? DASH }}</span>
           </DetailItem>
-          <DetailItem label="경기 기록">
+          <DetailItem label="참석">
+            <span class="font-mono">{{ detailRow.attended_count }}회</span>
+          </DetailItem>
+          <DetailItem label="기록(불참 포함)">
             <span class="font-mono">{{ detailRow.result_count }}건</span>
           </DetailItem>
           <DetailItem label="기획 이력">

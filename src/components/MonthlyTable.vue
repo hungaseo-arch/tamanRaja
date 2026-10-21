@@ -4,7 +4,7 @@ import { CircleHelp, Download } from 'lucide-vue-next';
 import type { MonthlyRow, ResultRank, ResultGroup } from '@/lib';
 import { formatDate, formatMeetingHeading, formatYearMonth } from '@/lib/format';
 import { cn } from '@/lib/utils';
-import { isRankName } from '@/lib/rank';
+import { computeResults, isRankName, type ScoredRow } from '@/lib/rank';
 import { GOLF_COURSES, setting } from '@/data';
 import { useAttendance } from '@/composables/useAttendance';
 import { useRecordExport } from '@/composables/useRecordExport';
@@ -34,6 +34,8 @@ export interface SavePayload {
   groups: Record<string, string>;
   ranks: Record<string, string>;
   attendance: Record<string, boolean | null>;
+  /** 잠금 해제 후 수정일 때 그 사유 (4-2). 저장이 끝나면 meetings.notes 에 덧붙인다. */
+  unlockReason?: string;
 }
 
 interface Props {
@@ -44,8 +46,12 @@ interface Props {
   isFutureMonth?: boolean;
   isEditable?: boolean;
   isManager?: boolean;
+  /** 기한(경기일+3일)이 지난 달을 잠금 해제해 고칠 수 있는지 — 관리자 한정 (4-2). */
+  canUnlock?: boolean;
   selectedMonth: string;
   monthOptions: SelectOption[];
+  selectedYear: string;
+  yearOptions: SelectOption[];
   manualDate: string;
   manualCourse: string;
   /**
@@ -54,6 +60,11 @@ interface Props {
    * 저장에 실패했는데 화면이 읽기 모드로 돌아가면 방금 친 값이 사라진 것처럼 보인다.
    */
   saveState?: 'idle' | 'saving' | 'error';
+  /**
+   * 참석 창을 열 수 있는 줄(로그인한 본인)의 회원 id. 참석 창은 익월 본인 참석만
+   * 바꾸므로, 부모가 익월을 보고 있을 때만 넘긴다. 그 외에는 null.
+   */
+  attendanceMemberId?: string | null;
 }
 
 const props = defineProps<Props>();
@@ -61,8 +72,10 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: 'save', data: SavePayload): void;
   (e: 'update:selectedMonth', value: string): void;
+  (e: 'update:selectedYear', value: string): void;
   (e: 'update:manualDate', value: string): void;
   (e: 'update:manualCourse', value: string): void;
+  (e: 'open-attendance'): void;
 }>();
 
 // 편집 모드. 미래 달은 기본 편집 상태로 열리지만, 편집 권한이 있을 때만이다.
@@ -80,7 +93,11 @@ const localAttendance = reactive<Record<string, boolean | null>>({});
 const { getAttendance } = useAttendance();
 
 // 편집 가능 여부: 미래월(기획) 또는 경기일 +3일 이내(당월 수정) — 관리자 한정
-const canManage = computed(() => (props.isEditable ?? props.isFutureMonth ?? false) && (props.isManager ?? false));
+// 잠금 해제(4-2): 기한이 지난 달을 관리자가 사유를 남기고 다시 연다. 달을 바꾸면 다시 잠긴다.
+const unlockReason = ref<string | null>(null);
+const canManage = computed(() =>
+  ((props.isEditable ?? props.isFutureMonth ?? false) || unlockReason.value !== null) && (props.isManager ?? false)
+);
 
 function clearLocal(): void {
   [localScores, localGroups, localRanks, localNextHc].forEach((map) =>
@@ -88,6 +105,9 @@ function clearLocal(): void {
   );
   Object.keys(localAttendance).forEach((k) => delete localAttendance[k]);
 }
+
+// 다른 달로 옮기면 잠금 해제도 풀린다 — 사유는 그 달 하나에 대한 것이다.
+watch(() => props.yearMonth, () => { unlockReason.value = null; });
 
 watch(
   () => [props.yearMonth, props.isFutureMonth, canManage.value] as const,
@@ -127,7 +147,7 @@ function getLocalNet(row: MonthlyRow): string {
 }
 
 function computeAutoFields(): void {
-  const scored = props.monthlyData
+  const scored: ScoredRow[] = props.monthlyData
     .filter((row) => {
       // 적용 핸디가 없으면 Net 을 낼 수 없다. 0 으로 두고 계산하면 Net 이
       // 스코어와 같아져 조 편성·Winner 판정까지 어긋나므로 아예 뺀다.
@@ -135,19 +155,13 @@ function computeAutoFields(): void {
       const val = localScores[row.member_id];
       return val !== undefined && val !== '' && !isNaN(parseInt(val, 10));
     })
-    .map((row) => {
-      const appHc = row.app_hc as number;
-      const score = parseInt(localScores[row.member_id], 10);
-      return {
-        member_id: row.member_id,
-        std_hc: row.std_hc,
-        app_hc: appHc,
-        prev_result_group: row.prev_result_group,
-        score,
-        netScore: score - appHc,
-      };
-    })
-    .sort((a, b) => a.netScore - b.netScore);
+    .map((row) => ({
+      member_id: row.member_id,
+      std_hc: row.std_hc,
+      app_hc: row.app_hc as number,
+      prev_result_group: row.prev_result_group,
+      score: parseInt(localScores[row.member_id], 10),
+    }));
 
   // 점수 없는 회원의 자동 계산값 초기화
   for (const row of props.monthlyData) {
@@ -158,47 +172,10 @@ function computeAutoFields(): void {
     }
   }
 
-  if (scored.length === 0) return;
-
-  const topCount = Math.floor(scored.length / 2);
-
-  scored.forEach((row, idx) => {
-    const group: ResultGroup = idx < topCount ? '1등조' : '2등조';
-    localGroups[row.member_id] = group;
-
-    // 차월핸디:
-    //  - 당월핸디가 기준핸디와 같은 달(1월·기준핸디 재설정·조 변경 복귀 직후)은
-    //    초기화 상태라 직전 조와 견주지 않고 당월 결과만으로 ±1
-    //  - 그 외 직전 라운드와 같은 조 → 1등조 app-1 / 2등조 app+1
-    //  - 조가 바뀐 경우 → 기준핸디(std_hc)로 복귀
-    const fresh = row.app_hc === row.std_hc;
-    const adjust = group === '1등조' ? row.app_hc - 1 : row.app_hc + 1;
-    localNextHc[row.member_id] =
-      fresh || (row.prev_result_group !== null && row.prev_result_group === group)
-        ? adjust
-        : row.std_hc;
-  });
-
-  // Winner: 최저 Net Score
-  const winnerRow = scored[0];
-  // Host: 최고 Net Score (Winner와 다른 경우)
-  const hostRow = scored[scored.length - 1].member_id !== winnerRow.member_id
-    ? scored[scored.length - 1]
-    : undefined;
-  // Medalist: 최저 Raw Score (Winner 제외)
-  const byRaw = [...scored].sort((a, b) => a.score - b.score);
-  const medalistRow = byRaw.find((r) => r.member_id !== winnerRow.member_id);
-
-  for (const row of scored) {
-    if (row.member_id === winnerRow.member_id) {
-      localRanks[row.member_id] = 'Winner';
-    } else if (row.member_id === medalistRow?.member_id) {
-      localRanks[row.member_id] = 'Medalist';
-    } else if (row.member_id === hostRow?.member_id) {
-      localRanks[row.member_id] = 'Host';
-    } else {
-      localRanks[row.member_id] = '';
-    }
+  for (const [memberId, r] of Object.entries(computeResults(scored))) {
+    localGroups[memberId] = r.result_group;
+    localNextHc[memberId] = r.next_hc;
+    localRanks[memberId] = r.result_rank;
   }
 }
 
@@ -222,6 +199,21 @@ const invalidScoreNames = computed(() =>
 
 const validationError = ref<string | null>(null);
 
+// 당월 핸디가 없는 회원 (3-4). 서버 save_meeting_results 의 no_handicap 과 같은
+// 규칙이다 — 스코어가 저장된 적 없는 달은 전원, 이미 저장된 달(사후 수정)은
+// 참석·스코어 행만 본다. 직전 달이 미확정이면 resolveHandicap 이 app_hc 를
+// null 로 주므로 그 경우도 여기 걸린다. 눌러 봐야 서버가 거절하니 버튼을 잠근다.
+const missingHcNames = computed(() =>
+  props.monthlyData
+    .filter((row) => row.app_hc === null)
+    .filter((row) =>
+      props.isFutureMonth
+      || localAttendance[row.member_id] === true
+      || !!localScores[row.member_id]?.trim(),
+    )
+    .map((row) => row.member_name),
+);
+
 watch(
   localScores,
   () => {
@@ -233,10 +225,10 @@ watch(
 );
 
 function handleSave(): void {
-  if (props.saveState === 'saving') return;
+  if (props.saveState === 'saving' || missingHcNames.value.length > 0) return;
   if (invalidScoreNames.value.length > 0) {
     validationError.value =
-      `스코어는 ${SCORE_MIN}~${SCORE_MAX} 사이의 정수여야 합니다 — ${invalidScoreNames.value.join(', ')}`;
+      `스코어는 ${SCORE_MIN}~${SCORE_MAX} 사이 정수만 가능 — ${invalidScoreNames.value.join(', ')}`;
     return;
   }
   validationError.value = null;
@@ -245,6 +237,7 @@ function handleSave(): void {
     groups: { ...localGroups },
     ranks: { ...localRanks },
     attendance: { ...localAttendance },
+    unlockReason: unlockReason.value ?? undefined,
   });
 }
 
@@ -252,9 +245,42 @@ function handleSave(): void {
 watch(
   () => props.saveState,
   (now, before) => {
-    if (before === 'saving' && now === 'idle') isEditing.value = false;
+    if (before === 'saving' && now === 'idle') {
+      isEditing.value = false;
+      unlockReason.value = null; // 한 번 저장하면 다시 잠근다. 또 고치려면 사유를 새로 적는다.
+    }
   },
 );
+
+// ── 잠금 해제 (4-2) ──────────────────────────────────────────────────────────
+const unlockOpen = ref(false);
+const unlockInput = ref('');
+const unlockError = ref<string | null>(null);
+const showUnlock = computed(() => !!props.canUnlock && (props.isManager ?? false) && unlockReason.value === null);
+
+function openUnlock(): void {
+  unlockInput.value = '';
+  unlockError.value = null;
+  unlockOpen.value = true;
+}
+
+function confirmUnlock(): void {
+  const reason = unlockInput.value.trim();
+  if (!reason) {
+    unlockError.value = '수정 사유 필요';
+    return;
+  }
+  unlockReason.value = reason;
+  unlockOpen.value = false;
+  // canManage 가 참이 된 뒤 watch 가 입력값을 비우므로, 그다음에 시드한다.
+  void nextTick(enterEdit);
+}
+
+function cancelEdit(): void {
+  clearLocal();
+  isEditing.value = false;
+  unlockReason.value = null;
+}
 
 // ── 줄 상세 (디스클로저) ─────────────────────────────────────────────────────
 // 좁은 화면에서는 기준 핸디·차월 핸디·결과 그룹 열이 숨는다. 회원 이름을
@@ -263,12 +289,18 @@ watch(
 // detailRow 는 창을 닫아도 비우지 않는다 — 닫히는 동안 내용이 사라지면
 // 사라지는 애니메이션이 빈 상자로 보인다.
 const compact = useCompactTable('md');
+// 좁은 화면의 편집 모드에서는 표가 가로 스크롤을 맡는다. (3-3)
+const tableScrolls = computed(() => isEditing.value && compact.value);
 
 // 핸디 규칙 도움말. 차월 핸디 열은 좁은 화면에서 숨겨지므로 열 제목이 아니라
 // 항상 보이는 컨트롤 줄에 둔다.
 const showHcHelp = ref(false);
 const detailRow = ref<MonthlyRow | null>(null);
 const detailOpen = ref(false);
+
+// 본인 줄의 이름·참석 칸. RowDetailButton 과 같은 점선 밑줄로 눌리는 곳임을 알린다.
+const ATTENDANCE_BUTTON_CLASS =
+  '-mx-1 rounded-sm px-1 py-1 underline decoration-dotted decoration-muted-foreground/70 underline-offset-4 hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 function openDetail(row: MonthlyRow): void {
   detailRow.value = row;
@@ -312,6 +344,10 @@ const sortedMonthlyData = computed(() =>
 
 const winnerRow = computed(() => props.monthlyData.find((r) => r.result_rank === 'Winner'));
 
+const localSelectedYear = computed({
+  get: () => props.selectedYear,
+  set: (v: string) => emit('update:selectedYear', v),
+});
 const localSelectedMonth = computed({
   get: () => props.selectedMonth,
   set: (v: string) => emit('update:selectedMonth', v),
@@ -471,13 +507,37 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             v-if="isEditing"
             size="xs"
             class="shrink-0"
-            :disabled="props.saveState === 'saving'"
+            :disabled="props.saveState === 'saving' || missingHcNames.length > 0"
+            :aria-describedby="isEditing && missingHcNames.length > 0 ? 'monthly-missing-hc' : undefined"
             @click="handleSave"
           >{{ props.saveState === 'saving' ? '저장 중...' : '저장' }}</Button>
-          <Button v-else size="xs" variant="outline" class="shrink-0" @click="enterEdit">수정</Button>
+          <Button
+            v-if="isEditing && unlockReason !== null"
+            size="xs"
+            variant="outline"
+            class="shrink-0"
+            :disabled="props.saveState === 'saving'"
+            @click="cancelEdit"
+          >취소</Button>
+          <Button v-else-if="!isEditing" size="xs" variant="outline" class="shrink-0" @click="enterEdit">수정</Button>
         </template>
+        <Button v-else-if="showUnlock" size="xs" variant="outline" class="shrink-0" @click="openUnlock">
+          잠금 해제 후 수정
+        </Button>
 
-        <!-- 월 선택. 연간 랭킹의 연도 선택과 같은 자리·같은 배색이다 -->
+        <!-- 연도·월 선택. 연간 랭킹의 연도 선택과 같은 자리·같은 배색이다.
+             고를 연도가 하나뿐이면 연도 상자는 띄우지 않는다 (연간 랭킹과 같다). -->
+        <template v-if="yearOptions.length > 1">
+          <label for="monthly-year" class="sr-only">조회할 연도</label>
+          <Select
+            id="monthly-year"
+            v-model="localSelectedYear"
+            :options="yearOptions"
+            placeholder=""
+            size="xs"
+            class="w-22 shrink-0"
+          />
+        </template>
         <label for="monthly-month" class="sr-only">조회할 월</label>
         <Select
           id="monthly-month"
@@ -485,7 +545,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           :options="monthOptions"
           placeholder="월 선택"
           size="xs"
-          class="w-24 shrink-0"
+          class="w-18 shrink-0"
         />
 
         <!-- 엑셀(CSV) 다운로드 — 해당 연도 전체 기록.
@@ -494,12 +554,12 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           variant="outline"
           size="xs"
           class="shrink-0 gap-1"
-          :title="`${exportYear}년 전체 기록 엑셀(CSV) 다운로드`"
-          :aria-label="`${exportYear}년 전체 기록 엑셀 다운로드`"
+          :title="`${exportYear}년 전체 기록 CSV 다운로드(엑셀용)`"
+          :aria-label="`${exportYear}년 전체 기록 CSV 다운로드(엑셀용)`"
           @click="exportYearlyRecords(props.selectedMonth)"
         >
           <Download class="w-3.5 h-3.5" aria-hidden="true" />
-          <span class="hidden sm:inline">엑셀</span>
+          <span class="hidden sm:inline">CSV</span>
         </Button>
 
         <!-- 핸디 규칙 도움말 -->
@@ -522,27 +582,39 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
       <p v-if="validationError" class="text-xs text-destructive" role="alert">
         {{ validationError }}
       </p>
+      <p
+        v-if="isEditing && missingHcNames.length > 0"
+        id="monthly-missing-hc"
+        class="text-xs text-destructive"
+        role="status"
+      >
+        당월 핸디 없는 회원 있음 — {{ missingHcNames.join(', ') }} · 직전 달 결과 저장 후 저장 가능
+      </p>
     </div>
 
     <!-- 월별 기록 테이블 -->
     <!-- 카드가 표를 감싼다: 표는 좁은 화면에서 줄일 수 없는 최소 폭이 있고
-         가로 스크롤은 main 이 맡는다. 카드 폭을 그 최소 폭(w-min)에 맞춰야
+         평소 가로 스크롤은 main 이 맡는다. 카드 폭을 그 최소 폭(w-min)에 맞춰야
          테두리·배경이 표 오른쪽 끝까지 따라간다. 넓은 화면에서는
-         min-w-full 이 이겨서 예전과 똑같이 폭을 가득 채운다. -->
-    <Card class="w-min min-w-full">
+         min-w-full 이 이겨서 예전과 똑같이 폭을 가득 채운다.
+         표가 스스로 스크롤할 때(tableScrolls)는 카드가 화면 폭에 머문다. -->
+    <Card :class="tableScrolls ? 'w-full' : 'w-min min-w-full'">
       <CardContent class="px-2 sm:px-6">
         <div class="pt-4">
           <!-- 위의 월 선택·엑셀은 밖에 둔다. 기록이 없는 달이라도 다른 달로
                넘어갈 수단은 남아 있어야 한다. -->
           <AsyncState
             :empty="props.monthlyData.length === 0"
-            :empty-title="`${heading} 기록이 없습니다`"
-            empty-hint="다른 달을 고르거나, 경기 결과가 저장되면 여기에 표가 나타납니다."
+            :empty-title="`${heading} 기록 없음`"
+            empty-hint="다른 달 선택, 또는 경기 결과 저장 후 표 표시"
           >
-          <!-- scroll=false: 스크롤은 페이지가 한다. 그래야 위쪽 표제 줄이 함께
-               밀려 올라가고, 열 제목만 화면 맨 위에 남는다. -->
+          <!-- 평소에는 스크롤을 페이지가 한다. 그래야 위쪽 표제 줄이 함께
+               밀려 올라가고, 열 제목만 화면 맨 위에 남는다.
+               좁은 화면의 편집 모드만 표가 스스로 옆으로 민다 — 입력칸이 붙어
+               최소 폭이 화면보다 넓어지는데, 페이지째 밀리면 저장 버튼까지
+               화면 밖으로 나간다. 회원 열은 sticky 라 그대로 남는다. (3-3) -->
           <Table
-            :scroll="false"
+            :scroll="tableScrolls"
             class="text-xs sm:text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
             :caption="`${heading} 회원별 핸디·스코어 기록`"
           >
@@ -581,19 +653,37 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 >
                   <!-- 편집 중에는 열지 않는다. 상세는 저장된 값을 보여주므로
                        아직 저장하지 않은 입력값과 어긋나 보인다. -->
-                  <RowDetailButton v-if="!isEditing" :label="row.member_name" :enabled="compact" @click="openDetail(row)">{{ row.member_name }}</RowDetailButton>
+                  <!-- 본인 줄은 상세 대신 참석 창을 연다. 참석 창은 저장된 값만
+                       다루므로 편집 중에도 연다. -->
+                  <button
+                    v-if="row.member_id === attendanceMemberId"
+                    type="button"
+                    aria-haspopup="dialog"
+                    :aria-label="`${row.member_name} 참석 여부 바꾸기`"
+                    :class="ATTENDANCE_BUTTON_CLASS"
+                    @click="emit('open-attendance')"
+                  >{{ row.member_name }}</button>
+                  <RowDetailButton v-else-if="!isEditing" :label="row.member_name" :enabled="compact" @click="openDetail(row)">{{ row.member_name }}</RowDetailButton>
                   <template v-else>{{ row.member_name }}</template>
                 </TableCell>
 
                 <!-- 참석여부 (미래월만) -->
                 <TableCell v-if="isFutureMonth" class="text-center">
-                  <span :class="cn('text-xs font-semibold whitespace-nowrap', attendanceLabel(row).class)">{{ attendanceLabel(row).text }}</span>
+                  <button
+                    v-if="row.member_id === attendanceMemberId"
+                    type="button"
+                    aria-haspopup="dialog"
+                    :aria-label="`참석 여부 ${attendanceLabel(row).text} — 바꾸기`"
+                    :class="cn(ATTENDANCE_BUTTON_CLASS, 'text-xs font-semibold whitespace-nowrap', attendanceLabel(row).class)"
+                    @click="emit('open-attendance')"
+                  >{{ attendanceLabel(row).text }}</button>
+                  <span v-else :class="cn('text-xs font-semibold whitespace-nowrap', attendanceLabel(row).class)">{{ attendanceLabel(row).text }}</span>
                 </TableCell>
 
                 <TableCell class="text-center font-mono hidden sm:table-cell">{{ row.std_hc }}</TableCell>
                 <TableCell class="text-center font-mono">
                   <template v-if="row.app_hc !== null">{{ row.app_hc }}</template>
-                  <span v-else class="text-muted-foreground" title="직전 달 차월 핸디가 아직 정해지지 않았습니다">-</span>
+                  <span v-else class="text-muted-foreground" title="직전 달 차월 핸디 미정">-</span>
                 </TableCell>
                 <TableCell class="text-center font-mono hidden sm:table-cell">
                   <template v-if="isEditing && localNextHc[row.member_id] != null">{{ localNextHc[row.member_id] }}</template>
@@ -691,6 +781,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                   </template>
                   <template v-else-if="isRankName(row.result_rank)">
                     <RankBadge :rank="row.result_rank" />
+                    <!-- 결과 그룹 열이 숨는 폭에서는 배지에 가려 조가 사라진다 (5-5) -->
+                    <span v-if="row.result_group" class="md:hidden block text-[10px] leading-tight text-muted-foreground mt-0.5">{{ row.result_group }}</span>
                   </template>
                   <!-- 순위 없는 회원: 작은 화면(결과 그룹 컬럼 숨김)에서만 그룹 표시 -->
                   <template v-else-if="row.result_group">
@@ -727,6 +819,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         </DetailItem>
         <DetailItem label="차월 핸디">
           <span v-if="detailRow.attended && detailRow.score !== null && detailRow.next_hc !== null" class="font-mono">{{ detailRow.next_hc }}</span>
+          <Badge v-if="detailRow.next_hc_mismatch" variant="outline" class="ml-1.5 border-amber-500 text-amber-700 font-normal">※ 저장값 불일치(관리자 확인 필요)</Badge>
         </DetailItem>
         <DetailItem label="스코어">
           <span v-if="detailRow.attended && detailRow.score !== null" class="font-mono">{{ detailRow.score }}</span>
@@ -763,10 +856,10 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         <section class="space-y-1.5">
           <h3 class="font-semibold">용어</h3>
           <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
-            <li><b class="text-foreground">기준 핸디</b> — 매년 1월에 새로 정하는 그 해의 기본 핸디.</li>
-            <li><b class="text-foreground">당월 핸디</b> — 이달 경기에 적용하는 핸디. NET = 스코어 − 당월 핸디.</li>
-            <li><b class="text-foreground">차월 핸디</b> — 이달 결과로 정해지는 다음 달의 당월 핸디.</li>
-            <li><b class="text-foreground">조 편성</b> — NET 이 낮은 순으로 참석자 절반이 1등조, 나머지가 2등조.</li>
+            <li><b class="text-foreground">기준 핸디</b> — 매년 1월에 새로 정하는 그 해의 기본 핸디</li>
+            <li><b class="text-foreground">당월 핸디</b> — 이달 경기에 적용하는 핸디 · NET = 스코어 − 당월 핸디</li>
+            <li><b class="text-foreground">차월 핸디</b> — 이달 결과로 정해지는 다음 달의 당월 핸디</li>
+            <li><b class="text-foreground">조 편성</b> — NET 이 낮은 순으로 참석자 절반이 1등조, 나머지가 2등조</li>
           </ul>
         </section>
 
@@ -802,14 +895,43 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             </table>
           </div>
           <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
-            <li>홀수 핸디도 그대로 인정한다.</li>
-            <li>계속 1등조라 핸디가 내려가 있어도 <b class="text-foreground">단 한 번</b> 2등조에 들면 기준 핸디로 돌아온다. 2등조도 반대로 같다.</li>
-            <li><b class="text-foreground">기준 핸디로 복귀하면 모든 것이 초기화된다.</b> 당월 핸디가 기준 핸디와 같은 달(매년 1월, 기준 핸디를 새로 정한 달, 조 변경으로 복귀한 다음 달)은 직전 라운드와 견주지 않고 그 달 결과만으로 ±1 한다.</li>
-            <li>"직전 라운드"는 마지막으로 조에 편성된 달이다. 불참한 달은 건너뛰고 비교한다.</li>
-            <li>불참한 달은 당월 핸디가 그대로 다음 달로 이어진다.</li>
+            <li>홀수 핸디도 그대로 인정</li>
+            <li>계속 1등조라 핸디가 내려가 있어도 <b class="text-foreground">단 한 번</b> 2등조에 들면 기준 핸디로 복귀 · 2등조도 반대로 동일</li>
+            <li><b class="text-foreground">기준 핸디로 복귀하면 모든 것을 초기화</b> · 당월 핸디가 기준 핸디와 같은 달(매년 1월, 기준 핸디를 새로 정한 달, 조 변경으로 복귀한 다음 달)은 직전 라운드와 견주지 않고 그 달 결과만으로 ±1</li>
+            <li>"직전 라운드" = 마지막으로 조에 편성된 달 · 불참한 달은 건너뛰고 비교</li>
+            <li>불참한 달은 당월 핸디를 그대로 다음 달로 이월</li>
           </ul>
         </section>
       </div>
+    </Dialog>
+
+    <!-- 잠금 해제 사유 (4-2) -->
+    <Dialog v-model:open="unlockOpen" label="잠금 해제 후 수정" content-class="sm:max-w-sm">
+      <form class="px-1 pt-1 space-y-3" @submit.prevent="confirmUnlock">
+        <h2 class="text-base font-bold">잠금 해제 후 수정</h2>
+        <p class="text-sm">확정된 기록 · 수정 사유 입력 필요</p>
+        <p class="text-xs text-muted-foreground">
+          사유는 저장 시 모임 메모에 <span class="whitespace-nowrap">[날짜 수정: 사유]</span> 로 누적
+        </p>
+        <div class="space-y-1">
+          <label for="unlock-reason" class="text-sm font-medium">수정 사유</label>
+          <textarea
+            id="unlock-reason"
+            v-model="unlockInput"
+            rows="3"
+            maxlength="200"
+            class="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            placeholder="예: 홍길동 스코어 오기 정정"
+            :aria-invalid="!!unlockError"
+            :aria-describedby="unlockError ? 'unlock-error' : undefined"
+          />
+          <p v-if="unlockError" id="unlock-error" class="text-xs text-destructive" role="alert">{{ unlockError }}</p>
+        </div>
+        <div class="flex justify-end gap-2 pt-1">
+          <Button type="button" variant="outline" size="sm" @click="unlockOpen = false">취소</Button>
+          <Button type="submit" size="sm">잠금 해제</Button>
+        </div>
+      </form>
     </Dialog>
   </div>
 </template>

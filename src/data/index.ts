@@ -76,13 +76,14 @@ export async function loadMembers(): Promise<void> {
   if (MEMBERS.length > 0 || membersLoading.value) return;
   membersLoading.value = true;
   try {
-    // dormant_from 은 로그인 화면의 회원 목록에서 휴면 회원을 빼는 데 쓴다.
-    // 기록이 아니라 명단에 붙는 표시라 로그인 전에도 필요하다.
-    const { data, error } = await supabase.from('members').select('id, name, dormant_from');
+    // 세션 없이 members 테이블을 읽지 않는다 (5-4). login_members() 는 지금
+    // 현역인 회원의 id, name 만 돌려준다 — 휴면 회원·dormant_from 은 로그인 뒤
+    // loadData() 가 채운다.
+    const { data, error } = await supabase.rpc('login_members');
     if (error) throw new Error(error.message);
     fillMembers(data ?? []);
   } catch (err) {
-    dataError.value = describeError(err, '회원 목록을 불러오는 중 오류가 발생했습니다.');
+    dataError.value = describeError(err, '회원 목록 불러오기 실패');
   } finally {
     membersLoading.value = false;
   }
@@ -136,7 +137,7 @@ export async function loadData(retries = 1): Promise<void> {
       if (attempt < retries) {
         await delay(1500 * attempt);
       } else {
-        dataError.value = describeError(err, '데이터를 불러오는 중 오류가 발생했습니다.');
+        dataError.value = describeError(err, '데이터 불러오기 실패');
       }
     }
   }
@@ -250,7 +251,7 @@ async function _fetchAll(): Promise<void> {
       (attendances ?? []).map((a) => ({
         year_month: a.year_month as string,
         member_id: (a as { member_id: number }).member_id,
-        attending: a.attending as boolean,
+        attending: (a.attending as boolean | null) ?? null,
       }))
     );
 }
@@ -297,10 +298,37 @@ function isMonthSettled(yearMonth: string): boolean {
   return results.some((r) => r.score !== null);
 }
 
+/** 그 달의 다음 달. 12월이면 다음 해 1월. */
+function nextYearMonth(yearMonth: string): string {
+  const [yr, mo] = yearMonth.split('-');
+  const next = parseInt(mo, 10) + 1;
+  return next === 13
+    ? `${parseInt(yr, 10) + 1}-01`
+    : `${yr}-${String(next).padStart(2, '0')}`;
+}
+
+/**
+ * 차월핸디 체인(이 달 next_hc = 다음 달 app_hc)을 검사하는 첫 달. 2026-07 에
+ * 전 회원 기준핸디를 새로 정했고, 그 전 기록은 시트에서 옮긴 값이라 재설정
+ * 달마다 어긋나는 게 정상이다. DB app.check_handicap_chain() 과 같은 값.
+ */
+const HANDICAP_CHAIN_FROM = '2026-07';
+
+export interface ResolvedHandicap {
+  std_hc: number;
+  app_hc: number | null;
+  next_hc: number | null;
+  /**
+   * 그 달 next_hc 저장값과 다음 달 app_hc 저장값이 다르다. 화면은 다음 달
+   * app_hc 를 차월 핸디로 보여 주고, 상세창에 관리자 확인 배지를 단다.
+   */
+  next_hc_mismatch: boolean;
+}
+
 export function resolveHandicap(
   memberId: string,
   yearMonth: string
-): { std_hc: number; app_hc: number | null; next_hc: number | null } | null {
+): ResolvedHandicap | null {
   // 당월 핸디는 직전 달 결과로, 차월 핸디는 그 달 결과로 정해진다.
   const appSettled = isMonthSettled(prevYearMonth(yearMonth));
   const nextSettled = isMonthSettled(yearMonth);
@@ -309,10 +337,23 @@ export function resolveHandicap(
     (h) => h.member_id === memberId && h.year_month === yearMonth
   );
   if (exact) {
+    // 차월 핸디는 다음 달 행의 app_hc 가 있으면 그 값이다 — 다음 달 Net 이
+    // 실제로 그 값으로 계산되므로, 이 달 next_hc 와 어긋나면 다음 달 쪽이 맞다.
+    // 둘이 다르면 숨기지 않고 표시해 관리자가 고치게 한다
+    // (DB: app.check_handicap_chain()).
+    const nextRow = MONTHLY_HANDICAPS.find(
+      (h) => h.member_id === memberId && h.year_month === nextYearMonth(yearMonth)
+    );
+    const nextApp = nextRow?.app_hc ?? null;
+    const nextHc = nextApp ?? exact.next_hc;
+    const mismatch =
+      yearMonth >= HANDICAP_CHAIN_FROM &&
+      nextApp !== null && exact.next_hc !== null && nextApp !== exact.next_hc;
     return {
       std_hc: exact.std_hc,
       app_hc: appSettled ? exact.app_hc : null,
-      next_hc: nextSettled ? exact.next_hc : null,
+      next_hc: nextSettled ? nextHc : null,
+      next_hc_mismatch: nextSettled && mismatch,
     };
   }
 
@@ -321,7 +362,12 @@ export function resolveHandicap(
     .sort((a, b) => (a.year_month > b.year_month ? -1 : 1))[0];
   if (!prev) return null;
 
-  return { std_hc: prev.std_hc, app_hc: appSettled ? prev.next_hc : null, next_hc: null };
+  return {
+    std_hc: prev.std_hc,
+    app_hc: appSettled ? prev.next_hc : null,
+    next_hc: null,
+    next_hc_mismatch: false,
+  };
 }
 
 /**
@@ -403,6 +449,7 @@ export function getMonthlyData(yearMonth: string): MonthlyRow[] {
       std_hc: stdHc,
       app_hc: appHc,
       next_hc: baseHandicap.next_hc,
+      next_hc_mismatch: baseHandicap.next_hc_mismatch,
       prev_result_group: lastResultGroup(member.id, yearMonth),
       attended: result?.attended ?? false,
       score: result?.score ?? null,
@@ -478,7 +525,7 @@ export async function loadYearlySummary(year: string, reload = false): Promise<v
       rank: Number(r.rank),
     }));
   } catch (err) {
-    yearlyRankingError.value = describeError(err, '연간 랭킹을 불러오지 못했습니다.');
+    yearlyRankingError.value = describeError(err, '연간 랭킹 불러오기 실패');
   } finally {
     yearlyRankingLoading.value = false;
   }

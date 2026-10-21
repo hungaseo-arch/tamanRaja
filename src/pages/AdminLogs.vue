@@ -48,6 +48,8 @@ interface AuthEventRow {
   user_agent: string | null;
   /** 세션이 끝난 기록에만 있다. 그 세션이 열려 있던 시간(초). */
   duration_seconds: number | null;
+  /** 본인이 아닌 사람이 일으킨 기록(pin_reset)의 행위자. 그때 기기는 행위자의 것이다. */
+  actor_name?: string | null;
 }
 
 // 화면 문구와 색을 한 곳에 모은다. 서버가 새 값을 보내와도 뱃지가 비어
@@ -59,6 +61,7 @@ const EVENT_META = {
   expired:      { label: '세션 만료',    variant: 'outline'     },
   login_failed: { label: 'PIN 실패',     variant: 'destructive' },
   locked:       { label: '잠금',         variant: 'destructive' },
+  pin_reset:    { label: 'PIN 초기화',   variant: 'secondary'   },
 } as const;
 
 type EventKey = keyof typeof EVENT_META;
@@ -122,7 +125,7 @@ async function load(): Promise<void> {
   if (rpcError) {
     // 권한 없음(42501)도 그대로 보여준다. 빈 표로 두면 기록이 없는 것과
     // 구분되지 않는다.
-    error.value = describeError(rpcError, '접속 기록을 불러오지 못했습니다.');
+    error.value = describeError(rpcError, '접속 기록 불러오기 실패');
     rows.value = [];
   } else {
     rows.value = (data ?? []) as AuthEventRow[];
@@ -251,8 +254,8 @@ watch(compact, (isCompact) => {
             :empty="rows.length === 0"
             label="접속 기록"
             :skeleton-rows="8"
-            empty-title="해당 조건의 기록이 없습니다"
-            empty-hint="기간을 넓히거나 필터를 지워 보세요."
+            empty-title="해당 조건의 기록 없음"
+            empty-hint="기간 확대 또는 필터 해제"
             container-class="py-6"
             @retry="load()"
           >
@@ -288,7 +291,7 @@ watch(compact, (isCompact) => {
                       {{ formatDuration(row.duration_seconds) }}
                     </TableCell>
                     <TableCell class="text-center whitespace-nowrap hidden sm:table-cell text-muted-foreground">
-                      {{ formatDevice(row.user_agent) }}
+                      <template v-if="row.actor_name">{{ row.actor_name }} 처리 · </template>{{ formatDevice(row.user_agent) }}
                     </TableCell>
                   </TableRow>
                 </TableBody>
@@ -297,9 +300,9 @@ watch(compact, (isCompact) => {
               <p class="text-xs text-muted-foreground mt-2 px-4">
                 {{ rows.length }}건
                 <template v-if="rows.length >= ROW_LIMIT">
-                  (최근 {{ ROW_LIMIT }}건까지만 보여줍니다 — 기간을 좁혀 주세요)
+                  (최근 {{ ROW_LIMIT }}건까지만 표시 — 기간 축소 필요)
                 </template>
-                · 기록은 180일 보관합니다.
+                · 기록 180일 보관
               </p>
             </div>
           </AsyncState>
@@ -321,7 +324,8 @@ watch(compact, (isCompact) => {
           <DetailItem label="접속 시간">
             <span class="font-mono">{{ formatDuration(detailRow.duration_seconds) }}</span>
           </DetailItem>
-          <DetailItem label="기기">{{ formatDevice(detailRow.user_agent) }}</DetailItem>
+          <DetailItem v-if="detailRow.actor_name" label="처리한 관리자">{{ detailRow.actor_name }}</DetailItem>
+          <DetailItem :label="detailRow.actor_name ? '처리 기기' : '기기'">{{ formatDevice(detailRow.user_agent) }}</DetailItem>
           <DetailItem label="기기 원문">
             <span class="text-xs text-muted-foreground wrap-break-word">{{ detailRow.user_agent ?? DASH }}</span>
           </DetailItem>

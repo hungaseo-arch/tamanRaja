@@ -148,7 +148,7 @@ HashHistory(`#/path`) 기반이다. GitHub Pages 는 임의 경로를 index.html
   (관리자 ↔ 회원) · 휴면/복귀 · 삭제를 한 화면에서 한다. 회원을 추가하면
   로그인 정보와 시작월의 기준핸디가 함께 생긴다. **경기 기록이 있는 회원은
   삭제되지 않는다** — 명단에서 빼는 정상 경로는 휴면이다.
-- **엑셀(CSV) 내려받기** — 월간 기록·연간 랭킹·나의 기록 각 화면에서 지원한다.
+- **CSV 내려받기(엑셀용)** — 월간 기록·연간 랭킹·나의 기록 각 화면에서 지원한다.
 - **PWA** — 홈 화면에 설치할 수 있고, 새 버전이 올라오면 토스트로 물어본다.
   점수를 입력하는 중에 말없이 새로고침되지 않도록 `prompt` 방식을 쓴다.
 
@@ -181,7 +181,8 @@ SECURITY DEFINER 함수를 거치지 않으면 아무도 읽지 못한다.
 | `v_member_stats` | 뷰 | 연도별 + 통산 집계 (`year IS NULL` 행이 통산) |
 | `v_yearly_summary` | 뷰 | 연간 요약 |
 | `yearly_ranking(year)` | 함수 | 연간 랭킹 집계 |
-| `recompute_next_hc()` | 트리거 | `meeting_results` 저장 시 차월핸디 산출·이월 |
+| `save_meeting_results(...)` | RPC | 월 기록(골프장·모임·결과) 저장을 한 트랜잭션으로. `security invoker` 라 권한은 기존 RLS. 입력 검증(스코어 -20~60, 시상, Host 1명, 당월 핸디 유무) |
+| `recompute_next_hc_stmt()` | 트리거 | `meeting_results` 저장 시 차월핸디 산출·이월. 문장 단위 — 본문은 `app.recompute_next_hc_for_meeting()` |
 
 뷰는 모두 `security_invoker = on` 이다. 끄면 뷰가 읽기 RLS 를 통째로 우회해
 익명 키만으로 전 회원 기록이 새어 나간다.
@@ -214,7 +215,7 @@ Net = 스코어(score) − 당월 핸디(app_hc)      낮을수록 우수
 
 ### 자동 보정
 
-스코어를 저장하면 DB 트리거 `recompute_next_hc` 가 차월핸디를 계산해 저장하고,
+스코어를 저장하면 DB 트리거(`recompute_next_hc_stmt` → `app.recompute_next_hc_for_meeting`)가 차월핸디를 계산해 저장하고,
 그 값을 다음 달 `app_hc` 로 이월한다 (다음 달에 아직 결과가 없을 때만).
 `MonthlyTable.vue` 의 `computeAutoFields()` 는 같은 규칙의 실시간 미리보기다.
 두 곳은 반드시 같은 규칙이어야 한다.
@@ -258,25 +259,30 @@ Supabase Auth 를 쓰지 않는다. 회원 선택 + 4자리 PIN 방식이며, �
 
 | RPC | 하는 일 |
 |-----|---------|
-| `verify_pin(member_id, pin, ...)` | PIN 대조 후 세션 토큰 발급. 실패가 쌓이면 잠근다 |
-| `session_member()` | 지금 토큰의 회원과 권한을 돌려준다 |
-| `change_pin(old, new)` | PIN 변경 |
+| `verify_pin(member_id, pin, ...)` | PIN 대조 후 세션 토큰 발급. 실패가 쌓이면 잠근다. 임시 PIN 이면 `must_change: true` |
+| `session_member()` | 지금 토큰의 회원과 권한, `must_change` 를 돌려준다 |
+| `change_pin(old, new)` | PIN 변경. 쉬운 PIN 은 `weak` 로 거절, 성공하면 `must_change` 해제 |
 | `logout(reason?)` | 세션 폐기. `reason='idle'` 이면 자동 로그아웃으로 기록 |
 | `touch_session()` | 활동 보고. 유휴 시계를 되돌리고, 끝난 세션이면 `{ok:false}` |
 | `auth_events(...)` | 접속 기록 조회. 관리자가 아니면 거절(42501) |
 | `admin_members()` | 관리자용 회원 목록(등급·기록 수·마지막 로그인) |
-| `add_member(...)` | 회원 추가 + 로그인 정보 + 시작월 기준핸디 |
+| `add_member(...)` | 회원 추가 + 로그인 정보 + 시작월 기준핸디. 무작위 임시 PIN 을 응답에 한 번만 싣는다 |
 | `set_member_role(id, role)` | 등급 변경. 본인·마지막 관리자 강등은 막는다 |
 | `set_member_dormant(id, from?)` | 휴면 시작월 지정, `null` 이면 복귀 |
 | `delete_member(id)` | 기록 없는 회원만 삭제 |
+| `reset_member_pin(id)` | 임시 PIN 재발급 + 변경 강제 + 그 회원 세션 전부 폐기. 본인은 거절 |
 
 - PIN 은 `app.member_credentials` 에 bcrypt 해시로만 있다. 평문 PIN 테이블
   (`member_pins`)은 제거했다.
+- **공통 초기 PIN 은 없다.** 회원 추가 때 서버가 무작위 4자리 임시 PIN 을 만들어
+  관리자 화면에 한 번만 보여주고, 해시만 남긴다. 임시 PIN 상태
+  (`member_credentials.must_change`)인 회원은 로그인하자마자 닫을 수 없는 PIN
+  변경 창을 만난다. 같은 숫자 반복·연속 숫자·옛 공통 기본값은 새 PIN 으로 쓸 수 없다.
 - 세션 토큰은 서버가 발급한 불투명 문자열이다. 저장은 sha256 해시로 하며,
   프런트는 요청 헤더 `x-taman-session` 에 실어 보내기만 한다.
   `src/lib/supabase.ts` 가 fetch 를 감싸 매 요청에 붙인다.
-- 브라우저 보관 위치는 기본이 `sessionStorage`(탭을 닫으면 사라짐), "이 기기에서
-  로그인 유지"를 고르면 `localStorage`. 키는 전부 `taman:` 접두사를 쓰고
+- 브라우저 보관 위치는 "이 기기에서 로그인 유지"를 켜면 `localStorage`(기본으로
+  켜져 있음), 끄면 `sessionStorage`(탭을 닫으면 사라짐). 키는 전부 `taman:` 접두사를 쓰고
   로그아웃 때 한 번에 지운다. 서버 토큰 자체는 30일짜리다.
 - 그 30일과 별개로 **마지막 조작 이후 30분이 지나면 자동으로 로그아웃**한다.
   "로그인 유지"를 켰든 껐든 똑같이 걸린다 — 켜 둔 기기가 그대로 열려 있지
@@ -284,8 +290,8 @@ Supabase Auth 를 쓰지 않는다. 회원 선택 + 4자리 PIN 방식이며, �
   (`useIdleLogout`)이고, 서버는 `app.idle_timeout()`(35분)으로 뒷단속만 한다.
   프런트가 활동을 5분에 한 번씩 묶어 보고하므로 서버가 정확히 30분에 자르면
   실제로 쓰고 있는 사람이 끊긴다.
-- 로그인 · PIN 실패 · 잠금 · 로그아웃 · 자동 로그아웃 · 세션 만료는
-  `app.member_auth_events` 에 남는다. PIN 값과 IP 는 남기지 않고 기기 문자열만
+- 로그인 · PIN 실패 · 잠금 · 로그아웃 · 자동 로그아웃 · 세션 만료 · PIN 초기화는
+  `app.member_auth_events` 에 남는다. PIN 초기화는 처리한 관리자(`actor_member_id`)도 남는다. PIN 값과 IP 는 남기지 않고 기기 문자열만
   적으며, 180일이 지난 기록은 다음 로그인 때 함께 지워진다.
 - RLS 안에서는 `app.current_member_id()` 가 헤더의 토큰으로 호출자를 식별한다.
   로그인하지 않으면 기록 테이블은 0행이 나온다. `members` 만 로그인 화면의
@@ -333,10 +339,8 @@ npm run deploy            # = npm run build && gh-pages -d dist
 
 ## 알려진 제한
 
-- 월 기록 저장은 기존 `meeting_results` 를 지우고 다시 넣는다. 이 두 단계가
-  한 트랜잭션이 아니라, 중간에 네트워크가 끊기면 그 달 결과가 빌 수 있다.
 - 골프장 이름은 자유 입력이라 표기가 갈릴 수 있다.
-- 자동화된 테스트가 없다. 검증은 타입 검사(`npm run type-check`)와 수동 확인에 의존한다.
+- 자동화된 테스트는 최소 세트뿐이다 (`npm test` — 조 편성·시상·차월 핸디 계산, 표기 함수, `resolveHandicap()`). 화면·DB 함수·RLS 는 타입 검사(`npm run type-check`)와 수동 확인에 의존한다.
 
 ---
 

@@ -6,6 +6,14 @@ import {
 } from 'vue-router';
 import { LEGACY_ROUTE_PATHS, ROUTE_PATHS } from '@/lib';
 import { loadSession } from '@/lib/session';
+import { setPageTitle } from '@/lib/title';
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    /** 문서 제목의 화면명. 연월·연도가 붙는 화면은 페이지가 setPageTitle 로 덧쓴다. */
+    title?: string;
+  }
+}
 
 // 라우터 가드는 편의일 뿐 권한 경계가 아니다. 실제 접근 통제는 서버 RLS 가 한다.
 function isLoggedIn(): boolean {
@@ -16,21 +24,25 @@ const routes: RouteRecordRaw[] = [
   {
     path: ROUTE_PATHS.HOME,
     name: 'login',
+    meta: { title: '로그인' },
     component: () => import('@/pages/Login.vue'),
   },
   {
     path: ROUTE_PATHS.MONTHLY,
     name: 'monthly',
+    meta: { title: '월간 기록' },
     component: () => import('@/pages/Monthly.vue'),
   },
   {
     path: ROUTE_PATHS.RANKING,
     name: 'ranking',
+    meta: { title: '연간 랭킹' },
     component: () => import('@/pages/YearlyRanking.vue'),
   },
   {
     path: ROUTE_PATHS.PROFILE,
     name: 'profile',
+    meta: { title: '나의 기록' },
     component: () => import('@/pages/MyProfile.vue'),
   },
   {
@@ -39,16 +51,19 @@ const routes: RouteRecordRaw[] = [
     // 바로 본다. 창 자체는 App.vue 가 이 경로를 보고 연다.
     path: ROUTE_PATHS.ATTENDANCE,
     name: 'attendance',
+    meta: { title: '참석 확인' },
     component: () => import('@/pages/Monthly.vue'),
   },
   {
     path: ROUTE_PATHS.ADMIN_LOGS,
     name: 'admin-logs',
+    meta: { title: '접속 기록' },
     component: () => import('@/pages/AdminLogs.vue'),
   },
   {
     path: ROUTE_PATHS.ADMIN_MEMBERS,
     name: 'admin-members',
+    meta: { title: '회원 관리' },
     component: () => import('@/pages/AdminMembers.vue'),
   },
   // 예전 경로 → 새 경로. 쿼리(?month=...)는 그대로 넘긴다.
@@ -60,6 +75,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/:pathMatch(.*)*',
     name: 'not-found',
+    meta: { title: '페이지 없음' },
     component: () => import('@/pages/NotFound.vue'),
   },
 ];
@@ -84,4 +100,11 @@ router.beforeEach((to) => {
   if (AUTH_REQUIRED.has(to.path) && !isLoggedIn()) {
     return ROUTE_PATHS.HOME;
   }
+});
+
+// 화면이 바뀔 때만 제목을 바꾼다. 같은 화면에서 쿼리만 바뀌는 이동(월간 기록의
+// ?month=)에서 덮어쓰면, 페이지가 붙여 둔 연월이 지워진다.
+router.afterEach((to, from) => {
+  if (to.path === from.path && from.matched.length > 0) return;
+  setPageTitle(to.meta.title);
 });

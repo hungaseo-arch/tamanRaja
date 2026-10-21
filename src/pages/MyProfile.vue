@@ -16,6 +16,7 @@ import RowDetailDialog from '@/components/ui/RowDetailDialog.vue';
 import RowDetailButton from '@/components/ui/RowDetailButton.vue';
 import DetailItem from '@/components/ui/DetailItem.vue';
 import Button from '@/components/ui/Button.vue';
+import Select from '@/components/ui/Select.vue';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -42,6 +43,7 @@ interface HistoryRow {
   std_hc: number | null;
   app_hc: number | null;
   next_hc: number | null;
+  next_hc_mismatch: boolean;
   attended: boolean;
   score: number | null;
   net_score: number | null;
@@ -49,17 +51,35 @@ interface HistoryRow {
   result_rank: ResultRank;
 }
 
-// 표에 담을 연도. 기록이 있는 달 중 가장 나중 달의 해다 (없으면 올해).
+// 아래 연도 watch(immediate)가 쓰므로 그보다 먼저 둔다.
+const nowYM = (() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+})();
+
+// 고를 수 있는 연도. 모임이 있었던 해와 본인 핸디 기록이 있는 해 (없으면 올해).
+const availableYears = computed(() => {
+  const memberId = currentMember.value?.id;
+  const years = new Set([
+    ...MEETINGS.map((m) => m.year_month.slice(0, 4)),
+    ...MONTHLY_HANDICAPS.filter((h) => h.member_id === memberId).map((h) => h.year_month.slice(0, 4)),
+  ]);
+  if (years.size === 0) years.add(nowYM.slice(0, 4));
+  return [...years].sort().reverse();
+});
+const yearOptions = computed(() => availableYears.value.map((y) => ({ value: y, label: `${y}년` })));
+
+// 표에 담을 연도. 기본은 기록이 있는 가장 최근 해 (4-1).
 // 이 값 하나가 표의 12줄과 위쪽 통계 카드의 범위를 함께 정한다 — 예전에는
 // 달 목록을 데이터에서 그러모으느라 연도가 섞여도 '몇 월'로만 보였다.
-const historyYear = computed(() => {
-  const memberId = currentMember.value?.id;
-  const latest = [
-    ...MEETINGS.map((m) => m.year_month),
-    ...MONTHLY_HANDICAPS.filter((h) => h.member_id === memberId).map((h) => h.year_month),
-  ].reduce((max, ym) => (ym > max ? ym : max), '');
-  return latest ? latest.slice(0, 4) : nowYM.slice(0, 4);
-});
+const historyYear = ref('');
+watch(
+  availableYears,
+  (years) => {
+    if (!years.includes(historyYear.value)) historyYear.value = years[0];
+  },
+  { immediate: true }
+);
 
 // ── 줄 상세 (디스클로저) ─────────────────────────────────────────────────────
 // 좁은 화면에서는 기준·당월·차월 핸디 열이 숨는다. 월을 누르면 그달 기록을
@@ -107,6 +127,7 @@ const history = computed<HistoryRow[]>(() => {
         std_hc:       handicap?.std_hc ?? null,
         app_hc:       handicap?.app_hc ?? null,
         next_hc:      handicap?.next_hc ?? null,
+        next_hc_mismatch: handicap?.next_hc_mismatch ?? false,
         attended,
         score,
         net_score,
@@ -149,11 +170,6 @@ function formatMonth(ym: string): string {
   return `${parseInt(ym.slice(5), 10)}월`;
 }
 
-const nowYM = (() => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-})();
-
 // 아직 오지 않은 달은 `미정`(앞으로 정해짐), 지난 달은 `-`(기록 없음).
 function formatCourse(row: HistoryRow): string {
   return row.year_month >= nowYM ? formatPending(row.course_name) : formatValue(row.course_name);
@@ -168,6 +184,7 @@ function handleExport(): void {
   if (!currentMember.value) return;
   exportMyRecords(
     currentMember.value.name,
+    historyYear.value,
     history.value.map((r) => ({
       year_month: r.year_month,
       course_name: r.course_name,
@@ -192,17 +209,30 @@ function handleExport(): void {
           <h1 class="text-lg font-bold text-foreground mr-auto">
             나의 기록 <span class="text-muted-foreground font-medium text-sm">— {{ currentMember.name }} 님</span>
           </h1>
+          <!-- 고를 연도가 하나뿐이면 드롭다운을 띄우지 않는다 (연간 랭킹과 같다).
+               그 연도는 표의 첫 열 제목에 이미 나온다. -->
+          <template v-if="yearOptions.length > 1">
+            <label for="profile-year" class="sr-only">연도 선택</label>
+            <Select
+              id="profile-year"
+              v-model="historyYear"
+              :options="yearOptions"
+              placeholder=""
+              size="xs"
+              class="w-24 shrink-0"
+            />
+          </template>
           <!-- 좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->
           <Button
             variant="outline"
             size="xs"
             class="shrink-0 gap-1"
-            title="나의 기록 엑셀(CSV) 다운로드"
-            aria-label="나의 기록 엑셀 다운로드"
+            :title="`나의 ${historyYear}년 기록 CSV 다운로드(엑셀용)`"
+            :aria-label="`나의 ${historyYear}년 기록 CSV 다운로드(엑셀용)`"
             @click="handleExport"
           >
             <Download class="w-3.5 h-3.5" aria-hidden="true" />
-            <span class="hidden sm:inline">엑셀</span>
+            <span class="hidden sm:inline">CSV</span>
           </Button>
         </div>
 
@@ -248,28 +278,29 @@ function handleExport(): void {
         </div>
 
         <!-- 월별 히스토리 테이블 -->
-        <!-- 카드가 표를 감싼다: 표는 좁은 화면에서 줄일 수 없는 최소 폭이 있고
-             가로 스크롤은 main 이 맡는다. 카드 폭을 그 최소 폭(w-min)에 맞춰야
-             테두리·배경이 표 오른쪽 끝까지 따라간다. 넓은 화면에서는
-             min-w-full 이 이겨서 예전과 똑같이 폭을 가득 채운다. -->
-        <Card class="w-min min-w-full">
+        <!-- 넓은 화면: 카드가 표의 최소 폭(w-min)을 따라가고, 남으면 min-w-full 로
+             가득 채운다. 스크롤은 페이지가 한다.
+             좁은 화면(compact): 골프장 이름 때문에 표가 화면보다 넓어진다. 이때는
+             표가 스스로 옆으로 밀고 카드는 화면 폭에 머문다. (3-3) -->
+        <Card :class="compact ? 'w-full' : 'w-min min-w-full'">
           <CardContent class="px-2 sm:px-6">
             <AsyncState
               :empty="!hasRecord"
-              empty-title="아직 기록이 없습니다"
-              empty-hint="모임에 참석하고 스코어가 저장되면 여기에 쌓입니다."
+              empty-title="아직 기록 없음"
+              empty-hint="모임 참석 후 스코어가 저장되면 여기에 누적"
             >
             <div class="pt-4">
-              <!-- scroll=false: 스크롤은 페이지가 한다. 그래야 위쪽 요약 카드가
+              <!-- 넓은 화면은 스크롤을 페이지가 한다. 그래야 위쪽 요약 카드가
                    함께 밀려 올라가고, 열 제목만 화면 맨 위에 남는다. -->
               <Table
-                :scroll="false"
+                :scroll="compact"
                 class="text-xs sm:text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
                 caption="월별 참석·핸디·스코어 기록"
               >
                 <TableHeader>
                   <TableRow>
-                    <TableHead class="font-bold text-foreground whitespace-nowrap">
+                    <!-- 표가 옆으로 밀려도 몇 월 줄인지는 남는다 -->
+                    <TableHead class="font-bold text-foreground whitespace-nowrap sticky left-0 z-30 bg-card">
                       <Badge variant="default">{{ historyYear }}년</Badge>
                     </TableHead>
                     <TableHead class="font-bold text-foreground whitespace-nowrap">골프장</TableHead>
@@ -285,9 +316,13 @@ function handleExport(): void {
                   <TableRow
                     v-for="row in history"
                     :key="row.year_month"
-                    class="hover:bg-muted/50 transition-colors"
+                    class="group hover:bg-muted/50 transition-colors"
                   >
-                    <TableCell class="font-medium whitespace-nowrap pl-7">
+                    <!-- 고정 열은 불투명 bg-card 라 tr 의 hover 틴트가 가려진다.
+                         MonthlyTable 과 같이 isolate + ::before 로 다시 얹는다. -->
+                    <TableCell
+                      class="font-medium whitespace-nowrap pl-7 sticky left-0 z-10 bg-card isolate before:absolute before:inset-0 before:-z-10 before:transition-colors group-hover:before:bg-muted/50"
+                    >
                       <RowDetailButton
                         v-if="row.course_name"
                         :label="formatMonth(row.year_month)"
@@ -377,7 +412,10 @@ function handleExport(): void {
             </DetailItem>
             <DetailItem label="기준 핸디"><span class="font-mono">{{ formatValue(detailRow.std_hc) }}</span></DetailItem>
             <DetailItem label="당월 핸디"><span class="font-mono">{{ formatValue(detailRow.app_hc) }}</span></DetailItem>
-            <DetailItem label="차월 핸디"><span class="font-mono">{{ formatValue(detailRow.next_hc) }}</span></DetailItem>
+            <DetailItem label="차월 핸디">
+              <span class="font-mono">{{ formatValue(detailRow.next_hc) }}</span>
+              <Badge v-if="detailRow.next_hc_mismatch" variant="outline" class="ml-1.5 border-amber-500 text-amber-700 font-normal">※ 저장값 불일치(관리자 확인 필요)</Badge>
+            </DetailItem>
             <DetailItem label="스코어">
               <span v-if="detailRow.attended && detailRow.score !== null" class="font-mono">{{ detailRow.score }}</span>
             </DetailItem>

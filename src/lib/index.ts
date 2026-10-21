@@ -80,6 +80,8 @@ export interface MonthlyRow {
   // 그 값도 비어 있는 경우). 이때 Net·조 편성은 계산하지 않는다.
   app_hc: number | null;
   next_hc: number | null;
+  /** 이 달 next_hc 저장값과 다음 달 app_hc 저장값이 다르다 (resolveHandicap 참고). */
+  next_hc_mismatch: boolean;
   /** 마지막으로 조에 편성된 달의 조 (불참한 달은 건너뛴다). 차월 핸디 판정 기준. */
   prev_result_group: ResultGroup;
   attended: boolean;
