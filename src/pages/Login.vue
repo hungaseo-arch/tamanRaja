@@ -28,9 +28,11 @@ const selectedMember = ref('');
 const pin = ref('');
 const loginError = ref('');
 const submitting = ref(false);
-// 기본은 꺼짐. 공용 기기에서 무심코 로그인한 사람이 로그인된 채 남지 않도록
-// 켜는 건 본인이 정하게 한다.
-const remember = ref(false);
+// 기본은 켜짐 (4-3 안 A). 회원 대부분이 자기 휴대폰으로 들어와 매번 PIN 을
+// 치는 수고가 더 크다. 공용 기기에 남는 위험은 30분 무활동 자동 로그아웃
+// (IDLE_TIMEOUT_MS, 서버 app.idle_timeout())이 그대로 막는다 — 유지를 켜도
+// 그 한도는 똑같이 걸린다. 공용 기기라면 본인이 끄면 된다.
+const remember = ref(true);
 
 // 회원 목록은 members(id, name) 만 사용한다. PIN 은 어떤 형태로도 내려오지 않는다.
 const memberOptions = computed(() =>
@@ -120,6 +122,9 @@ async function handleLogin(e: Event): Promise<void> {
             <Button type="submit" class="w-full" :disabled="submitting">
               {{ submitting ? '확인 중...' : '로그인' }}
             </Button>
+            <p class="text-xs text-muted-foreground text-center">
+              PIN 분실 시 관리자(서종환·조학영)에게 초기화 요청
+            </p>
           </form>
         </CardContent>
       </Card>
