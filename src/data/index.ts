@@ -297,10 +297,30 @@ function isMonthSettled(yearMonth: string): boolean {
   return results.some((r) => r.score !== null);
 }
 
+/** 그 달의 다음 달. 12월이면 다음 해 1월. */
+function nextYearMonth(yearMonth: string): string {
+  const [yr, mo] = yearMonth.split('-');
+  const next = parseInt(mo, 10) + 1;
+  return next === 13
+    ? `${parseInt(yr, 10) + 1}-01`
+    : `${yr}-${String(next).padStart(2, '0')}`;
+}
+
+export interface ResolvedHandicap {
+  std_hc: number;
+  app_hc: number | null;
+  next_hc: number | null;
+  /**
+   * 그 달 next_hc 저장값과 다음 달 app_hc 저장값이 다르다. 화면은 다음 달
+   * app_hc 를 차월 핸디로 보여 주고, 상세창에 관리자 확인 배지를 단다.
+   */
+  next_hc_mismatch: boolean;
+}
+
 export function resolveHandicap(
   memberId: string,
   yearMonth: string
-): { std_hc: number; app_hc: number | null; next_hc: number | null } | null {
+): ResolvedHandicap | null {
   // 당월 핸디는 직전 달 결과로, 차월 핸디는 그 달 결과로 정해진다.
   const appSettled = isMonthSettled(prevYearMonth(yearMonth));
   const nextSettled = isMonthSettled(yearMonth);
@@ -309,10 +329,21 @@ export function resolveHandicap(
     (h) => h.member_id === memberId && h.year_month === yearMonth
   );
   if (exact) {
+    // 차월 핸디는 다음 달 행의 app_hc 가 있으면 그 값이다 — 다음 달 Net 이
+    // 실제로 그 값으로 계산되므로, 이 달 next_hc 와 어긋나면 다음 달 쪽이 맞다.
+    // 둘이 다르면 숨기지 않고 표시해 관리자가 고치게 한다
+    // (DB: app.check_handicap_chain()).
+    const nextRow = MONTHLY_HANDICAPS.find(
+      (h) => h.member_id === memberId && h.year_month === nextYearMonth(yearMonth)
+    );
+    const nextApp = nextRow?.app_hc ?? null;
+    const nextHc = nextApp ?? exact.next_hc;
+    const mismatch = nextApp !== null && exact.next_hc !== null && nextApp !== exact.next_hc;
     return {
       std_hc: exact.std_hc,
       app_hc: appSettled ? exact.app_hc : null,
-      next_hc: nextSettled ? exact.next_hc : null,
+      next_hc: nextSettled ? nextHc : null,
+      next_hc_mismatch: nextSettled && mismatch,
     };
   }
 
@@ -321,7 +352,12 @@ export function resolveHandicap(
     .sort((a, b) => (a.year_month > b.year_month ? -1 : 1))[0];
   if (!prev) return null;
 
-  return { std_hc: prev.std_hc, app_hc: appSettled ? prev.next_hc : null, next_hc: null };
+  return {
+    std_hc: prev.std_hc,
+    app_hc: appSettled ? prev.next_hc : null,
+    next_hc: null,
+    next_hc_mismatch: false,
+  };
 }
 
 /**
@@ -403,6 +439,7 @@ export function getMonthlyData(yearMonth: string): MonthlyRow[] {
       std_hc: stdHc,
       app_hc: appHc,
       next_hc: baseHandicap.next_hc,
+      next_hc_mismatch: baseHandicap.next_hc_mismatch,
       prev_result_group: lastResultGroup(member.id, yearMonth),
       attended: result?.attended ?? false,
       score: result?.score ?? null,

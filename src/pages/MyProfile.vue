@@ -42,6 +42,7 @@ interface HistoryRow {
   std_hc: number | null;
   app_hc: number | null;
   next_hc: number | null;
+  next_hc_mismatch: boolean;
   attended: boolean;
   score: number | null;
   net_score: number | null;
@@ -107,6 +108,7 @@ const history = computed<HistoryRow[]>(() => {
         std_hc:       handicap?.std_hc ?? null,
         app_hc:       handicap?.app_hc ?? null,
         next_hc:      handicap?.next_hc ?? null,
+        next_hc_mismatch: handicap?.next_hc_mismatch ?? false,
         attended,
         score,
         net_score,
@@ -377,7 +379,10 @@ function handleExport(): void {
             </DetailItem>
             <DetailItem label="기준 핸디"><span class="font-mono">{{ formatValue(detailRow.std_hc) }}</span></DetailItem>
             <DetailItem label="당월 핸디"><span class="font-mono">{{ formatValue(detailRow.app_hc) }}</span></DetailItem>
-            <DetailItem label="차월 핸디"><span class="font-mono">{{ formatValue(detailRow.next_hc) }}</span></DetailItem>
+            <DetailItem label="차월 핸디">
+              <span class="font-mono">{{ formatValue(detailRow.next_hc) }}</span>
+              <Badge v-if="detailRow.next_hc_mismatch" variant="outline" class="ml-1.5 border-amber-500 text-amber-700 font-normal">※ 저장값 불일치(관리자 확인 필요)</Badge>
+            </DetailItem>
             <DetailItem label="스코어">
               <span v-if="detailRow.attended && detailRow.score !== null" class="font-mono">{{ detailRow.score }}</span>
             </DetailItem>
