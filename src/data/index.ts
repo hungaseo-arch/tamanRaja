@@ -76,9 +76,10 @@ export async function loadMembers(): Promise<void> {
   if (MEMBERS.length > 0 || membersLoading.value) return;
   membersLoading.value = true;
   try {
-    // dormant_from 은 로그인 화면의 회원 목록에서 휴면 회원을 빼는 데 쓴다.
-    // 기록이 아니라 명단에 붙는 표시라 로그인 전에도 필요하다.
-    const { data, error } = await supabase.from('members').select('id, name, dormant_from');
+    // 세션 없이 members 테이블을 읽지 않는다 (5-4). login_members() 는 지금
+    // 현역인 회원의 id, name 만 돌려준다 — 휴면 회원·dormant_from 은 로그인 뒤
+    // loadData() 가 채운다.
+    const { data, error } = await supabase.rpc('login_members');
     if (error) throw new Error(error.message);
     fillMembers(data ?? []);
   } catch (err) {
