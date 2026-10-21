@@ -88,6 +88,18 @@ onMounted(() => void load());
 
 const adminCount = computed(() => rows.value.filter((r) => r.role === 'admin').length);
 
+// 표시 순서 (5-3): 현역을 이름순으로 먼저, 그 아래 휴면을 최근에 쉰 순서로.
+// 서버는 id 순으로 주지만, 회원을 찾을 때는 이름으로 찾는다.
+const sortedRows = computed(() =>
+  [...rows.value].sort((a, b) => {
+    if (!a.dormant_from !== !b.dormant_from) return a.dormant_from ? 1 : -1;
+    if (a.dormant_from && b.dormant_from && a.dormant_from !== b.dormant_from) {
+      return a.dormant_from < b.dormant_from ? 1 : -1;
+    }
+    return a.name.localeCompare(b.name, 'ko');
+  })
+);
+
 // ── 실패 사유 문구 ───────────────────────────────────────────────────────────
 // 서버가 돌려주는 reason 을 사람 말로 옮긴다. 사유를 감추고 "실패했습니다" 만
 // 띄우면 왜 막혔는지 알 수 없어 같은 시도를 반복하게 된다.
@@ -332,6 +344,23 @@ function isSelf(row: AdminMemberRow): boolean {
   return String(row.id) === currentMember.value?.id;
 }
 
+// ── 버튼 막힘 규칙 (5-3) ─────────────────────────────────────────────────────
+// 서버가 어차피 거절하는 조작은 미리 잠근다. 눌러 보고 나서야 안 된다는 걸
+// 알게 하지 않는다. 최종 판정은 여전히 서버(self_demote·self·last_admin)다.
+const SELF_LOCKED = '본인 계정 변경 불가';
+
+/** 등급 버튼을 막는 이유. 막히지 않으면 null. */
+function roleBlock(row: AdminMemberRow): string | null {
+  if (isSelf(row)) return SELF_LOCKED;
+  if (row.role === 'admin' && adminCount.value <= 1) return REASONS.last_admin;
+  return null;
+}
+
+/** 휴면 회원을 관리자로 올리는 버튼은 보이지 않는다 — 쉬는 회원이 관리할 일은 없다. */
+function showRoleButton(row: AdminMemberRow): boolean {
+  return row.role === 'admin' || !row.dormant_from;
+}
+
 function openReset(row: AdminMemberRow): void {
   resetRow.value = row;
   resetError.value = null;
@@ -431,28 +460,31 @@ function statusLabel(row: AdminMemberRow): string {
 // 넓은 화면의 버튼 넷과 같은 동작·같은 막힘 조건이다. 막힌 이유는 title 대신
 // hint 로 보인다 — 손가락으로는 title 이 뜨지 않는다.
 function menuItems(row: AdminMemberRow): DropdownMenuItem[] {
-  return [
-    {
+  const items: DropdownMenuItem[] = [];
+  if (showRoleButton(row)) {
+    items.push({
       label: row.role === 'admin' ? '회원으로 내리기' : '관리자로 올리기',
       onSelect: () => void toggleRole(row),
-    },
+      disabled: roleBlock(row) !== null,
+      hint: roleBlock(row) ?? undefined,
+    });
+  }
+  items.push(
     row.dormant_from
-      ? { label: '현역으로 복귀', onSelect: () => void restore(row) }
-      : { label: '휴면 처리', onSelect: () => openDormant(row) },
+      ? { label: '현역으로 복귀', onSelect: () => void restore(row), disabled: isSelf(row), hint: SELF_LOCKED }
+      : { label: '휴면 처리', onSelect: () => openDormant(row), disabled: isSelf(row), hint: SELF_LOCKED },
     {
       label: 'PIN 초기화',
       onSelect: () => openReset(row),
       disabled: isSelf(row),
       hint: '본인 PIN은 계정 창에서 변경',
     },
-    {
-      label: '삭제',
-      onSelect: () => openDelete(row),
-      destructive: true,
-      disabled: !deletable(row),
-      hint: '기록 있음 · 삭제 불가 (휴면 사용)',
-    },
-  ];
+  );
+  // 지울 수 없는 회원에게는 삭제를 아예 내놓지 않는다. 이유는 표 아래 안내문에 있다.
+  if (deletable(row)) {
+    items.push({ label: '삭제', onSelect: () => openDelete(row), destructive: true });
+  }
+  return items;
 }
 
 // ── 줄 상세 ──────────────────────────────────────────────────────────────────
@@ -527,7 +559,7 @@ watch(compact, (isCompact) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow v-for="row in rows" :key="row.id" class="group hover:bg-muted/50 transition-colors">
+                  <TableRow v-for="row in sortedRows" :key="row.id" class="group hover:bg-muted/50 transition-colors">
                     <!-- 고정 열: 불투명 bg-card 위에 hover 틴트를 ::before 로 다시 얹는다 -->
                     <TableCell
                       class="font-medium whitespace-nowrap sticky left-0 z-10 bg-card isolate before:absolute before:inset-0 before:-z-10 before:transition-colors group-hover:before:bg-muted/50"
@@ -568,10 +600,11 @@ watch(compact, (isCompact) => {
                       />
                       <div v-else class="inline-flex gap-1">
                         <Button
+                          v-if="showRoleButton(row)"
                           variant="outline"
                           size="xs"
-                          :disabled="busyId === row.id"
-                          :title="row.role === 'admin' ? '회원으로 내리기' : '관리자로 올리기'"
+                          :disabled="busyId === row.id || roleBlock(row) !== null"
+                          :title="roleBlock(row) ?? (row.role === 'admin' ? '회원으로 내리기' : '관리자로 올리기')"
                           @click="toggleRole(row)"
                         >
                           {{ row.role === 'admin' ? '회원으로' : '관리자로' }}
@@ -580,16 +613,16 @@ watch(compact, (isCompact) => {
                           v-if="row.dormant_from"
                           variant="outline"
                           size="xs"
-                          :disabled="busyId === row.id"
-                          title="현역으로 되돌리기"
+                          :disabled="busyId === row.id || isSelf(row)"
+                          :title="isSelf(row) ? SELF_LOCKED : '현역으로 되돌리기'"
                           @click="restore(row)"
                         >복귀</Button>
                         <Button
                           v-else
                           variant="outline"
                           size="xs"
-                          :disabled="busyId === row.id"
-                          title="이 달부터 집계에서 제외"
+                          :disabled="busyId === row.id || isSelf(row)"
+                          :title="isSelf(row) ? SELF_LOCKED : '이 달부터 집계에서 제외'"
                           @click="openDormant(row)"
                         >휴면</Button>
                         <Button
@@ -599,11 +632,14 @@ watch(compact, (isCompact) => {
                           :title="isSelf(row) ? '본인 PIN은 계정 창에서 변경' : '임시 PIN 을 새로 발급'"
                           @click="openReset(row)"
                         >PIN 초기화</Button>
+                        <!-- 지울 수 없는 회원에게는 버튼을 아예 두지 않는다 (5-3).
+                             이유는 표 아래 안내문에 있다. -->
                         <Button
+                          v-if="deletable(row)"
                           variant="destructive"
                           size="xs"
-                          :disabled="busyId === row.id || !deletable(row)"
-                          :title="deletable(row) ? '회원 삭제' : '기록 있음 · 삭제 불가 (휴면 사용)'"
+                          :disabled="busyId === row.id"
+                          title="회원 삭제"
                           @click="openDelete(row)"
                         >삭제</Button>
                       </div>
