@@ -33,6 +33,7 @@ import TableBody from '@/components/ui/TableBody.vue';
 import TableRow from '@/components/ui/TableRow.vue';
 import TableHead from '@/components/ui/TableHead.vue';
 import TableCell from '@/components/ui/TableCell.vue';
+import { setPageTitle } from '@/lib/title';
 
 const availableYears = computed(() =>
   [...new Set(MEETINGS.map((m) => m.year_month.substring(0, 4)))].sort(
@@ -43,6 +44,9 @@ const availableYears = computed(() =>
 const yearOptions = computed(() => availableYears.value.map((y) => ({ value: y, label: `${y}년` })));
 
 const selectedYear = ref<string>('');
+
+// 문서 제목에 보고 있는 연도를 붙인다 (4-5). 연도는 주소에 없어 라우터가 모른다.
+watch(selectedYear, (y) => setPageTitle(y ? `연간 랭킹 ${y}` : '연간 랭킹'), { immediate: true });
 
 watch(
   availableYears,

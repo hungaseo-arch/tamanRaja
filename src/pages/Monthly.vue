@@ -7,6 +7,7 @@ import { useToast } from '@/composables/useToast';
 import { supabase } from '@/lib/supabase';
 import { describeError } from '@/lib/errors';
 import { ROUTE_PATHS } from '@/lib';
+import { setPageTitle } from '@/lib/title';
 import type { SavePayload } from '@/components/MonthlyTable.vue';
 import MonthlyTable from '@/components/MonthlyTable.vue';
 
@@ -36,6 +37,10 @@ const router = useRouter();
 watch(() => route.query.month, (m) => {
   if (m && typeof m === 'string') selectedMonth.value = m;
 });
+// 문서 제목에 보고 있는 달을 붙인다 (4-5). 참석 창은 라우터가 정한 제목 그대로.
+watch(selectedMonth, (m) => {
+  if (route.path === ROUTE_PATHS.MONTHLY) setPageTitle(`월간 기록 ${m}`);
+}, { immediate: true });
 watch(selectedMonth, (m) => {
   if (route.path !== ROUTE_PATHS.MONTHLY || route.query.month === m) return;
   void router.replace({ query: { ...route.query, month: m } });
