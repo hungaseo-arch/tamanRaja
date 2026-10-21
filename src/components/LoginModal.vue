@@ -133,7 +133,8 @@ async function handleLogout(): Promise<void> {
          로그아웃은 탭 밖 이름 줄에 둔다. 창은 늘 참석 확인 탭으로 열리므로,
          계정 탭 안에 두면 로그아웃하려고 탭을 한 번 더 눌러야 했다. -->
     <div v-if="isLoggedIn" class="w-full px-5 pt-4 space-y-4">
-      <div class="flex items-center justify-between gap-2">
+      <!-- pr-8: 창 오른쪽 위 닫기(X, right-2·w-9) 아래로 로그아웃이 붙지 않게 비운다 -->
+      <div class="flex items-center justify-between gap-2 pr-8">
         <p class="text-sm font-medium text-foreground">{{ currentMember?.name }} 님</p>
         <Button variant="outline" size="xs" class="gap-1.5" @click="handleLogout">
           <LogOut class="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
