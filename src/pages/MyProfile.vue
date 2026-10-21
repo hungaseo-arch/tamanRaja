@@ -227,12 +227,12 @@ function handleExport(): void {
             variant="outline"
             size="xs"
             class="shrink-0 gap-1"
-            :title="`나의 ${historyYear}년 기록 엑셀(CSV) 다운로드`"
-            :aria-label="`나의 ${historyYear}년 기록 엑셀 다운로드`"
+            :title="`나의 ${historyYear}년 기록 CSV 다운로드(엑셀용)`"
+            :aria-label="`나의 ${historyYear}년 기록 CSV 다운로드(엑셀용)`"
             @click="handleExport"
           >
             <Download class="w-3.5 h-3.5" aria-hidden="true" />
-            <span class="hidden sm:inline">엑셀</span>
+            <span class="hidden sm:inline">CSV</span>
           </Button>
         </div>
 

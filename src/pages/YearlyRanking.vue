@@ -352,12 +352,12 @@ function stickyTint(rank: number | null): string {
           variant="outline"
           size="xs"
           class="shrink-0 gap-1"
-          :title="`${selectedYear}년 연간 랭킹 엑셀(CSV) 다운로드`"
-          :aria-label="`${selectedYear}년 연간 랭킹 엑셀 다운로드`"
+          :title="`${selectedYear}년 연간 랭킹 CSV 다운로드(엑셀용)`"
+          :aria-label="`${selectedYear}년 연간 랭킹 CSV 다운로드(엑셀용)`"
           @click="handleExport"
         >
           <Download class="w-3.5 h-3.5" aria-hidden="true" />
-          <span class="hidden sm:inline">엑셀</span>
+          <span class="hidden sm:inline">CSV</span>
         </Button>
       </div>
 

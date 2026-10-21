@@ -597,12 +597,12 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           variant="outline"
           size="xs"
           class="shrink-0 gap-1"
-          :title="`${exportYear}년 전체 기록 엑셀(CSV) 다운로드`"
-          :aria-label="`${exportYear}년 전체 기록 엑셀 다운로드`"
+          :title="`${exportYear}년 전체 기록 CSV 다운로드(엑셀용)`"
+          :aria-label="`${exportYear}년 전체 기록 CSV 다운로드(엑셀용)`"
           @click="exportYearlyRecords(props.selectedMonth)"
         >
           <Download class="w-3.5 h-3.5" aria-hidden="true" />
-          <span class="hidden sm:inline">엑셀</span>
+          <span class="hidden sm:inline">CSV</span>
         </Button>
 
         <!-- 핸디 규칙 도움말 -->
