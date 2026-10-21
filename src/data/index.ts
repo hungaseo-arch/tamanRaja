@@ -306,6 +306,13 @@ function nextYearMonth(yearMonth: string): string {
     : `${yr}-${String(next).padStart(2, '0')}`;
 }
 
+/**
+ * 차월핸디 체인(이 달 next_hc = 다음 달 app_hc)을 검사하는 첫 달. 2026-07 에
+ * 전 회원 기준핸디를 새로 정했고, 그 전 기록은 시트에서 옮긴 값이라 재설정
+ * 달마다 어긋나는 게 정상이다. DB app.check_handicap_chain() 과 같은 값.
+ */
+const HANDICAP_CHAIN_FROM = '2026-07';
+
 export interface ResolvedHandicap {
   std_hc: number;
   app_hc: number | null;
@@ -338,7 +345,9 @@ export function resolveHandicap(
     );
     const nextApp = nextRow?.app_hc ?? null;
     const nextHc = nextApp ?? exact.next_hc;
-    const mismatch = nextApp !== null && exact.next_hc !== null && nextApp !== exact.next_hc;
+    const mismatch =
+      yearMonth >= HANDICAP_CHAIN_FROM &&
+      nextApp !== null && exact.next_hc !== null && nextApp !== exact.next_hc;
     return {
       std_hc: exact.std_hc,
       app_hc: appSettled ? exact.app_hc : null,
