@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="robots" content="noindex" />
+<title>따만라자 모임</title>
+<!-- GitHub Pages 는 /tamanRaja/monthly 같은 해시 없는 주소에 이 파일을 준다.
+     앱은 해시 라우터라 /tamanRaja/#/monthly 로 바꿔 보낸다. -->
+<script>
+  var base = '/tamanRaja/';
+  var rest = location.pathname.indexOf(base) === 0 ? location.pathname.slice(base.length) : '';
+  location.replace(base + '#/' + rest.replace(/^\/+|\/+$/g, '') + location.search);
+</script>
+</head>
+<body></body>
+</html>
