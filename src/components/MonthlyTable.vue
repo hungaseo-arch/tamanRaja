@@ -242,7 +242,7 @@ function handleSave(): void {
   if (props.saveState === 'saving') return;
   if (invalidScoreNames.value.length > 0) {
     validationError.value =
-      `스코어는 ${SCORE_MIN}~${SCORE_MAX} 사이의 정수여야 합니다 — ${invalidScoreNames.value.join(', ')}`;
+      `스코어는 ${SCORE_MIN}~${SCORE_MAX} 사이 정수만 가능 — ${invalidScoreNames.value.join(', ')}`;
     return;
   }
   validationError.value = null;
@@ -549,8 +549,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                넘어갈 수단은 남아 있어야 한다. -->
           <AsyncState
             :empty="props.monthlyData.length === 0"
-            :empty-title="`${heading} 기록이 없습니다`"
-            empty-hint="다른 달을 고르거나, 경기 결과가 저장되면 여기에 표가 나타납니다."
+            :empty-title="`${heading} 기록 없음`"
+            empty-hint="다른 달 선택, 또는 경기 결과 저장 후 표 표시"
           >
           <!-- 평소에는 스크롤을 페이지가 한다. 그래야 위쪽 표제 줄이 함께
                밀려 올라가고, 열 제목만 화면 맨 위에 남는다.
@@ -627,7 +627,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 <TableCell class="text-center font-mono hidden sm:table-cell">{{ row.std_hc }}</TableCell>
                 <TableCell class="text-center font-mono">
                   <template v-if="row.app_hc !== null">{{ row.app_hc }}</template>
-                  <span v-else class="text-muted-foreground" title="직전 달 차월 핸디가 아직 정해지지 않았습니다">-</span>
+                  <span v-else class="text-muted-foreground" title="직전 달 차월 핸디 미정">-</span>
                 </TableCell>
                 <TableCell class="text-center font-mono hidden sm:table-cell">
                   <template v-if="isEditing && localNextHc[row.member_id] != null">{{ localNextHc[row.member_id] }}</template>
@@ -798,10 +798,10 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         <section class="space-y-1.5">
           <h3 class="font-semibold">용어</h3>
           <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
-            <li><b class="text-foreground">기준 핸디</b> — 매년 1월에 새로 정하는 그 해의 기본 핸디.</li>
-            <li><b class="text-foreground">당월 핸디</b> — 이달 경기에 적용하는 핸디. NET = 스코어 − 당월 핸디.</li>
-            <li><b class="text-foreground">차월 핸디</b> — 이달 결과로 정해지는 다음 달의 당월 핸디.</li>
-            <li><b class="text-foreground">조 편성</b> — NET 이 낮은 순으로 참석자 절반이 1등조, 나머지가 2등조.</li>
+            <li><b class="text-foreground">기준 핸디</b> — 매년 1월에 새로 정하는 그 해의 기본 핸디</li>
+            <li><b class="text-foreground">당월 핸디</b> — 이달 경기에 적용하는 핸디 · NET = 스코어 − 당월 핸디</li>
+            <li><b class="text-foreground">차월 핸디</b> — 이달 결과로 정해지는 다음 달의 당월 핸디</li>
+            <li><b class="text-foreground">조 편성</b> — NET 이 낮은 순으로 참석자 절반이 1등조, 나머지가 2등조</li>
           </ul>
         </section>
 
@@ -837,11 +837,11 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             </table>
           </div>
           <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
-            <li>홀수 핸디도 그대로 인정한다.</li>
-            <li>계속 1등조라 핸디가 내려가 있어도 <b class="text-foreground">단 한 번</b> 2등조에 들면 기준 핸디로 돌아온다. 2등조도 반대로 같다.</li>
-            <li><b class="text-foreground">기준 핸디로 복귀하면 모든 것이 초기화된다.</b> 당월 핸디가 기준 핸디와 같은 달(매년 1월, 기준 핸디를 새로 정한 달, 조 변경으로 복귀한 다음 달)은 직전 라운드와 견주지 않고 그 달 결과만으로 ±1 한다.</li>
-            <li>"직전 라운드"는 마지막으로 조에 편성된 달이다. 불참한 달은 건너뛰고 비교한다.</li>
-            <li>불참한 달은 당월 핸디가 그대로 다음 달로 이어진다.</li>
+            <li>홀수 핸디도 그대로 인정</li>
+            <li>계속 1등조라 핸디가 내려가 있어도 <b class="text-foreground">단 한 번</b> 2등조에 들면 기준 핸디로 복귀 · 2등조도 반대로 동일</li>
+            <li><b class="text-foreground">기준 핸디로 복귀하면 모든 것을 초기화</b> · 당월 핸디가 기준 핸디와 같은 달(매년 1월, 기준 핸디를 새로 정한 달, 조 변경으로 복귀한 다음 달)은 직전 라운드와 견주지 않고 그 달 결과만으로 ±1</li>
+            <li>"직전 라운드" = 마지막으로 조에 편성된 달 · 불참한 달은 건너뛰고 비교</li>
+            <li>불참한 달은 당월 핸디를 그대로 다음 달로 이월</li>
           </ul>
         </section>
       </div>

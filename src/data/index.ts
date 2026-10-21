@@ -82,7 +82,7 @@ export async function loadMembers(): Promise<void> {
     if (error) throw new Error(error.message);
     fillMembers(data ?? []);
   } catch (err) {
-    dataError.value = describeError(err, '회원 목록을 불러오는 중 오류가 발생했습니다.');
+    dataError.value = describeError(err, '회원 목록 불러오기 실패');
   } finally {
     membersLoading.value = false;
   }
@@ -136,7 +136,7 @@ export async function loadData(retries = 1): Promise<void> {
       if (attempt < retries) {
         await delay(1500 * attempt);
       } else {
-        dataError.value = describeError(err, '데이터를 불러오는 중 오류가 발생했습니다.');
+        dataError.value = describeError(err, '데이터 불러오기 실패');
       }
     }
   }
@@ -524,7 +524,7 @@ export async function loadYearlySummary(year: string, reload = false): Promise<v
       rank: Number(r.rank),
     }));
   } catch (err) {
-    yearlyRankingError.value = describeError(err, '연간 랭킹을 불러오지 못했습니다.');
+    yearlyRankingError.value = describeError(err, '연간 랭킹 불러오기 실패');
   } finally {
     yearlyRankingLoading.value = false;
   }

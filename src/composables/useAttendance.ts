@@ -82,7 +82,7 @@ export function useAttendance() {
       if (hadValue) state[yearMonth][memberId] = previous;
       else delete state[yearMonth][memberId];
       persist();
-      return { ok: false, message: describeError(error, '참석 여부를 저장하지 못했습니다.') };
+      return { ok: false, message: describeError(error, '참석 여부 저장 실패') };
     }
     return { ok: true };
   }

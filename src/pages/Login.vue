@@ -48,11 +48,11 @@ async function handleLogin(e: Event): Promise<void> {
   e.preventDefault();
   loginError.value = '';
   if (!selectedMember.value) {
-    loginError.value = '회원을 선택해주세요.';
+    loginError.value = '회원 선택 필요';
     return;
   }
   if (pin.value.length !== 4) {
-    loginError.value = 'PIN은 4자리 숫자여야 합니다.';
+    loginError.value = 'PIN은 4자리 숫자만 가능';
     return;
   }
 
@@ -79,7 +79,7 @@ async function handleLogin(e: Event): Promise<void> {
       <div class="text-center space-y-2">
         <span class="text-5xl">🏌️</span>
         <h1 class="text-2xl font-bold text-foreground">따만라자 모임</h1>
-        <p class="text-sm text-muted-foreground">로그인 후 기록을 확인하세요</p>
+        <p class="text-sm text-muted-foreground">로그인 후 기록 확인</p>
       </div>
 
       <Card>
@@ -91,7 +91,7 @@ async function handleLogin(e: Event): Promise<void> {
                 id="member-select"
                 v-model="selectedMember"
                 :options="memberOptions"
-                placeholder="회원을 선택하세요"
+                placeholder="회원 선택"
               />
             </div>
             <div class="space-y-2">

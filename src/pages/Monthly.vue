@@ -179,20 +179,20 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
     });
     if (error) throw error;
     const res = data as { ok: boolean; message?: string; saved?: number };
-    if (!res.ok) throw new Error(res.message ?? '저장하지 못했습니다.');
+    if (!res.ok) throw new Error(res.message ?? '저장 실패');
 
     await loadData();
     saveState.value = 'idle';
     toast({
       title: '저장 완료',
-      description: `${selectedMonth.value} 기록 ${res.saved ?? rows.length}건을 저장했습니다.`,
+      description: `${selectedMonth.value} 기록 ${res.saved ?? rows.length}건 저장 완료`,
     });
   } catch (err) {
     // 인라인 문구는 남겨 둔다 — 토스트는 몇 초 뒤 사라지는데, 저장에 실패했다는
     // 사실은 다시 저장할 때까지 화면에 남아 있어야 한다.
-    saveError.value = describeError(err, '저장 중 오류가 발생했습니다.');
+    saveError.value = describeError(err, '저장 중 오류 발생');
     saveState.value = 'error';
-    toast({ title: '저장하지 못했습니다', description: saveError.value, variant: 'destructive' });
+    toast({ title: '저장 실패', description: saveError.value, variant: 'destructive' });
   }
 }
 

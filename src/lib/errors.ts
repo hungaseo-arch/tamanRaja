@@ -24,10 +24,10 @@ function messageOf(err: unknown): string {
  * 기다려야 할지 다시 눌러야 할지 알 수가 없다. 연결 문제로 보이면 우리말
  * 안내로 바꾸고, 그 외에는 서버가 준 메시지를 감추지 않고 그대로 전한다.
  */
-export function describeError(err: unknown, fallback = '오류가 발생했습니다.'): string {
+export function describeError(err: unknown, fallback = '오류 발생'): string {
   const raw = messageOf(err);
   if (/failed to fetch|load failed|networkerror|network request failed/i.test(raw)) {
-    return '서버에 연결하지 못했습니다. 네트워크 상태를 확인한 뒤 다시 시도해 주세요.';
+    return '서버 연결 실패 · 네트워크 상태 확인 후 다시 시도';
   }
   return raw || fallback;
 }

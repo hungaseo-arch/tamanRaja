@@ -76,7 +76,7 @@ async function load(): Promise<void> {
   if (rpcError) {
     // 권한 없음(42501)도 그대로 보여준다. 빈 표로 두면 회원이 없는 것과
     // 구분되지 않는다.
-    error.value = describeError(rpcError, '회원 목록을 불러오지 못했습니다.');
+    error.value = describeError(rpcError, '회원 목록 불러오기 실패');
     rows.value = [];
   } else {
     rows.value = (data ?? []) as AdminMemberRow[];
@@ -92,15 +92,15 @@ const adminCount = computed(() => rows.value.filter((r) => r.role === 'admin').l
 // 서버가 돌려주는 reason 을 사람 말로 옮긴다. 사유를 감추고 "실패했습니다" 만
 // 띄우면 왜 막혔는지 알 수 없어 같은 시도를 반복하게 된다.
 const REASONS: Record<string, string> = {
-  invalid_name: '이름을 확인해주세요. (1~50자)',
-  duplicate_name: '같은 이름의 회원이 이미 있습니다.',
-  invalid_std_hc: '기준핸디는 0~54 사이의 숫자여야 합니다.',
-  invalid_month: '월은 YYYY-MM 형식이어야 합니다.',
-  invalid_role: '등급 값이 올바르지 않습니다.',
-  not_found: '이미 삭제된 회원입니다.',
-  self: '본인 계정에는 쓸 수 없습니다.',
-  self_demote: '본인 등급은 스스로 내릴 수 없습니다.',
-  last_admin: '마지막 관리자입니다. 다른 회원을 먼저 관리자로 올려주세요.',
+  invalid_name: '이름 확인 필요 (1~50자)',
+  duplicate_name: '같은 이름의 회원 이미 있음',
+  invalid_std_hc: '기준핸디는 0~54 사이 숫자만 가능',
+  invalid_month: '월은 YYYY-MM 형식만 가능',
+  invalid_role: '잘못된 등급 값',
+  not_found: '이미 삭제된 회원',
+  self: '본인 계정에는 사용 불가',
+  self_demote: '본인 등급은 스스로 내리기 불가',
+  last_admin: '마지막 관리자 · 다른 회원을 먼저 관리자로 올리기 필요',
 };
 
 function describeReason(reason: string | undefined, fallback: string): string {
@@ -129,8 +129,8 @@ const tempPinCopied = ref(false);
 function showTempPin(name: string, pin: string | undefined): void {
   if (!pin) {
     toast({
-      title: '임시 PIN을 받지 못했습니다.',
-      description: '서버가 아직 이전 버전입니다. PIN 초기화로 다시 발급해 주세요.',
+      title: '임시 PIN 수신 실패',
+      description: '서버가 아직 이전 버전 · PIN 초기화로 다시 발급 필요',
       variant: 'destructive',
     });
     return;
@@ -145,7 +145,7 @@ async function copyTempPin(): Promise<void> {
     await navigator.clipboard.writeText(tempPin.value.pin);
     tempPinCopied.value = true;
   } catch {
-    toast({ title: '복사하지 못했습니다.', description: '숫자를 직접 옮겨 적어 주세요.', variant: 'destructive' });
+    toast({ title: '복사 실패', description: '숫자를 직접 옮겨 적기 필요', variant: 'destructive' });
   }
 }
 
@@ -167,7 +167,7 @@ async function callRpc(
 
   const res = (data ?? null) as RpcResult | null;
   if (!res) {
-    toast({ title: fallback, description: '서버 응답이 비어 있습니다.', variant: 'destructive' });
+    toast({ title: fallback, description: '서버 응답 없음', variant: 'destructive' });
     return null;
   }
   return res;
@@ -214,14 +214,14 @@ async function submitAdd(): Promise<void> {
       p_start_month: addMonth.value,
       p_role: addRole.value,
     },
-    '회원을 추가하지 못했습니다.'
+    '회원 추가 실패'
   );
   addSaving.value = false;
 
   if (!res) return;
   if (!res.ok) {
     // 모달 안에 남긴다. 토스트는 몇 초 뒤 사라져 무엇을 고쳐야 할지 잊힌다.
-    addError.value = describeReason(res.reason, '회원을 추가하지 못했습니다.');
+    addError.value = describeReason(res.reason, '회원 추가 실패');
     return;
   }
 
@@ -238,21 +238,21 @@ async function toggleRole(row: AdminMemberRow): Promise<void> {
   const res = await callRpc(
     'set_member_role',
     { p_member_id: row.id, p_role: next },
-    '등급을 바꾸지 못했습니다.'
+    '등급 변경 실패'
   );
   busyId.value = null;
 
   if (!res) return;
   if (!res.ok) {
     toast({
-      title: '등급을 바꾸지 못했습니다.',
+      title: '등급 변경 실패',
       description: describeReason(res.reason, ''),
       variant: 'destructive',
     });
     return;
   }
 
-  toast({ title: `${row.name} · ${next === 'admin' ? '관리자' : '회원'}로 바꿨습니다.` });
+  toast({ title: `${row.name} · ${next === 'admin' ? '관리자' : '회원'}로 변경 완료` });
   await load();
 }
 
@@ -281,18 +281,18 @@ async function submitDormant(): Promise<void> {
   const res = await callRpc(
     'set_member_dormant',
     { p_member_id: row.id, p_from: dormantMonth.value },
-    '휴면 처리를 하지 못했습니다.'
+    '휴면 처리 실패'
   );
   dormantSaving.value = false;
 
   if (!res) return;
   if (!res.ok) {
-    dormantError.value = describeReason(res.reason, '휴면 처리를 하지 못했습니다.');
+    dormantError.value = describeReason(res.reason, '휴면 처리 실패');
     return;
   }
 
   dormantOpen.value = false;
-  toast({ title: `${row.name} · ${dormantMonth.value}부터 휴면으로 바꿨습니다.` });
+  toast({ title: `${row.name} · ${dormantMonth.value}부터 휴면 처리 완료` });
   await load();
 }
 
@@ -302,21 +302,21 @@ async function restore(row: AdminMemberRow): Promise<void> {
   const res = await callRpc(
     'set_member_dormant',
     { p_member_id: row.id, p_from: null },
-    '복귀 처리를 하지 못했습니다.'
+    '복귀 처리 실패'
   );
   busyId.value = null;
 
   if (!res) return;
   if (!res.ok) {
     toast({
-      title: '복귀 처리를 하지 못했습니다.',
+      title: '복귀 처리 실패',
       description: describeReason(res.reason, ''),
       variant: 'destructive',
     });
     return;
   }
 
-  toast({ title: `${row.name} 회원을 현역으로 되돌렸습니다.` });
+  toast({ title: `${row.name} 회원 현역 복귀 완료` });
   await load();
 }
 
@@ -344,12 +344,12 @@ async function submitReset(): Promise<void> {
 
   resetError.value = null;
   resetSaving.value = true;
-  const res = await callRpc('reset_member_pin', { p_member_id: row.id }, 'PIN을 초기화하지 못했습니다.');
+  const res = await callRpc('reset_member_pin', { p_member_id: row.id }, 'PIN 초기화 실패');
   resetSaving.value = false;
 
   if (!res) return;
   if (!res.ok) {
-    resetError.value = describeReason(res.reason, 'PIN을 초기화하지 못했습니다.');
+    resetError.value = describeReason(res.reason, 'PIN 초기화 실패');
     return;
   }
 
@@ -389,7 +389,7 @@ async function submitDelete(): Promise<void> {
   const res = await callRpc(
     'delete_member',
     { p_member_id: row.id },
-    '회원을 삭제하지 못했습니다.'
+    '회원 삭제 실패'
   );
   deleteSaving.value = false;
 
@@ -397,13 +397,13 @@ async function submitDelete(): Promise<void> {
   if (!res.ok) {
     deleteError.value =
       res.reason === 'has_records'
-        ? `경기 기록이 ${res.result_count ?? 0}건 있어 삭제할 수 없습니다. 휴면 처리를 쓰세요.`
-        : describeReason(res.reason, '회원을 삭제하지 못했습니다.');
+        ? `경기 기록 ${res.result_count ?? 0}건 있음 · 삭제 불가 (휴면 처리 사용)`
+        : describeReason(res.reason, '회원 삭제 실패');
     return;
   }
 
   deleteOpen.value = false;
-  toast({ title: `${row.name} 회원을 삭제했습니다.` });
+  toast({ title: `${row.name} 회원 삭제 완료` });
   await load();
 }
 
@@ -443,14 +443,14 @@ function menuItems(row: AdminMemberRow): DropdownMenuItem[] {
       label: 'PIN 초기화',
       onSelect: () => openReset(row),
       disabled: isSelf(row),
-      hint: '본인 PIN 은 계정 창에서 바꿉니다',
+      hint: '본인 PIN은 계정 창에서 변경',
     },
     {
       label: '삭제',
       onSelect: () => openDelete(row),
       destructive: true,
       disabled: !deletable(row),
-      hint: '기록이 있어 삭제할 수 없습니다 (휴면을 쓰세요)',
+      hint: '기록 있음 · 삭제 불가 (휴면 사용)',
     },
   ];
 }
@@ -505,7 +505,7 @@ watch(compact, (isCompact) => {
             :empty="rows.length === 0"
             label="회원 목록"
             :skeleton-rows="8"
-            empty-title="회원이 없습니다"
+            empty-title="회원 없음"
             container-class="py-6"
             @retry="load()"
           >
@@ -596,14 +596,14 @@ watch(compact, (isCompact) => {
                           variant="outline"
                           size="xs"
                           :disabled="busyId === row.id || isSelf(row)"
-                          :title="isSelf(row) ? '본인 PIN 은 계정 창에서 바꿉니다' : '임시 PIN 을 새로 발급'"
+                          :title="isSelf(row) ? '본인 PIN은 계정 창에서 변경' : '임시 PIN 을 새로 발급'"
                           @click="openReset(row)"
                         >PIN 초기화</Button>
                         <Button
                           variant="destructive"
                           size="xs"
                           :disabled="busyId === row.id || !deletable(row)"
-                          :title="deletable(row) ? '회원 삭제' : '기록이 있어 삭제할 수 없습니다 (휴면을 쓰세요)'"
+                          :title="deletable(row) ? '회원 삭제' : '기록 있음 · 삭제 불가 (휴면 사용)'"
                           @click="openDelete(row)"
                         >삭제</Button>
                       </div>
@@ -614,7 +614,7 @@ watch(compact, (isCompact) => {
 
               <p class="text-xs text-muted-foreground mt-2 px-4">
                 {{ rows.length }}명 · 관리자 {{ adminCount }}명 ·
-                기록이 있는 회원은 삭제되지 않습니다. 명단에서 빼려면 휴면을 쓰세요.
+                기록이 있는 회원은 삭제 불가 · 명단에서 빼려면 휴면 사용
               </p>
             </div>
           </AsyncState>
@@ -651,8 +651,8 @@ watch(compact, (isCompact) => {
           </div>
 
           <p class="text-xs text-muted-foreground">
-            시작월부터 월간 기록 표에 나옵니다. 임시 PIN 이 한 번만 표시됩니다.
-            본인에게 전달하면 첫 로그인에서 새 PIN 을 정합니다.
+            시작월부터 월간 기록 표에 표시 · 임시 PIN은 한 번만 표시 ·
+            본인에게 전달하면 첫 로그인에서 새 PIN 설정
           </p>
 
           <p v-if="addError" class="text-xs text-destructive">{{ addError }}</p>
@@ -660,7 +660,7 @@ watch(compact, (isCompact) => {
           <div class="flex justify-end gap-2 pt-1">
             <Button variant="outline" :disabled="addSaving" @click="addOpen = false">취소</Button>
             <Button :disabled="addSaving" @click="submitAdd()">
-              {{ addSaving ? '추가하는 중…' : '추가' }}
+              {{ addSaving ? '추가 중…' : '추가' }}
             </Button>
           </div>
         </div>
@@ -672,7 +672,7 @@ watch(compact, (isCompact) => {
           <h2 class="text-base font-bold">휴면 처리</h2>
           <p class="text-sm">
             <span class="font-medium">{{ dormantRow?.name }}</span> 회원을 아래 달부터
-            집계·랭킹·로그인 목록에서 제외합니다. 지난 기록은 그대로 남습니다.
+            집계·랭킹·로그인 목록에서 제외 · 지난 기록은 그대로 유지
           </p>
           <div class="space-y-1">
             <Label for="dormant-month">휴면 시작월</Label>
@@ -683,7 +683,7 @@ watch(compact, (isCompact) => {
           <div class="flex justify-end gap-2 pt-1">
             <Button variant="outline" :disabled="dormantSaving" @click="dormantOpen = false">취소</Button>
             <Button :disabled="dormantSaving" @click="submitDormant()">
-              {{ dormantSaving ? '저장하는 중…' : '휴면 처리' }}
+              {{ dormantSaving ? '저장 중…' : '휴면 처리' }}
             </Button>
           </div>
         </div>
@@ -694,18 +694,18 @@ watch(compact, (isCompact) => {
         <div class="px-1 pt-1 space-y-3">
           <h2 class="text-base font-bold">PIN 초기화</h2>
           <p class="text-sm">
-            <span class="font-medium">{{ resetRow?.name }}</span> 회원의 PIN 을 초기화합니다.
-            기존 로그인은 모두 끊깁니다.
+            <span class="font-medium">{{ resetRow?.name }}</span> 회원의 PIN 초기화 ·
+            기존 로그인 모두 해제
           </p>
           <p class="text-xs text-muted-foreground">
-            새 임시 PIN 이 한 번만 표시됩니다. 본인에게 전달하면 첫 로그인에서 새 PIN 을 정합니다.
+            새 임시 PIN은 한 번만 표시 · 본인에게 전달하면 첫 로그인에서 새 PIN 설정
           </p>
           <p v-if="resetError" class="text-xs text-destructive">{{ resetError }}</p>
 
           <div class="flex justify-end gap-2 pt-1">
             <Button variant="outline" :disabled="resetSaving" @click="resetOpen = false">취소</Button>
             <Button :disabled="resetSaving" @click="submitReset()">
-              {{ resetSaving ? '초기화하는 중…' : '초기화' }}
+              {{ resetSaving ? '초기화 중…' : '초기화' }}
             </Button>
           </div>
         </div>
@@ -717,17 +717,17 @@ watch(compact, (isCompact) => {
           <h2 class="text-base font-bold">회원 삭제</h2>
           <p class="text-sm">
             <span class="font-medium">{{ deleteRow?.name }}</span> 회원을 명단에서
-            완전히 지웁니다. 로그인 정보와 접속 기록도 함께 사라지며 되돌릴 수 없습니다.
+            완전히 삭제 · 로그인 정보와 접속 기록도 함께 삭제되며 되돌리기 불가
           </p>
           <p class="text-xs text-muted-foreground">
-            경기 기록이 있는 회원은 서버가 삭제를 거절합니다. 그런 경우에는 휴면 처리를 쓰세요.
+            경기 기록이 있는 회원은 서버가 삭제 거절 · 이 경우 휴면 처리 사용
           </p>
           <p v-if="deleteError" class="text-xs text-destructive">{{ deleteError }}</p>
 
           <div class="flex justify-end gap-2 pt-1">
             <Button variant="outline" :disabled="deleteSaving" @click="deleteOpen = false">취소</Button>
             <Button variant="destructive" :disabled="deleteSaving" @click="submitDelete()">
-              {{ deleteSaving ? '삭제하는 중…' : '삭제' }}
+              {{ deleteSaving ? '삭제 중…' : '삭제' }}
             </Button>
           </div>
         </div>
@@ -742,15 +742,15 @@ watch(compact, (isCompact) => {
           </p>
           <Button variant="outline" size="sm" class="gap-1.5" @click="copyTempPin()">
             <Copy class="w-4 h-4" aria-hidden="true" />
-            {{ tempPinCopied ? '복사했습니다' : '복사' }}
+            {{ tempPinCopied ? '복사 완료' : '복사' }}
           </Button>
           <p class="text-sm text-destructive font-medium">
-            이 창을 닫으면 다시 볼 수 없습니다.
+            이 창을 닫으면 다시 볼 수 없음
           </p>
           <p class="text-xs text-muted-foreground">
-            본인에게 전달하면 첫 로그인에서 새 PIN 을 정하게 됩니다.
+            본인에게 전달하면 첫 로그인에서 새 PIN 설정
           </p>
-          <Button class="w-full" @click="tempPinOpen = false">전달했습니다 · 닫기</Button>
+          <Button class="w-full" @click="tempPinOpen = false">전달 완료 · 닫기</Button>
         </div>
       </Dialog>
 

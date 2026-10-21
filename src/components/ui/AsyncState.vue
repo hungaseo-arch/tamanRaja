@@ -35,7 +35,7 @@ const emit = defineEmits<{ retry: [] }>();
   <!-- 로딩이 오류를 덮는다. 다시 시도를 누른 직후에는 이전 오류가 아니라
        "다시 불러오는 중"이 보여야 누른 게 먹혔는지 알 수 있다. -->
   <div v-if="props.loading" :class="['py-6', props.containerClass]" role="status" aria-live="polite">
-    <span class="sr-only">{{ props.label ? `${props.label}을(를) 불러오는 중` : '불러오는 중' }}</span>
+    <span class="sr-only">{{ props.label ? `${props.label} 불러오는 중` : '불러오는 중' }}</span>
     <template v-if="props.skeletonRows">
       <!-- 표 골격. 화면 전체를 문구로 덮으면 내용이 도착할 때 레이아웃이 튄다. -->
       <div class="space-y-2" aria-hidden="true">
@@ -49,7 +49,7 @@ const emit = defineEmits<{ retry: [] }>();
       </div>
     </template>
     <p v-else class="text-center text-muted-foreground animate-pulse py-8">
-      {{ props.label ? `${props.label}을(를) 불러오는 중...` : '불러오는 중...' }}
+      {{ props.label ? `${props.label} 불러오는 중...` : '불러오는 중...' }}
     </p>
   </div>
 
@@ -59,7 +59,7 @@ const emit = defineEmits<{ retry: [] }>();
     role="alert"
   >
     <p class="font-medium text-foreground">
-      {{ props.label ? `${props.label}을(를) 불러오지 못했습니다` : '불러오지 못했습니다' }}
+      {{ props.label ? `${props.label} 불러오기 실패` : '불러오기 실패' }}
     </p>
     <!-- 원인을 감추지 않는다. "오류가 발생했습니다"만 보면 기다려야 할지
          새로고침해야 할지 판단할 수가 없다. -->
@@ -74,7 +74,7 @@ const emit = defineEmits<{ retry: [] }>();
     v-else-if="props.empty"
     :class="['flex flex-col items-center justify-center gap-1.5 py-10 px-4 text-center', props.containerClass]"
   >
-    <p class="text-muted-foreground">{{ props.emptyTitle ?? '표시할 기록이 없습니다' }}</p>
+    <p class="text-muted-foreground">{{ props.emptyTitle ?? '표시할 기록 없음' }}</p>
     <p v-if="props.emptyHint" class="text-sm text-muted-foreground/80">{{ props.emptyHint }}</p>
     <slot name="empty-action" />
   </div>

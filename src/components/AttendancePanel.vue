@@ -71,11 +71,11 @@ function handleSubmit(e: Event): void {
       </div>
     </div>
     <div v-else class="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground text-center">
-      핸디캡 정보가 없습니다.
+      핸디캡 정보 없음
     </div>
 
     <!-- 참석 / 미정 / 불참 선택 -->
-    <p class="text-sm text-center text-muted-foreground">{{ yearMonth }} 참석 여부를 선택해 주세요.</p>
+    <p class="text-sm text-center text-muted-foreground">{{ yearMonth }} 참석 여부 선택</p>
     <div class="grid grid-cols-3 gap-2">
       <button
         type="button"

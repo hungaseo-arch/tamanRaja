@@ -95,11 +95,11 @@ async function handleLogin(e: Event): Promise<void> {
   loginError.value = '';
 
   if (!selectedMember.value) {
-    loginError.value = '회원을 선택해주세요.';
+    loginError.value = '회원 선택 필요';
     return;
   }
   if (pin.value.length !== 4) {
-    loginError.value = 'PIN은 4자리 숫자여야 합니다.';
+    loginError.value = 'PIN은 4자리 숫자만 가능';
     return;
   }
 
@@ -175,7 +175,7 @@ async function handleLogout(): Promise<void> {
           id="member-select"
           v-model="selectedMember"
           :options="memberOptions"
-          placeholder="회원을 선택하세요"
+          placeholder="회원 선택"
         />
       </div>
 

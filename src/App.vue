@@ -75,9 +75,9 @@ async function handleSaveAttendance(attended: boolean | null): Promise<void> {
 
   if (!result.ok) {
     toast({
-      title: '저장하지 못했습니다',
+      title: '저장 실패',
       // 화면 값은 setAttendance 안에서 이미 원래대로 돌아갔다.
-      description: result.message ?? '네트워크 상태를 확인한 뒤 다시 시도해 주세요.',
+      description: result.message ?? '네트워크 상태 확인 후 다시 시도',
       variant: 'destructive',
     });
     return;
@@ -85,7 +85,7 @@ async function handleSaveAttendance(attended: boolean | null): Promise<void> {
 
   toast({
     title: '저장 완료',
-    description: `${nextYM} ${ATTENDANCE_LABEL[String(attended)]}(으)로 저장되었습니다.`,
+    description: `${nextYM} ${ATTENDANCE_LABEL[String(attended)]}(으)로 저장`,
   });
 
   // 전체 페이지 리로드 대신 데이터만 다시 읽는다 (번들 재다운로드·세션 재검증 회피)
@@ -108,7 +108,7 @@ async function logoutFromPinChange(): Promise<void> {
 }
 
 function onForcedPinChanged(): void {
-  toast({ title: 'PIN을 바꿨습니다', description: '다음 로그인부터 새 PIN을 쓰세요.' });
+  toast({ title: 'PIN 변경 완료', description: '다음 로그인부터 새 PIN 사용' });
 }
 
 // 30분 동안 아무 조작이 없으면 스스로 로그아웃한다. 라운드 중 스코어를 보다
@@ -120,8 +120,8 @@ useIdleLogout(async () => {
   loginModalOpen.value = false;
   router.replace(ROUTE_PATHS.HOME);
   toast({
-    title: '자동 로그아웃되었습니다',
-    description: `${IDLE_TIMEOUT_MINUTES}분 동안 사용하지 않아 로그아웃했습니다. 다시 로그인해 주세요.`,
+    title: '자동 로그아웃',
+    description: `${IDLE_TIMEOUT_MINUTES}분 동안 사용 없음 · 다시 로그인 필요`,
     duration: 6000,
   });
 });
@@ -177,10 +177,10 @@ onMounted(async () => {
     content-class="sm:max-w-sm"
   >
     <div class="w-full px-1 pt-1 space-y-4">
-      <h2 class="text-base font-bold">새 PIN을 정해 주세요</h2>
+      <h2 class="text-base font-bold">새 PIN 설정 필요</h2>
       <p class="text-sm text-muted-foreground">
-        지금 PIN은 관리자가 정한 임시 PIN입니다. 본인만 아는 4자리로 바꾼 뒤
-        이용할 수 있습니다.
+        지금 PIN은 관리자가 정한 임시 PIN · 본인만 아는 4자리로 변경 후
+        이용 가능
       </p>
       <PinChangeForm old-label="지금 PIN" @changed="onForcedPinChanged" />
       <div class="border-t border-border pt-3">

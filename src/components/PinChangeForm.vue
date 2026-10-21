@@ -40,11 +40,11 @@ async function handleSubmit(e: Event): Promise<void> {
   success.value = false;
 
   if (oldPin.value.length !== 4 || newPin.value.length !== 4 || confirmPin.value.length !== 4) {
-    error.value = 'PIN은 4자리 숫자여야 합니다.';
+    error.value = 'PIN은 4자리 숫자만 가능';
     return;
   }
   if (newPin.value !== confirmPin.value) {
-    error.value = '새 PIN이 일치하지 않습니다.';
+    error.value = '새 PIN 불일치';
     return;
   }
 
@@ -63,7 +63,7 @@ async function handleSubmit(e: Event): Promise<void> {
       error.value = describeChangePinError(result);
     }
   } catch {
-    error.value = '저장 중 오류가 발생했습니다.';
+    error.value = '저장 중 오류 발생';
   } finally {
     loading.value = false;
   }
@@ -118,7 +118,7 @@ async function handleSubmit(e: Event): Promise<void> {
 
     <Alert v-if="success" class="border-primary bg-primary/10">
       <CheckCircle2 class="h-4 w-4 text-primary" />
-      <AlertDescription class="text-primary">PIN이 성공적으로 변경되었습니다.</AlertDescription>
+      <AlertDescription class="text-primary">PIN 변경 완료</AlertDescription>
     </Alert>
 
     <Button type="submit" class="w-full" :disabled="loading">

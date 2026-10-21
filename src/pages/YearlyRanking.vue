@@ -427,8 +427,8 @@ function stickyTint(rank: number | null): string {
             :skeleton-rows="8"
             :error="yearlyRankingError"
             :empty="summary.length === 0"
-            :empty-title="selectedYear ? `${selectedYear}년 기록이 없습니다` : '기록이 없습니다'"
-            empty-hint="경기 결과가 저장되면 이 표에 순위가 나타납니다."
+            :empty-title="selectedYear ? `${selectedYear}년 기록 없음` : '기록 없음'"
+            empty-hint="경기 결과 저장 후 이 표에 순위 표시"
             container-class="mt-4"
             @retry="retryRanking"
           >
@@ -548,7 +548,7 @@ function stickyTint(rank: number | null): string {
                   <!-- 기준 미달 구역 시작 -->
                   <TableRow v-if="entry.divider" class="bg-muted/50 hover:bg-muted/50">
                     <TableCell :colspan="9" class="text-xs text-muted-foreground py-1.5">
-                      아래는 50% 미만 참석으로 순위에서 제외된 회원입니다.
+                      아래는 50% 미만 참석으로 순위에서 제외된 회원
                     </TableCell>
                   </TableRow>
                   <TableRow
@@ -666,12 +666,12 @@ function stickyTint(rank: number | null): string {
            서너 줄만 남는다. 한 번 읽으면 되는 안내라 표 아래로 내렸다. -->
       <p class="text-xs text-muted-foreground leading-relaxed">
         <strong class="text-foreground">랭킹 기준</strong> —
-        <strong class="text-foreground">{{ rankBasisLabel }}</strong>{{ rankBasisParticle }} 낮은 순.
+        <strong class="text-foreground">{{ rankBasisLabel }}</strong>{{ rankBasisParticle }} 낮은 순 ·
         {{ selectedYear }}년 치른 {{ yearMeetingCount }}경기 중
         <strong class="text-foreground">50% 이상({{ minRoundsNum }}회)</strong> 참석한
-        회원에게만 순위를 부여합니다. 표의 <strong class="text-foreground">평균 Net</strong> ·
-        <strong class="text-foreground">평균 스코어</strong> 열 제목을 누르면 그 지표가 순위 기준이 되고,
-        참석 · 기준 핸디로 정렬해도 순위는 바뀌지 않습니다.
+        회원에게만 순위 부여 · 표의 <strong class="text-foreground">평균 Net</strong> ·
+        <strong class="text-foreground">평균 스코어</strong> 열 제목을 누르면 그 지표가 순위 기준 ·
+        참석·기준 핸디 정렬은 순위에 영향 없음
       </p>
     </div>
   </div>

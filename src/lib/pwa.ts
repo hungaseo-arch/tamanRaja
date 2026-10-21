@@ -20,14 +20,14 @@ export function setupPWA(): void {
   const updateSW = registerSW({
     onNeedRefresh() {
       toast({
-        title: '새 버전이 있습니다',
-        description: '새로고침하면 최신 화면으로 바뀝니다.',
+        title: '새 버전 있음',
+        description: '새로고침 시 최신 화면으로 전환',
         duration: 0,
         action: { label: '새로고침', onClick: () => updateSW(true) },
       });
     },
     onOfflineReady() {
-      toast({ title: '오프라인에서도 열립니다', description: '기록 조회는 연결이 필요합니다.' });
+      toast({ title: '오프라인에서도 열림', description: '기록 조회는 연결 필요' });
     },
   });
 }

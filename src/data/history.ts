@@ -178,7 +178,7 @@ export async function loadYearScores(year: string, reload = false): Promise<void
     if (error) throw new Error(error.message);
     SCORES[year] = rows(data).map(toScoreRow);
   } catch (err) {
-    scoresError.value = describeError(err, '기록을 불러오지 못했습니다.');
+    scoresError.value = describeError(err, '기록 불러오기 실패');
   } finally {
     scoresLoading.value = false;
   }
@@ -210,7 +210,7 @@ export async function loadMemberScores(memberId: string, reload = false): Promis
     if (error) throw new Error(error.message);
     MEMBER_SCORES[memberId] = rows(data).map(toScoreRow);
   } catch (err) {
-    scoresError.value = describeError(err, '개인 기록을 불러오지 못했습니다.');
+    scoresError.value = describeError(err, '개인 기록 불러오기 실패');
   } finally {
     scoresLoading.value = false;
   }
@@ -245,7 +245,7 @@ export async function loadStats(scope: string, reload = false): Promise<void> {
     if (error) throw new Error(error.message);
     STATS[scope] = rows(data).map(toStatsRow);
   } catch (err) {
-    statsError.value = describeError(err, '집계를 불러오지 못했습니다.');
+    statsError.value = describeError(err, '집계 불러오기 실패');
   } finally {
     statsLoading.value = false;
   }
@@ -300,7 +300,7 @@ export async function loadHonors(reload = false): Promise<void> {
     );
     honorsLoaded.value = true;
   } catch (err) {
-    honorsError.value = describeError(err, '명예의 전당을 불러오지 못했습니다.');
+    honorsError.value = describeError(err, '명예의 전당 불러오기 실패');
   } finally {
     honorsLoading.value = false;
   }
@@ -349,7 +349,7 @@ export async function loadMemberHandicaps(memberId: string, reload = false): Pro
       next_hc: num(h.next_hc),
     }));
   } catch (err) {
-    handicapError.value = describeError(err, '핸디캡 기록을 불러오지 못했습니다.');
+    handicapError.value = describeError(err, '핸디캡 기록 불러오기 실패');
   } finally {
     handicapLoading.value = false;
   }

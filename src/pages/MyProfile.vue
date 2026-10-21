@@ -258,8 +258,8 @@ function handleExport(): void {
           <CardContent class="px-2 sm:px-6">
             <AsyncState
               :empty="!hasRecord"
-              empty-title="아직 기록이 없습니다"
-              empty-hint="모임에 참석하고 스코어가 저장되면 여기에 쌓입니다."
+              empty-title="아직 기록 없음"
+              empty-hint="모임 참석 후 스코어가 저장되면 여기에 누적"
             >
             <div class="pt-4">
               <!-- 넓은 화면은 스크롤을 페이지가 한다. 그래야 위쪽 요약 카드가

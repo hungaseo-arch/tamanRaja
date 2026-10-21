@@ -16,9 +16,9 @@ function goHome(): void {
 <template>
   <div class="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
     <p class="text-5xl">🏌️</p>
-    <h1 class="text-2xl font-bold text-foreground">페이지를 찾을 수 없습니다</h1>
+    <h1 class="text-2xl font-bold text-foreground">페이지 없음</h1>
     <p class="text-sm text-muted-foreground">
-      요청하신 주소가 없거나 옮겨졌습니다.
+      없는 주소 또는 옮겨진 주소
     </p>
     <p class="text-xs text-muted-foreground break-all font-mono">#{{ route.fullPath }}</p>
     <Button variant="default" size="sm" @click="goHome">

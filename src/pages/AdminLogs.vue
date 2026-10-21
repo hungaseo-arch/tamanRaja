@@ -125,7 +125,7 @@ async function load(): Promise<void> {
   if (rpcError) {
     // 권한 없음(42501)도 그대로 보여준다. 빈 표로 두면 기록이 없는 것과
     // 구분되지 않는다.
-    error.value = describeError(rpcError, '접속 기록을 불러오지 못했습니다.');
+    error.value = describeError(rpcError, '접속 기록 불러오기 실패');
     rows.value = [];
   } else {
     rows.value = (data ?? []) as AuthEventRow[];
@@ -254,8 +254,8 @@ watch(compact, (isCompact) => {
             :empty="rows.length === 0"
             label="접속 기록"
             :skeleton-rows="8"
-            empty-title="해당 조건의 기록이 없습니다"
-            empty-hint="기간을 넓히거나 필터를 지워 보세요."
+            empty-title="해당 조건의 기록 없음"
+            empty-hint="기간 확대 또는 필터 해제"
             container-class="py-6"
             @retry="load()"
           >
@@ -300,9 +300,9 @@ watch(compact, (isCompact) => {
               <p class="text-xs text-muted-foreground mt-2 px-4">
                 {{ rows.length }}건
                 <template v-if="rows.length >= ROW_LIMIT">
-                  (최근 {{ ROW_LIMIT }}건까지만 보여줍니다 — 기간을 좁혀 주세요)
+                  (최근 {{ ROW_LIMIT }}건까지만 표시 — 기간 축소 필요)
                 </template>
-                · 기록은 180일 보관합니다.
+                · 기록 180일 보관
               </p>
             </div>
           </AsyncState>

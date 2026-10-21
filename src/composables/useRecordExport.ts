@@ -9,8 +9,8 @@ function download(filename: string, headers: string[], body: CsvValue[][], label
 
   if (body.length === 0) {
     toast({
-      title: '내려받을 기록이 없습니다',
-      description: `${label} 기록이 없습니다.`,
+      title: '내려받을 기록 없음',
+      description: `${label} 기록 없음`,
       variant: 'destructive',
     });
     return 0;
@@ -19,7 +19,7 @@ function download(filename: string, headers: string[], body: CsvValue[][], label
   downloadCsv(filename, toCsv(headers, body));
   toast({
     title: '엑셀 다운로드 완료',
-    description: `${label} ${body.length}건을 내려받았습니다.`,
+    description: `${label} ${body.length}건 내려받기 완료`,
   });
   return body.length;
 }
