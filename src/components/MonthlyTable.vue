@@ -228,6 +228,21 @@ const invalidScoreNames = computed(() =>
 
 const validationError = ref<string | null>(null);
 
+// 당월 핸디가 없는 회원 (3-4). 서버 save_meeting_results 의 no_handicap 과 같은
+// 규칙이다 — 스코어가 저장된 적 없는 달은 전원, 이미 저장된 달(사후 수정)은
+// 참석·스코어 행만 본다. 직전 달이 미확정이면 resolveHandicap 이 app_hc 를
+// null 로 주므로 그 경우도 여기 걸린다. 눌러 봐야 서버가 거절하니 버튼을 잠근다.
+const missingHcNames = computed(() =>
+  props.monthlyData
+    .filter((row) => row.app_hc === null)
+    .filter((row) =>
+      props.isFutureMonth
+      || localAttendance[row.member_id] === true
+      || !!localScores[row.member_id]?.trim(),
+    )
+    .map((row) => row.member_name),
+);
+
 watch(
   localScores,
   () => {
@@ -239,7 +254,7 @@ watch(
 );
 
 function handleSave(): void {
-  if (props.saveState === 'saving') return;
+  if (props.saveState === 'saving' || missingHcNames.value.length > 0) return;
   if (invalidScoreNames.value.length > 0) {
     validationError.value =
       `스코어는 ${SCORE_MIN}~${SCORE_MAX} 사이 정수만 가능 — ${invalidScoreNames.value.join(', ')}`;
@@ -483,7 +498,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             v-if="isEditing"
             size="xs"
             class="shrink-0"
-            :disabled="props.saveState === 'saving'"
+            :disabled="props.saveState === 'saving' || missingHcNames.length > 0"
+            :aria-describedby="isEditing && missingHcNames.length > 0 ? 'monthly-missing-hc' : undefined"
             @click="handleSave"
           >{{ props.saveState === 'saving' ? '저장 중...' : '저장' }}</Button>
           <Button v-else size="xs" variant="outline" class="shrink-0" @click="enterEdit">수정</Button>
@@ -533,6 +549,14 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
            달에서는 눌러 놓고 아무 반응이 없는 것처럼 보인다. -->
       <p v-if="validationError" class="text-xs text-destructive" role="alert">
         {{ validationError }}
+      </p>
+      <p
+        v-if="isEditing && missingHcNames.length > 0"
+        id="monthly-missing-hc"
+        class="text-xs text-destructive"
+        role="status"
+      >
+        당월 핸디 없는 회원 있음 — {{ missingHcNames.join(', ') }} · 직전 달 결과 저장 후 저장 가능
       </p>
     </div>
 
