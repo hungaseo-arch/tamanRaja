@@ -16,6 +16,7 @@ import RowDetailDialog from '@/components/ui/RowDetailDialog.vue';
 import RowDetailButton from '@/components/ui/RowDetailButton.vue';
 import DetailItem from '@/components/ui/DetailItem.vue';
 import Button from '@/components/ui/Button.vue';
+import Select from '@/components/ui/Select.vue';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
 import Badge from '@/components/ui/Badge.vue';
@@ -50,17 +51,35 @@ interface HistoryRow {
   result_rank: ResultRank;
 }
 
-// 표에 담을 연도. 기록이 있는 달 중 가장 나중 달의 해다 (없으면 올해).
+// 아래 연도 watch(immediate)가 쓰므로 그보다 먼저 둔다.
+const nowYM = (() => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+})();
+
+// 고를 수 있는 연도. 모임이 있었던 해와 본인 핸디 기록이 있는 해 (없으면 올해).
+const availableYears = computed(() => {
+  const memberId = currentMember.value?.id;
+  const years = new Set([
+    ...MEETINGS.map((m) => m.year_month.slice(0, 4)),
+    ...MONTHLY_HANDICAPS.filter((h) => h.member_id === memberId).map((h) => h.year_month.slice(0, 4)),
+  ]);
+  if (years.size === 0) years.add(nowYM.slice(0, 4));
+  return [...years].sort().reverse();
+});
+const yearOptions = computed(() => availableYears.value.map((y) => ({ value: y, label: `${y}년` })));
+
+// 표에 담을 연도. 기본은 기록이 있는 가장 최근 해 (4-1).
 // 이 값 하나가 표의 12줄과 위쪽 통계 카드의 범위를 함께 정한다 — 예전에는
 // 달 목록을 데이터에서 그러모으느라 연도가 섞여도 '몇 월'로만 보였다.
-const historyYear = computed(() => {
-  const memberId = currentMember.value?.id;
-  const latest = [
-    ...MEETINGS.map((m) => m.year_month),
-    ...MONTHLY_HANDICAPS.filter((h) => h.member_id === memberId).map((h) => h.year_month),
-  ].reduce((max, ym) => (ym > max ? ym : max), '');
-  return latest ? latest.slice(0, 4) : nowYM.slice(0, 4);
-});
+const historyYear = ref('');
+watch(
+  availableYears,
+  (years) => {
+    if (!years.includes(historyYear.value)) historyYear.value = years[0];
+  },
+  { immediate: true }
+);
 
 // ── 줄 상세 (디스클로저) ─────────────────────────────────────────────────────
 // 좁은 화면에서는 기준·당월·차월 핸디 열이 숨는다. 월을 누르면 그달 기록을
@@ -151,11 +170,6 @@ function formatMonth(ym: string): string {
   return `${parseInt(ym.slice(5), 10)}월`;
 }
 
-const nowYM = (() => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-})();
-
 // 아직 오지 않은 달은 `미정`(앞으로 정해짐), 지난 달은 `-`(기록 없음).
 function formatCourse(row: HistoryRow): string {
   return row.year_month >= nowYM ? formatPending(row.course_name) : formatValue(row.course_name);
@@ -170,6 +184,7 @@ function handleExport(): void {
   if (!currentMember.value) return;
   exportMyRecords(
     currentMember.value.name,
+    historyYear.value,
     history.value.map((r) => ({
       year_month: r.year_month,
       course_name: r.course_name,
@@ -194,13 +209,26 @@ function handleExport(): void {
           <h1 class="text-lg font-bold text-foreground mr-auto">
             나의 기록 <span class="text-muted-foreground font-medium text-sm">— {{ currentMember.name }} 님</span>
           </h1>
+          <!-- 고를 연도가 하나뿐이면 드롭다운을 띄우지 않는다 (연간 랭킹과 같다).
+               그 연도는 표의 첫 열 제목에 이미 나온다. -->
+          <template v-if="yearOptions.length > 1">
+            <label for="profile-year" class="sr-only">연도 선택</label>
+            <Select
+              id="profile-year"
+              v-model="historyYear"
+              :options="yearOptions"
+              placeholder=""
+              size="xs"
+              class="w-24 shrink-0"
+            />
+          </template>
           <!-- 좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->
           <Button
             variant="outline"
             size="xs"
             class="shrink-0 gap-1"
-            title="나의 기록 엑셀(CSV) 다운로드"
-            aria-label="나의 기록 엑셀 다운로드"
+            :title="`나의 ${historyYear}년 기록 엑셀(CSV) 다운로드`"
+            :aria-label="`나의 ${historyYear}년 기록 엑셀 다운로드`"
             @click="handleExport"
           >
             <Download class="w-3.5 h-3.5" aria-hidden="true" />

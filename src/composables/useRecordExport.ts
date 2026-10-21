@@ -124,8 +124,8 @@ export function useRecordExport() {
     return download(`타만라자_연간랭킹_${year}.csv`, RANKING_HEADERS, body, `${year}년 랭킹`);
   }
 
-  /** 로그인한 본인의 월별 기록. */
-  function exportMyRecords(memberName: string, rows: ProfileExportRow[]): number {
+  /** 로그인한 본인의 월별 기록 (한 해치). */
+  function exportMyRecords(memberName: string, year: string, rows: ProfileExportRow[]): number {
     const body: CsvValue[][] = rows.map((r) => [
       r.year_month,
       r.course_name,
@@ -139,7 +139,7 @@ export function useRecordExport() {
     ]);
 
     return download(
-      `타만라자_${safeName(memberName)}_기록.csv`,
+      `타만라자_${safeName(memberName)}_기록_${year}.csv`,
       PROFILE_HEADERS,
       body,
       `${memberName} 님의`

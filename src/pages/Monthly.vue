@@ -14,7 +14,9 @@ const availableMonths = computed(() => getAvailableMonths());
 
 const today = new Date();
 const currentYM = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
-const nextYM = `${today.getFullYear()}-${String(today.getMonth() + 2).padStart(2, '0')}`;
+// 12월의 다음 달은 이듬해 1월이다. 월만 더하면 '2026-13' 이 된다.
+const nextMonthDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+const nextYM = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}`;
 
 // 현재달 이하의 가장 최근 미팅을 기본으로 선택 (미래달 미팅이 있어도 현재달을 우선)
 const route = useRoute();
@@ -27,8 +29,16 @@ const defaultMonth = queryMonth
   ?? currentYM;
 const selectedMonth = ref<string>(defaultMonth);
 
+const router = useRouter();
+
+// ?month= 와 고른 달은 양쪽으로 맞춘다 — 주소를 단톡방에 붙이면 같은 달이 열린다.
+// 참석 창(#/attendance)은 이 화면을 배경으로 빌려 쓸 뿐이라 주소를 건드리지 않는다.
 watch(() => route.query.month, (m) => {
   if (m && typeof m === 'string') selectedMonth.value = m;
+});
+watch(selectedMonth, (m) => {
+  if (route.path !== ROUTE_PATHS.MONTHLY || route.query.month === m) return;
+  void router.replace({ query: { ...route.query, month: m } });
 });
 
 const monthlyData = computed(() => getMonthlyData(selectedMonth.value));
@@ -38,23 +48,35 @@ const selectedMeeting = computed(() =>
 );
 
 
-const YEAR = '2026';
-const ALL_MONTHS = Array.from({ length: 12 }, (_, i) => {
-  const m = String(i + 1).padStart(2, '0');
-  return `${YEAR}-${m}`;
-}).reverse();
-
 // 현재월·다음달은 미팅 없어도 선택 가능
 const SELECTABLE = new Set([currentYM, nextYM]);
+const existingMonths = computed(() => new Set(availableMonths.value.map((m) => m.year_month)));
+const isSelectable = (ym: string): boolean => existingMonths.value.has(ym) || SELECTABLE.has(ym);
 
-const monthOptions = computed(() => {
-  const existing = new Set(availableMonths.value.map((m) => m.year_month));
-  return ALL_MONTHS.map((ym) => ({
-    value: ym,
-    label: ym,
-    disabled: !existing.has(ym) && !SELECTABLE.has(ym),
-  }));
+// 연도 → 월 2단 선택 (4-1). 연도는 기록이 있는 해와 고를 수 있는 달(이번 달·
+// 다음 달)이 속한 해. 고를 달이 하나도 없는 해는 넣지 않는다.
+const yearOptions = computed(() => {
+  const years = new Set([...existingMonths.value, ...SELECTABLE].map((ym) => ym.slice(0, 4)));
+  return [...years].sort().reverse().map((y) => ({ value: y, label: `${y}년` }));
 });
+
+const selectedYear = computed({
+  get: () => selectedMonth.value.slice(0, 4),
+  // 해를 바꾸면 그해에서 고를 수 있는 가장 최근 달(이번 달 이하 우선)로 간다.
+  set: (y: string) => {
+    if (y === selectedMonth.value.slice(0, 4)) return;
+    const months = Array.from({ length: 12 }, (_, i) => `${y}-${String(12 - i).padStart(2, '0')}`)
+      .filter(isSelectable);
+    selectedMonth.value = months.find((ym) => ym <= currentYM) ?? months[months.length - 1] ?? `${y}-01`;
+  },
+});
+
+const monthOptions = computed(() =>
+  Array.from({ length: 12 }, (_, i) => {
+    const ym = `${selectedYear.value}-${String(12 - i).padStart(2, '0')}`;
+    return { value: ym, label: `${12 - i}월`, disabled: !isSelectable(ym) };
+  })
+);
 
 // 직접 입력 (Supabase 미팅 없는 달, 또는 저장된 미래월 편집용)
 const manualDate = ref('');
@@ -94,7 +116,6 @@ const isFutureMonth = computed(() => {
 
 const { currentMember, isAdmin } = useAuth();
 const { toast } = useToast();
-const router = useRouter();
 
 // 참석 창(App.vue, #/attendance)은 익월 본인 참석만 바꾼다. 익월을 볼 때만 본인
 // 줄의 이름·참석 칸을 그 창으로 잇는다.
@@ -213,6 +234,8 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
           :is-future-month="isFutureMonth"
           :is-editable="isEditableMonth"
           v-model:selected-month="selectedMonth"
+          v-model:selected-year="selectedYear"
+          :year-options="yearOptions"
           :month-options="monthOptions"
           v-model:manual-date="manualDate"
           v-model:manual-course="manualCourse"

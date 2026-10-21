@@ -46,6 +46,8 @@ interface Props {
   isManager?: boolean;
   selectedMonth: string;
   monthOptions: SelectOption[];
+  selectedYear: string;
+  yearOptions: SelectOption[];
   manualDate: string;
   manualCourse: string;
   /**
@@ -66,6 +68,7 @@ const props = defineProps<Props>();
 const emit = defineEmits<{
   (e: 'save', data: SavePayload): void;
   (e: 'update:selectedMonth', value: string): void;
+  (e: 'update:selectedYear', value: string): void;
   (e: 'update:manualDate', value: string): void;
   (e: 'update:manualCourse', value: string): void;
   (e: 'open-attendance'): void;
@@ -339,6 +342,10 @@ const sortedMonthlyData = computed(() =>
 
 const winnerRow = computed(() => props.monthlyData.find((r) => r.result_rank === 'Winner'));
 
+const localSelectedYear = computed({
+  get: () => props.selectedYear,
+  set: (v: string) => emit('update:selectedYear', v),
+});
 const localSelectedMonth = computed({
   get: () => props.selectedMonth,
   set: (v: string) => emit('update:selectedMonth', v),
@@ -505,7 +512,19 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           <Button v-else size="xs" variant="outline" class="shrink-0" @click="enterEdit">수정</Button>
         </template>
 
-        <!-- 월 선택. 연간 랭킹의 연도 선택과 같은 자리·같은 배색이다 -->
+        <!-- 연도·월 선택. 연간 랭킹의 연도 선택과 같은 자리·같은 배색이다.
+             고를 연도가 하나뿐이면 연도 상자는 띄우지 않는다 (연간 랭킹과 같다). -->
+        <template v-if="yearOptions.length > 1">
+          <label for="monthly-year" class="sr-only">조회할 연도</label>
+          <Select
+            id="monthly-year"
+            v-model="localSelectedYear"
+            :options="yearOptions"
+            placeholder=""
+            size="xs"
+            class="w-22 shrink-0"
+          />
+        </template>
         <label for="monthly-month" class="sr-only">조회할 월</label>
         <Select
           id="monthly-month"
@@ -513,7 +532,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           :options="monthOptions"
           placeholder="월 선택"
           size="xs"
-          class="w-24 shrink-0"
+          class="w-18 shrink-0"
         />
 
         <!-- 엑셀(CSV) 다운로드 — 해당 연도 전체 기록.
