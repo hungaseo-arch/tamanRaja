@@ -178,10 +178,16 @@ onMounted(async () => {
   >
     <div class="w-full px-1 pt-1 space-y-4">
       <h2 class="text-base font-bold">새 PIN 설정 필요</h2>
-      <p class="text-sm text-muted-foreground">
-        지금 PIN은 관리자가 정한 임시 PIN · 본인만 아는 4자리로 변경 후
-        이용 가능
-      </p>
+      <!-- 회원 단체 공지 대신 이 창이 안내를 맡는다 (공통 초기 PIN 폐지). -->
+      <div class="rounded-md bg-muted px-3 py-2 text-sm space-y-1">
+        <p class="font-medium">보안 강화 안내</p>
+        <ul class="list-disc pl-4 text-muted-foreground space-y-0.5">
+          <li>공통 초기 PIN·관리자 임시 PIN 사용 중단</li>
+          <li>본인만 아는 4자리로 변경 후 이용 가능</li>
+          <li>다음 로그인부터 새 PIN 사용</li>
+          <li>PIN 분실 시 관리자에게 초기화 요청</li>
+        </ul>
+      </div>
       <PinChangeForm old-label="지금 PIN" @changed="onForcedPinChanged" />
       <div class="border-t border-border pt-3">
         <Button variant="ghost" size="sm" class="w-full" @click="logoutFromPinChange">
