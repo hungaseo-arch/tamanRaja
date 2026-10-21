@@ -824,6 +824,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                   </template>
                   <template v-else-if="isRankName(row.result_rank)">
                     <RankBadge :rank="row.result_rank" />
+                    <!-- 결과 그룹 열이 숨는 폭에서는 배지에 가려 조가 사라진다 (5-5) -->
+                    <span v-if="row.result_group" class="md:hidden block text-[10px] leading-tight text-muted-foreground mt-0.5">{{ row.result_group }}</span>
                   </template>
                   <!-- 순위 없는 회원: 작은 화면(결과 그룹 컬럼 숨김)에서만 그룹 표시 -->
                   <template v-else-if="row.result_group">
