@@ -250,11 +250,11 @@ function handleExport(): void {
         </div>
 
         <!-- 월별 히스토리 테이블 -->
-        <!-- 카드가 표를 감싼다: 표는 좁은 화면에서 줄일 수 없는 최소 폭이 있고
-             가로 스크롤은 main 이 맡는다. 카드 폭을 그 최소 폭(w-min)에 맞춰야
-             테두리·배경이 표 오른쪽 끝까지 따라간다. 넓은 화면에서는
-             min-w-full 이 이겨서 예전과 똑같이 폭을 가득 채운다. -->
-        <Card class="w-min min-w-full">
+        <!-- 넓은 화면: 카드가 표의 최소 폭(w-min)을 따라가고, 남으면 min-w-full 로
+             가득 채운다. 스크롤은 페이지가 한다.
+             좁은 화면(compact): 골프장 이름 때문에 표가 화면보다 넓어진다. 이때는
+             표가 스스로 옆으로 밀고 카드는 화면 폭에 머문다. (3-3) -->
+        <Card :class="compact ? 'w-full' : 'w-min min-w-full'">
           <CardContent class="px-2 sm:px-6">
             <AsyncState
               :empty="!hasRecord"
@@ -262,16 +262,17 @@ function handleExport(): void {
               empty-hint="모임에 참석하고 스코어가 저장되면 여기에 쌓입니다."
             >
             <div class="pt-4">
-              <!-- scroll=false: 스크롤은 페이지가 한다. 그래야 위쪽 요약 카드가
+              <!-- 넓은 화면은 스크롤을 페이지가 한다. 그래야 위쪽 요약 카드가
                    함께 밀려 올라가고, 열 제목만 화면 맨 위에 남는다. -->
               <Table
-                :scroll="false"
+                :scroll="compact"
                 class="text-xs sm:text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
                 caption="월별 참석·핸디·스코어 기록"
               >
                 <TableHeader>
                   <TableRow>
-                    <TableHead class="font-bold text-foreground whitespace-nowrap">
+                    <!-- 표가 옆으로 밀려도 몇 월 줄인지는 남는다 -->
+                    <TableHead class="font-bold text-foreground whitespace-nowrap sticky left-0 z-30 bg-card">
                       <Badge variant="default">{{ historyYear }}년</Badge>
                     </TableHead>
                     <TableHead class="font-bold text-foreground whitespace-nowrap">골프장</TableHead>
@@ -287,9 +288,13 @@ function handleExport(): void {
                   <TableRow
                     v-for="row in history"
                     :key="row.year_month"
-                    class="hover:bg-muted/50 transition-colors"
+                    class="group hover:bg-muted/50 transition-colors"
                   >
-                    <TableCell class="font-medium whitespace-nowrap pl-7">
+                    <!-- 고정 열은 불투명 bg-card 라 tr 의 hover 틴트가 가려진다.
+                         MonthlyTable 과 같이 isolate + ::before 로 다시 얹는다. -->
+                    <TableCell
+                      class="font-medium whitespace-nowrap pl-7 sticky left-0 z-10 bg-card isolate before:absolute before:inset-0 before:-z-10 before:transition-colors group-hover:before:bg-muted/50"
+                    >
                       <RowDetailButton
                         v-if="row.course_name"
                         :label="formatMonth(row.year_month)"

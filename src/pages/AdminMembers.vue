@@ -27,6 +27,7 @@ import TableCell from '@/components/ui/TableCell.vue';
 import RowDetailDialog from '@/components/ui/RowDetailDialog.vue';
 import RowDetailButton from '@/components/ui/RowDetailButton.vue';
 import DetailItem from '@/components/ui/DetailItem.vue';
+import DropdownMenu, { type DropdownMenuItem } from '@/components/ui/DropdownMenu.vue';
 
 /**
  * 회원 관리 (관리자 전용).
@@ -426,6 +427,34 @@ function statusLabel(row: AdminMemberRow): string {
   return row.dormant_from ? `휴면 ${row.dormant_from}~` : '현역';
 }
 
+// ── 좁은 화면의 관리 메뉴 ────────────────────────────────────────────────────
+// 넓은 화면의 버튼 넷과 같은 동작·같은 막힘 조건이다. 막힌 이유는 title 대신
+// hint 로 보인다 — 손가락으로는 title 이 뜨지 않는다.
+function menuItems(row: AdminMemberRow): DropdownMenuItem[] {
+  return [
+    {
+      label: row.role === 'admin' ? '회원으로 내리기' : '관리자로 올리기',
+      onSelect: () => void toggleRole(row),
+    },
+    row.dormant_from
+      ? { label: '현역으로 복귀', onSelect: () => void restore(row) }
+      : { label: '휴면 처리', onSelect: () => openDormant(row) },
+    {
+      label: 'PIN 초기화',
+      onSelect: () => openReset(row),
+      disabled: isSelf(row),
+      hint: '본인 PIN 은 계정 창에서 바꿉니다',
+    },
+    {
+      label: '삭제',
+      onSelect: () => openDelete(row),
+      destructive: true,
+      disabled: !deletable(row),
+      hint: '기록이 있어 삭제할 수 없습니다 (휴면을 쓰세요)',
+    },
+  ];
+}
+
 // ── 줄 상세 ──────────────────────────────────────────────────────────────────
 // 좁은 화면에서는 가입·참석·마지막 로그인 열이 숨는다. 이름을 누르면 통째로 본다.
 const compact = useCompactTable('sm');
@@ -466,7 +495,9 @@ watch(compact, (isCompact) => {
         </Button>
       </div>
 
-      <Card class="w-min min-w-full">
+      <!-- 넓은 화면: 카드가 표의 최소 폭을 따라간다(w-min, 남으면 min-w-full).
+           좁은 화면(compact): 표가 스스로 옆으로 밀고 카드는 화면 폭에 머문다. (3-3) -->
+      <Card :class="compact ? 'w-full' : 'w-min min-w-full'">
         <CardContent class="px-2 sm:px-6">
           <AsyncState
             :loading="loading"
@@ -480,13 +511,13 @@ watch(compact, (isCompact) => {
           >
             <div class="pt-4">
               <Table
-                :scroll="false"
+                :scroll="compact"
                 class="text-xs sm:text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
                 caption="회원 명단과 등급"
               >
                 <TableHeader>
                   <TableRow>
-                    <TableHead class="font-bold text-foreground whitespace-nowrap">이름</TableHead>
+                    <TableHead class="font-bold text-foreground whitespace-nowrap sticky left-0 z-30 bg-card">이름</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap">등급</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap">상태</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">가입</TableHead>
@@ -496,8 +527,11 @@ watch(compact, (isCompact) => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  <TableRow v-for="row in rows" :key="row.id" class="hover:bg-muted/50 transition-colors">
-                    <TableCell class="font-medium whitespace-nowrap">
+                  <TableRow v-for="row in rows" :key="row.id" class="group hover:bg-muted/50 transition-colors">
+                    <!-- 고정 열: 불투명 bg-card 위에 hover 틴트를 ::before 로 다시 얹는다 -->
+                    <TableCell
+                      class="font-medium whitespace-nowrap sticky left-0 z-10 bg-card isolate before:absolute before:inset-0 before:-z-10 before:transition-colors group-hover:before:bg-muted/50"
+                    >
                       <RowDetailButton
                         :label="`${row.name} 상세`"
                         :enabled="compact"
@@ -524,7 +558,15 @@ watch(compact, (isCompact) => {
                       {{ formatLastLogin(row.last_login_at) }}
                     </TableCell>
                     <TableCell class="text-right whitespace-nowrap">
-                      <div class="inline-flex gap-1">
+                      <!-- 좁은 화면에서는 버튼 넷을 "⋯" 하나로 접는다. 늘어놓으면
+                           이 열 하나가 화면 폭의 절반을 넘는다. (3-3) -->
+                      <DropdownMenu
+                        v-if="compact"
+                        :label="`${row.name} 관리`"
+                        :disabled="busyId === row.id"
+                        :items="menuItems(row)"
+                      />
+                      <div v-else class="inline-flex gap-1">
                         <Button
                           variant="outline"
                           size="xs"

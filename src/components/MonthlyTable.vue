@@ -269,6 +269,8 @@ watch(
 // detailRow 는 창을 닫아도 비우지 않는다 — 닫히는 동안 내용이 사라지면
 // 사라지는 애니메이션이 빈 상자로 보인다.
 const compact = useCompactTable('md');
+// 좁은 화면의 편집 모드에서는 표가 가로 스크롤을 맡는다. (3-3)
+const tableScrolls = computed(() => isEditing.value && compact.value);
 
 // 핸디 규칙 도움말. 차월 핸디 열은 좁은 화면에서 숨겨지므로 열 제목이 아니라
 // 항상 보이는 컨트롤 줄에 둔다.
@@ -536,10 +538,11 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
 
     <!-- 월별 기록 테이블 -->
     <!-- 카드가 표를 감싼다: 표는 좁은 화면에서 줄일 수 없는 최소 폭이 있고
-         가로 스크롤은 main 이 맡는다. 카드 폭을 그 최소 폭(w-min)에 맞춰야
+         평소 가로 스크롤은 main 이 맡는다. 카드 폭을 그 최소 폭(w-min)에 맞춰야
          테두리·배경이 표 오른쪽 끝까지 따라간다. 넓은 화면에서는
-         min-w-full 이 이겨서 예전과 똑같이 폭을 가득 채운다. -->
-    <Card class="w-min min-w-full">
+         min-w-full 이 이겨서 예전과 똑같이 폭을 가득 채운다.
+         표가 스스로 스크롤할 때(tableScrolls)는 카드가 화면 폭에 머문다. -->
+    <Card :class="tableScrolls ? 'w-full' : 'w-min min-w-full'">
       <CardContent class="px-2 sm:px-6">
         <div class="pt-4">
           <!-- 위의 월 선택·엑셀은 밖에 둔다. 기록이 없는 달이라도 다른 달로
@@ -549,10 +552,13 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             :empty-title="`${heading} 기록이 없습니다`"
             empty-hint="다른 달을 고르거나, 경기 결과가 저장되면 여기에 표가 나타납니다."
           >
-          <!-- scroll=false: 스크롤은 페이지가 한다. 그래야 위쪽 표제 줄이 함께
-               밀려 올라가고, 열 제목만 화면 맨 위에 남는다. -->
+          <!-- 평소에는 스크롤을 페이지가 한다. 그래야 위쪽 표제 줄이 함께
+               밀려 올라가고, 열 제목만 화면 맨 위에 남는다.
+               좁은 화면의 편집 모드만 표가 스스로 옆으로 민다 — 입력칸이 붙어
+               최소 폭이 화면보다 넓어지는데, 페이지째 밀리면 저장 버튼까지
+               화면 밖으로 나간다. 회원 열은 sticky 라 그대로 남는다. (3-3) -->
           <Table
-            :scroll="false"
+            :scroll="tableScrolls"
             class="text-xs sm:text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
             :caption="`${heading} 회원별 핸디·스코어 기록`"
           >
