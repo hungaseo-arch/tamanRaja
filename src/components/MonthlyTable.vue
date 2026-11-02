@@ -61,8 +61,8 @@ interface Props {
    */
   saveState?: 'idle' | 'saving' | 'error';
   /**
-   * 참석 창을 열 수 있는 줄(로그인한 본인)의 회원 id. 참석 창은 익월 본인 참석만
-   * 바꾸므로, 부모가 익월을 보고 있을 때만 넘긴다. 그 외에는 null.
+   * 참석 창을 열 수 있는 줄(로그인한 본인)의 회원 id. 참석 창은 아직 답할 수
+   * 있는 달의 본인 참석만 바꾸므로, 부모가 그런 달을 보고 있을 때만 넘긴다. 그 외에는 null.
    */
   attendanceMemberId?: string | null;
 }
