@@ -8,7 +8,7 @@ import Dialog from '@/components/ui/Dialog.vue';
 import Button from '@/components/ui/Button.vue';
 import Toaster from '@/components/ui/Toaster.vue';
 import AsyncState from '@/components/ui/AsyncState.vue';
-import { loadData, loadMembers, clearData, dataLoading, dataInitialized, dataError, getMonthlyData, getAttendanceMonth } from '@/data';
+import { loadData, loadMembers, clearData, dataLoading, dataInitialized, dataError, getMonthlyData, getAttendanceMonth, canAnswerAttendance } from '@/data';
 import { useAuth } from '@/composables/useAuth';
 import { useIdleLogout, IDLE_TIMEOUT_MINUTES } from '@/composables/useIdleLogout';
 import { useAttendance } from '@/composables/useAttendance';
@@ -48,9 +48,13 @@ function closeAttendance(): void {
   else router.replace({ path: ROUTE_PATHS.MONTHLY, query: { month: attendanceYM.value } });
 }
 
-// 참석을 받는 달. 이번 달 모임이 아직이면 이번 달, 끝났으면 다음 달이다.
-// MEETINGS 가 불러와지면 다시 계산된다.
-const attendanceYM = computed(() => getAttendanceMonth());
+// 참석을 받는 달. 월간 표에서 본인 줄을 눌러 열면 주소(?month=)에 그 달이
+// 실려 온다. 없거나 이미 지난 달이면 기본 대상 달(이번 달 모임이 아직이면
+// 이번 달, 끝났으면 다음 달)이다. MEETINGS 가 불러와지면 다시 계산된다.
+const attendanceYM = computed(() => {
+  const month = route.path === ROUTE_PATHS.ATTENDANCE ? route.query.month : undefined;
+  return typeof month === 'string' && canAnswerAttendance(month) ? month : getAttendanceMonth();
+});
 
 const attendanceMemberData = computed(() => {
   if (!currentMember.value) return null;

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getMonthlyData, getAvailableMonths, getAttendanceMonth, firstSaturday, GOLF_COURSES, MEETINGS, MEETING_RESULTS, MEMBERS, loadData } from '@/data';
+import { getMonthlyData, getAvailableMonths, getAttendanceMonth, canAnswerAttendance, firstSaturday, GOLF_COURSES, MEETINGS, MEETING_RESULTS, MEMBERS, loadData } from '@/data';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/composables/useToast';
 import { supabase } from '@/lib/supabase';
@@ -120,14 +120,15 @@ const isFutureMonth = computed(() => {
 const { currentMember, isAdmin } = useAuth();
 const { toast } = useToast();
 
-// 참석 창(App.vue, #/attendance)은 확인 대상 달의 본인 참석만 바꾼다. 그 달을
-// 볼 때만 본인 줄의 이름·참석 칸을 그 창으로 잇는다.
+// 참석 창(App.vue, #/attendance)은 본인 참석만 바꾼다. 아직 답할 수 있는 달
+// (확인 대상 달과 그 뒤)을 볼 때 본인 줄의 이름·참석 칸을 그 창으로 잇고,
+// 보고 있는 달을 주소에 실어 그 달에 저장되게 한다.
 const attendanceMemberId = computed(() =>
-  selectedMonth.value === attendanceYM.value ? currentMember.value?.id ?? null : null
+  canAnswerAttendance(selectedMonth.value) ? currentMember.value?.id ?? null : null
 );
 
 function openAttendance(): void {
-  router.push(ROUTE_PATHS.ATTENDANCE);
+  router.push({ path: ROUTE_PATHS.ATTENDANCE, query: { month: selectedMonth.value } });
 }
 
 // 화면 노출 조건일 뿐 권한 경계가 아니다. 실제 쓰기 허용 여부는 서버 RLS 가

@@ -658,3 +658,8 @@ export function getAttendanceMonth(today: Date = new Date()): string {
   // 12월의 다음 달은 이듬해 1월이다. 월만 더하면 '2026-13' 이 된다.
   return ym(new Date(today.getFullYear(), today.getMonth() + 1, 1));
 }
+
+/** 그 달 참석을 아직 답할 수 있는지. 참석 확인 대상 달과 그 뒤의 달이 해당한다. */
+export function canAnswerAttendance(yearMonth: string, today: Date = new Date()): boolean {
+  return /^\d{4}-\d{2}$/.test(yearMonth) && yearMonth >= getAttendanceMonth(today);
+}
