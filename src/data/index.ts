@@ -631,19 +631,29 @@ export function getAvailableMonths(): Meeting[] {
 }
 
 // ── 참석 확인 대상 달 ─────────────────────────────────────────────────────────
+/** 그 달 첫째 주 토요일 (YYYY-MM-DD). 모임 행이 아직 없는 달의 예정일로 쓴다. */
+export function firstSaturday(ym: string): string {
+  const [y, m] = ym.split('-').map(Number);
+  const first = new Date(y, m - 1, 1);
+  const day = 1 + ((6 - first.getDay() + 7) % 7); // 1일 이후 첫 토요일
+  return `${ym}-${String(day).padStart(2, '0')}`;
+}
+
 /**
  * 참석 확인을 받는 달. 이번 달 모임이 아직 열리지 않았으면(모임일이 오늘 이후이고
  * 스코어가 하나도 없음) 이번 달, 아니면 다음 달이다. 예전에는 무조건 다음 달이라
  * 11월 7일 모임을 앞둔 11월 2일에 11월 참석을 바꿀 수 없고 12월로 저장됐다.
+ * 모임 행은 보통 모임이 끝난 뒤에야 저장되므로, 행이 없으면 월간 화면과 같은
+ * 기본값(첫째 주 토요일)을 예정일로 본다.
  */
 export function getAttendanceMonth(today: Date = new Date()): string {
   const ym = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   const currentYM = ym(today);
   const todayStr = `${currentYM}-${String(today.getDate()).padStart(2, '0')}`;
   const meeting = MEETINGS.find((m) => m.year_month === currentYM);
-  const notPlayed = meeting
-    && meeting.meeting_date >= todayStr
-    && !MEETING_RESULTS.some((r) => r.meeting_id === meeting.id && r.score !== null);
+  const meetingDate = meeting?.meeting_date || firstSaturday(currentYM);
+  const notPlayed = meetingDate >= todayStr
+    && !(meeting && MEETING_RESULTS.some((r) => r.meeting_id === meeting.id && r.score !== null));
   if (notPlayed) return currentYM;
   // 12월의 다음 달은 이듬해 1월이다. 월만 더하면 '2026-13' 이 된다.
   return ym(new Date(today.getFullYear(), today.getMonth() + 1, 1));

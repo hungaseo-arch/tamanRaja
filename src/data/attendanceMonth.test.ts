@@ -39,8 +39,13 @@ describe('getAttendanceMonth', () => {
     expect(getAttendanceMonth(new Date(2026, 10, 7))).toBe('2026-12');
   });
 
-  it('이번 달 모임이 없으면 다음 달, 12월이면 이듬해 1월', () => {
-    expect(getAttendanceMonth(new Date(2026, 10, 2))).toBe('2026-12');
+  it('이번 달 모임 행이 없으면 첫째 주 토요일까지는 이번 달', () => {
+    expect(getAttendanceMonth(new Date(2026, 10, 2))).toBe('2026-11');
+    expect(getAttendanceMonth(new Date(2026, 10, 7))).toBe('2026-11');
+  });
+
+  it('모임 행 없이 첫째 주 토요일이 지나면 다음 달, 12월이면 이듬해 1월', () => {
+    expect(getAttendanceMonth(new Date(2026, 10, 8))).toBe('2026-12');
     expect(getAttendanceMonth(new Date(2026, 11, 20))).toBe('2027-01');
   });
 });

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getMonthlyData, getAvailableMonths, getAttendanceMonth, GOLF_COURSES, MEETINGS, MEETING_RESULTS, MEMBERS, loadData } from '@/data';
+import { getMonthlyData, getAvailableMonths, getAttendanceMonth, firstSaturday, GOLF_COURSES, MEETINGS, MEETING_RESULTS, MEMBERS, loadData } from '@/data';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/composables/useToast';
 import { supabase } from '@/lib/supabase';
@@ -92,14 +92,6 @@ const monthOptions = computed(() =>
 // 직접 입력 (Supabase 미팅 없는 달, 또는 저장된 미래월 편집용)
 const manualDate = ref('');
 const manualCourse = ref('');
-
-// 해당 월 첫째 주 토요일 (YYYY-MM-DD) — 미래월 날짜 추천값
-function firstSaturday(ym: string): string {
-  const [y, m] = ym.split('-').map(Number);
-  const first = new Date(y, m - 1, 1);
-  const day = 1 + ((6 - first.getDay() + 7) % 7); // 1일 이후 첫 토요일
-  return `${ym}-${String(day).padStart(2, '0')}`;
-}
 
 watch(selectedMonth, (ym) => {
   // 저장된 미팅이 있으면 그 값으로 초기화 (미래월 재편집 케이스)
