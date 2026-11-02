@@ -629,3 +629,22 @@ export function getAvailableMonths(): Meeting[] {
     (a, b) => new Date(b.meeting_date).getTime() - new Date(a.meeting_date).getTime()
   );
 }
+
+// ── 참석 확인 대상 달 ─────────────────────────────────────────────────────────
+/**
+ * 참석 확인을 받는 달. 이번 달 모임이 아직 열리지 않았으면(모임일이 오늘 이후이고
+ * 스코어가 하나도 없음) 이번 달, 아니면 다음 달이다. 예전에는 무조건 다음 달이라
+ * 11월 7일 모임을 앞둔 11월 2일에 11월 참석을 바꿀 수 없고 12월로 저장됐다.
+ */
+export function getAttendanceMonth(today: Date = new Date()): string {
+  const ym = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  const currentYM = ym(today);
+  const todayStr = `${currentYM}-${String(today.getDate()).padStart(2, '0')}`;
+  const meeting = MEETINGS.find((m) => m.year_month === currentYM);
+  const notPlayed = meeting
+    && meeting.meeting_date >= todayStr
+    && !MEETING_RESULTS.some((r) => r.meeting_id === meeting.id && r.score !== null);
+  if (notPlayed) return currentYM;
+  // 12월의 다음 달은 이듬해 1월이다. 월만 더하면 '2026-13' 이 된다.
+  return ym(new Date(today.getFullYear(), today.getMonth() + 1, 1));
+}

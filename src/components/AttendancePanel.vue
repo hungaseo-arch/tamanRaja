@@ -15,7 +15,7 @@ interface Props {
    * 들고 있는 회원이 넘어오고, 여기서 쓰는 것도 id 와 name 뿐이다.
    */
   member: SessionMember;
-  /** 다음달 year_month */
+  /** 참석 확인 대상 year_month (getAttendanceMonth) */
   yearMonth: string;
   currentAttended: boolean | null;
   /** 바깥이 서버에 보내는 중. 저장이 끝난 뒤 창을 닫는 것도 바깥이 한다. */

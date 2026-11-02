@@ -8,7 +8,7 @@ import Dialog from '@/components/ui/Dialog.vue';
 import Button from '@/components/ui/Button.vue';
 import Toaster from '@/components/ui/Toaster.vue';
 import AsyncState from '@/components/ui/AsyncState.vue';
-import { loadData, loadMembers, clearData, dataLoading, dataInitialized, dataError, getMonthlyData } from '@/data';
+import { loadData, loadMembers, clearData, dataLoading, dataInitialized, dataError, getMonthlyData, getAttendanceMonth } from '@/data';
 import { useAuth } from '@/composables/useAuth';
 import { useIdleLogout, IDLE_TIMEOUT_MINUTES } from '@/composables/useIdleLogout';
 import { useAttendance } from '@/composables/useAttendance';
@@ -45,22 +45,23 @@ const modalOpen = computed({
 // 돌아갈 곳이 없으므로 그 달 기록으로 바꿔 준다.
 function closeAttendance(): void {
   if (window.history.state?.back) router.back();
-  else router.replace({ path: ROUTE_PATHS.MONTHLY, query: { month: nextYM } });
+  else router.replace({ path: ROUTE_PATHS.MONTHLY, query: { month: attendanceYM.value } });
 }
 
-const today = new Date();
-const nextYM = `${today.getFullYear()}-${String(today.getMonth() + 2).padStart(2, '0')}`;
+// 참석을 받는 달. 이번 달 모임이 아직이면 이번 달, 끝났으면 다음 달이다.
+// MEETINGS 가 불러와지면 다시 계산된다.
+const attendanceYM = computed(() => getAttendanceMonth());
 
-const nextMemberData = computed(() => {
+const attendanceMemberData = computed(() => {
   if (!currentMember.value) return null;
-  return getMonthlyData(nextYM).find((d) => d.member_id === currentMember.value!.id) ?? null;
+  return getMonthlyData(attendanceYM.value).find((d) => d.member_id === currentMember.value!.id) ?? null;
 });
 
-const nextAttended = computed((): boolean | null => {
+const attendanceAttended = computed((): boolean | null => {
   if (!currentMember.value) return null;
-  const saved = getAttendance(nextYM)[currentMember.value.id];
+  const saved = getAttendance(attendanceYM.value)[currentMember.value.id];
   if (saved !== undefined) return saved;
-  return nextMemberData.value?.attended ?? null;
+  return attendanceMemberData.value?.attended ?? null;
 });
 
 const ATTENDANCE_LABEL: Record<string, string> = { true: '참석', false: '불참', null: '미정' };
@@ -70,7 +71,7 @@ const ATTENDANCE_LABEL: Record<string, string> = { true: '참석', false: '불�
 async function handleSaveAttendance(attended: boolean | null): Promise<void> {
   if (!currentMember.value || savingAttendance.value) return;
   savingAttendance.value = true;
-  const result = await setAttendance(nextYM, currentMember.value.id, attended);
+  const result = await setAttendance(attendanceYM.value, currentMember.value.id, attended);
   savingAttendance.value = false;
 
   if (!result.ok) {
@@ -85,7 +86,7 @@ async function handleSaveAttendance(attended: boolean | null): Promise<void> {
 
   toast({
     title: '저장 완료',
-    description: `${nextYM} ${ATTENDANCE_LABEL[String(attended)]}(으)로 저장`,
+    description: `${attendanceYM.value} ${ATTENDANCE_LABEL[String(attended)]}(으)로 저장`,
   });
 
   // 전체 페이지 리로드 대신 데이터만 다시 읽는다 (번들 재다운로드·세션 재검증 회피)
@@ -93,7 +94,7 @@ async function handleSaveAttendance(attended: boolean | null): Promise<void> {
   loginModalOpen.value = false;
   // push 가 아니라 replace — 이미 저장한 뒤라 뒤로가기로 확인 창이 다시 열리면
   // 저장이 안 된 줄 알고 또 누르게 된다.
-  router.replace({ path: ROUTE_PATHS.MONTHLY, query: { month: nextYM } });
+  router.replace({ path: ROUTE_PATHS.MONTHLY, query: { month: attendanceYM.value } });
 }
 
 // 임시 PIN(관리자가 새로 만들었거나 초기화한 PIN, 또는 옛 공통 기본값)으로
@@ -165,8 +166,8 @@ onMounted(async () => {
 
   <LoginModal
     v-model:open="modalOpen"
-    :attendance-year-month="nextYM"
-    :attendance-attended="nextAttended"
+    :attendance-year-month="attendanceYM"
+    :attendance-attended="attendanceAttended"
     :saving-attendance="savingAttendance"
     @save-attendance="handleSaveAttendance"
   />

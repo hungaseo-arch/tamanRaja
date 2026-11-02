@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getMonthlyData, getAvailableMonths, GOLF_COURSES, MEETINGS, MEETING_RESULTS, MEMBERS, loadData } from '@/data';
+import { getMonthlyData, getAvailableMonths, getAttendanceMonth, GOLF_COURSES, MEETINGS, MEETING_RESULTS, MEMBERS, loadData } from '@/data';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/composables/useToast';
 import { supabase } from '@/lib/supabase';
@@ -22,10 +22,12 @@ const nextYM = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth()
 // 현재달 이하의 가장 최근 미팅을 기본으로 선택 (미래달 미팅이 있어도 현재달을 우선)
 const route = useRoute();
 const queryMonth = route.query.month as string | undefined;
-// #/attendance 는 이 화면을 배경으로 쓰는 참석 확인 창이다. 확인 대상은 익월이니
-// 뒤에 깔리는 표도 익월이어야 한다.
+// 참석 확인 대상 달. 이번 달 모임이 아직이면 이번 달, 끝났으면 다음 달.
+const attendanceYM = computed(() => getAttendanceMonth());
+// #/attendance 는 이 화면을 배경으로 쓰는 참석 확인 창이다. 뒤에 깔리는 표도
+// 확인 대상 달이어야 한다.
 const defaultMonth = queryMonth
-  ?? (route.path === ROUTE_PATHS.ATTENDANCE ? nextYM : undefined)
+  ?? (route.path === ROUTE_PATHS.ATTENDANCE ? attendanceYM.value : undefined)
   ?? availableMonths.value.find((m) => m.year_month <= currentYM)?.year_month
   ?? currentYM;
 const selectedMonth = ref<string>(defaultMonth);
@@ -36,6 +38,10 @@ const router = useRouter();
 // 참석 창(#/attendance)은 이 화면을 배경으로 빌려 쓸 뿐이라 주소를 건드리지 않는다.
 watch(() => route.query.month, (m) => {
   if (m && typeof m === 'string') selectedMonth.value = m;
+});
+// 링크로 바로 들어오면 모임 목록이 늦게 와서 대상 달이 바뀔 수 있다.
+watch(attendanceYM, (ym) => {
+  if (route.path === ROUTE_PATHS.ATTENDANCE && !queryMonth) selectedMonth.value = ym;
 });
 // 문서 제목에 보고 있는 달을 붙인다 (4-5). 참석 창은 라우터가 정한 제목 그대로.
 watch(selectedMonth, (m) => {
@@ -122,10 +128,10 @@ const isFutureMonth = computed(() => {
 const { currentMember, isAdmin } = useAuth();
 const { toast } = useToast();
 
-// 참석 창(App.vue, #/attendance)은 익월 본인 참석만 바꾼다. 익월을 볼 때만 본인
-// 줄의 이름·참석 칸을 그 창으로 잇는다.
+// 참석 창(App.vue, #/attendance)은 확인 대상 달의 본인 참석만 바꾼다. 그 달을
+// 볼 때만 본인 줄의 이름·참석 칸을 그 창으로 잇는다.
 const attendanceMemberId = computed(() =>
-  selectedMonth.value === nextYM ? currentMember.value?.id ?? null : null
+  selectedMonth.value === attendanceYM.value ? currentMember.value?.id ?? null : null
 );
 
 function openAttendance(): void {
