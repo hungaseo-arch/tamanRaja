@@ -19,7 +19,8 @@ const currentYM = `${today.getFullYear()}-${String(today.getMonth() + 1).padStar
 const nextMonthDate = new Date(today.getFullYear(), today.getMonth() + 1, 1);
 const nextYM = `${nextMonthDate.getFullYear()}-${String(nextMonthDate.getMonth() + 1).padStart(2, '0')}`;
 
-// 현재달 이하의 가장 최근 미팅을 기본으로 선택 (미래달 미팅이 있어도 현재달을 우선)
+// 기본은 이번 달이다. 모임 행은 보통 모임이 끝난 뒤에야 저장되므로, 행이 있는
+// 달을 기준으로 고르면 달이 바뀌어도 지난달에 머문다.
 const route = useRoute();
 const queryMonth = route.query.month as string | undefined;
 // 참석 확인 대상 달. 이번 달 모임이 아직이면 이번 달, 끝났으면 다음 달.
@@ -27,9 +28,7 @@ const attendanceYM = computed(() => getAttendanceMonth());
 // #/attendance 는 이 화면을 배경으로 쓰는 참석 확인 창이다. 뒤에 깔리는 표도
 // 확인 대상 달이어야 한다.
 const defaultMonth = queryMonth
-  ?? (route.path === ROUTE_PATHS.ATTENDANCE ? attendanceYM.value : undefined)
-  ?? availableMonths.value.find((m) => m.year_month <= currentYM)?.year_month
-  ?? currentYM;
+  ?? (route.path === ROUTE_PATHS.ATTENDANCE ? attendanceYM.value : currentYM);
 const selectedMonth = ref<string>(defaultMonth);
 
 const router = useRouter();
