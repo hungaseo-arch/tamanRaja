@@ -692,8 +692,9 @@ async function loadCourseRatings(): Promise<void> {
   margin: 0.375rem 0 0;
   font-size: 0.8125rem;
 }
-/* 표 바로 아래의 설명은 각주로 보고 들여쓴다. */
-.policy-table-wrap + .policy-note {
+/* 표·수식 바로 아래의 설명은 각주로 보고 들여쓴다. */
+.policy-table-wrap + .policy-note,
+.policy-formula + .policy-note {
   padding-left: 0.625rem;
 }
 
