@@ -593,6 +593,9 @@ async function loadCourseRatings(): Promise<void> {
   padding-left: 0.4rem;
   padding-right: 0.4rem;
 }
+.policy-table.pp-whs .num {
+  text-align: center;
+}
 .policy-table.pp-whs thead th.num {
   white-space: normal;
 }
