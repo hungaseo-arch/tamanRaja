@@ -158,7 +158,7 @@ async function loadCourseRatings(): Promise<void> {
 
 <template>
   <div class="policy-page">
-    <div class="container mx-auto px-4 max-w-3xl py-4 space-y-3">
+    <div class="container mx-auto px-4 max-w-5xl py-2 space-y-3">
       <header class="space-y-2">
         <h1 class="text-lg font-bold">2027년 기준 핸디캡 산정기준</h1>
         <!-- 확정 전 안(案)임을 페이지 맨 위에서 밝힌다. 색만으로 전달하지 않도록 문구가 본체다. -->
@@ -172,7 +172,11 @@ async function loadCourseRatings(): Promise<void> {
         </p>
       </header>
 
-      <PolicySection id="sec-formula" no="1" title="산정 산식" default-open>
+      <PolicySection id="sec-results" no="1" title="회원별 산정결과 (안)" default-open>
+        <HandicapResultsTable />
+      </PolicySection>
+
+      <PolicySection id="sec-formula" no="2" title="산정 산식" default-open>
         <p class="policy-lead">기준핸디는 아래 6단계로 계산합니다. 숫자를 순서대로 따라가면 본인 결과를 직접 확인할 수 있습니다.</p>
         <ol class="space-y-2 list-none p-0 m-0">
           <li v-for="step in FORMULA_STEPS" :key="step.no" class="policy-card">
@@ -183,7 +187,7 @@ async function loadCourseRatings(): Promise<void> {
         </ol>
       </PolicySection>
 
-      <PolicySection id="sec-weights" no="2" title="구간 가중">
+      <PolicySection id="sec-weights" no="3" title="구간 가중">
         <p class="policy-lead">라운드가 최근일수록 무겁게, 오래될수록 가볍게 반영합니다.</p>
         <div class="policy-table-wrap">
           <table class="policy-table">
@@ -214,7 +218,7 @@ async function loadCourseRatings(): Promise<void> {
         </p>
       </PolicySection>
 
-      <PolicySection id="sec-awards" no="3" title="시상 가중치">
+      <PolicySection id="sec-awards" no="4" title="시상 가중치">
         <div class="policy-table-wrap">
           <table class="policy-table">
             <thead>
@@ -239,7 +243,7 @@ async function loadCourseRatings(): Promise<void> {
         </ul>
       </PolicySection>
 
-      <PolicySection id="sec-attend" no="4" title="참석률 반영률">
+      <PolicySection id="sec-attend" no="5" title="참석률 반영률">
         <p class="policy-lead">
           평균값이 아니라 <strong>변동폭의 반영률</strong>로 적용합니다. 참석이 적으면 표본이 부족해
           평균을 그대로 신뢰하기 어렵기 때문입니다.
@@ -270,7 +274,7 @@ async function loadCourseRatings(): Promise<void> {
         </div>
       </PolicySection>
 
-      <PolicySection id="sec-limits" no="5" title="증감 한도">
+      <PolicySection id="sec-limits" no="6" title="증감 한도">
         <div class="policy-table-wrap">
           <table class="policy-table">
             <thead>
@@ -304,7 +308,7 @@ async function loadCourseRatings(): Promise<void> {
         </ul>
       </PolicySection>
 
-      <PolicySection id="sec-course" no="6" title="코스 난이도 지수">
+      <PolicySection id="sec-course" no="7" title="코스 난이도 지수">
         <p class="policy-lead">
           같은 회원들이 같은 핸디로 쳤는데 특정 구장에서 Net 이 높게 나오면 그 구장이 어려운 것입니다.
           WHS 의 PCC 와 원리가 같습니다.
@@ -381,10 +385,6 @@ async function loadCourseRatings(): Promise<void> {
         </details>
       </PolicySection>
 
-      <PolicySection id="sec-results" no="7" title="회원별 산정결과 (안)" default-open>
-        <HandicapResultsTable />
-      </PolicySection>
-
       <PolicySection id="sec-whs" no="8" title="참고: WHS Handicap Index 대조">
         <p class="policy-lead">외부 표준(WHS)으로 계산해도 비슷한 결과가 나온다는 대조 자료입니다.</p>
         <div class="policy-table-wrap">
@@ -436,16 +436,17 @@ async function loadCourseRatings(): Promise<void> {
 /* 이 페이지 전용 팔레트 (60-30-10). 파스텔은 배경(fill) 전용이고 글자는 #546E7A 로 고정해
    명도 대비를 확보한다. 앱 전역 토큰은 건드리지 않도록 .policy-page 안에서만 쓴다. */
 .policy-page {
-  --pp-bg: #f0f0f0;
-  --pp-blue: #e3f2fd;
-  --pp-grey: #eceff1;
-  --pp-sage: #e8f5e9;
-  --pp-text: #546e7a;
-  --pp-up: #c62828;
-  --pp-down: #1565c0;
+  --pp-bg: var(--card);
+  --pp-blue: var(--muted);
+  --pp-grey: var(--card);
+  --pp-sage: var(--secondary);
+  --pp-text: var(--foreground);
+  --pp-border: var(--border);
+  --pp-up: oklch(0.55 0.22 25);
+  --pp-down: #2563eb;
   min-height: 100%;
-  background: var(--pp-bg);
-  color: var(--pp-text);
+  background: var(--background);
+  color: var(--foreground);
 }
 .policy-page h1,
 .policy-page h2 {
@@ -457,23 +458,25 @@ async function loadCourseRatings(): Promise<void> {
   gap: 0.5rem;
   margin: 0;
   padding: 0.35rem 0.75rem;
-  border: 1px solid var(--pp-text);
+  border: 1px solid var(--primary);
   border-radius: 999px;
   background: var(--pp-sage);
   font-size: 0.8125rem;
   font-weight: 600;
+  color: var(--primary);
 }
 .policy-status-dot {
   width: 0.5rem;
   height: 0.5rem;
   border-radius: 999px;
-  background: var(--pp-text);
+  background: var(--primary);
 }
 
 .policy-section {
-  border: 1px solid var(--pp-text);
-  border-radius: 0.5rem;
+  border: 1px solid var(--pp-border);
+  border-radius: var(--radius);
   background: var(--pp-grey);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
   overflow: hidden;
 }
 .policy-toggle {
@@ -489,7 +492,7 @@ async function loadCourseRatings(): Promise<void> {
   cursor: pointer;
 }
 .policy-toggle:focus-visible {
-  outline: 2px solid var(--pp-text);
+  outline: 2px solid var(--ring);
   outline-offset: -2px;
 }
 .policy-no {
@@ -498,9 +501,9 @@ async function loadCourseRatings(): Promise<void> {
   justify-content: center;
   width: 1.5rem;
   height: 1.5rem;
-  border: 1px solid var(--pp-text);
   border-radius: 999px;
-  background: var(--pp-sage);
+  background: var(--primary);
+  color: var(--primary-foreground);
   font-size: 0.8125rem;
 }
 .policy-chevron {
@@ -518,7 +521,7 @@ async function loadCourseRatings(): Promise<void> {
 }
 .policy-card {
   padding: 0.625rem 0.75rem;
-  border: 1px solid var(--pp-text);
+  border: 1px solid var(--pp-border);
   border-radius: 0.5rem;
   background: var(--pp-bg);
 }
@@ -547,7 +550,7 @@ async function loadCourseRatings(): Promise<void> {
 }
 
 .policy-table-wrap {
-  border: 1px solid var(--pp-text);
+  border: 1px solid var(--pp-border);
   border-radius: 0.375rem;
   overflow: hidden;
 }
@@ -576,7 +579,7 @@ async function loadCourseRatings(): Promise<void> {
 .policy-desc-row td {
   padding-top: 0;
   font-size: 0.8125rem;
-  border-bottom: 1px solid var(--pp-text);
+  border-bottom: 1px solid var(--pp-border);
 }
 
 .policy-list {
@@ -602,7 +605,7 @@ async function loadCourseRatings(): Promise<void> {
   font-weight: 700;
 }
 .policy-details {
-  border: 1px solid var(--pp-text);
+  border: 1px solid var(--pp-border);
   border-radius: 0.375rem;
   padding: 0.5rem 0.75rem;
   background: var(--pp-bg);

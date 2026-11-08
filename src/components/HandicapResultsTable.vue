@@ -264,7 +264,8 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   color: var(--pp-down);
 }
 .pp-std {
-  color: var(--pp-down);
+  /* 앱 공통 규칙: 기준 핸디는 주황 */
+  color: #c2410c;
   font-weight: 700;
 }
 .pp-delta-label {
@@ -292,7 +293,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 }
 .pp-sort:focus-visible,
 .pp-expand:focus-visible {
-  outline: 2px solid var(--pp-text);
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
 .pp-chevron {
@@ -303,7 +304,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 }
 .pp-detail td {
   background: var(--pp-blue);
-  border-bottom: 1px solid var(--pp-text);
+  border-bottom: 1px solid var(--pp-border);
 }
 .pp-dl {
   display: grid;
@@ -327,7 +328,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 }
 .pp-results tfoot td {
   background: var(--pp-sage);
-  border-top: 1px solid var(--pp-text);
+  border-top: 1px solid var(--pp-border);
   text-align: right;
 }
 /* 좁은 화면: 성명 · 2027 기준 · 증감 세 열만 남기고 나머지는 행 펼침에서 본다. */
