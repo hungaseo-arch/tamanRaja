@@ -254,13 +254,13 @@ async function loadCourseRatings(): Promise<void> {
         <p class="policy-lead">최근 라운드일수록 가중 상향, 오래된 라운드일수록 가중 하향</p>
         <div class="policy-table-wrap">
           <table class="policy-table pp-fixed pp-center-all">
-            <colgroup><col style="width:10%" /><col style="width:26%" /><col style="width:16%" /><col style="width:48%" /></colgroup>
+            <colgroup><col style="width:14%" /><col style="width:28%" /><col style="width:18%" /><col style="width:40%" /></colgroup>
             <thead>
               <tr>
                 <th scope="col">구간</th>
                 <th scope="col">기간</th>
                 <th scope="col" class="num">가중</th>
-                <th scope="col" class="pp-left">설명</th>
+                <th scope="col">설명</th>
               </tr>
             </thead>
             <tbody>
@@ -268,7 +268,7 @@ async function loadCourseRatings(): Promise<void> {
                 <th scope="row">{{ b.band }}</th>
                 <td>{{ b.period }}</td>
                 <td class="num">{{ padPct(b.weight) }}</td>
-                <td class="pp-left">{{ b.desc }}</td>
+                <td>{{ b.desc }}</td>
               </tr>
             </tbody>
           </table>
@@ -409,19 +409,19 @@ async function loadCourseRatings(): Promise<void> {
       <PolicySection id="sec-limits" no="6" title="증감 한도">
         <div class="policy-table-wrap">
           <table class="policy-table pp-fixed pp-center-all">
-            <colgroup><col style="width:30%" /><col style="width:16%" /><col style="width:54%" /></colgroup>
+            <colgroup><col style="width:33%" /><col style="width:33%" /><col style="width:34%" /></colgroup>
             <thead>
               <tr>
                 <th scope="col">구분</th>
                 <th scope="col" class="num">한도</th>
-                <th scope="col" class="pp-left">사유</th>
+                <th scope="col">사유</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="l in LIMITS" :key="l.kind">
                 <th scope="row">{{ l.kind }}</th>
                 <td class="num">{{ l.limit }}</td>
-                <td class="pp-left">{{ l.reason }}</td>
+                <td>{{ l.reason }}</td>
               </tr>
             </tbody>
           </table>
