@@ -254,25 +254,22 @@ async function loadCourseRatings(): Promise<void> {
         <p class="policy-lead">최근 라운드일수록 가중 상향, 오래된 라운드일수록 가중 하향</p>
         <div class="policy-table-wrap">
           <table class="policy-table pp-fixed pp-center-all">
-            <colgroup><col style="width:20%" /><col style="width:50%" /><col style="width:30%" /></colgroup>
+            <colgroup><col style="width:10%" /><col style="width:26%" /><col style="width:16%" /><col style="width:48%" /></colgroup>
             <thead>
               <tr>
                 <th scope="col">구간</th>
                 <th scope="col">기간</th>
                 <th scope="col" class="num">가중</th>
+                <th scope="col" class="pp-left">설명</th>
               </tr>
             </thead>
             <tbody>
-              <template v-for="b in WEIGHT_BANDS" :key="b.band + b.period">
-                <tr>
-                  <th scope="row">{{ b.band }}</th>
-                  <td>{{ b.period }}</td>
-                  <td class="num">{{ padPct(b.weight) }}</td>
-                </tr>
-                <tr class="policy-desc-row">
-                  <td colspan="3">{{ b.desc }}</td>
-                </tr>
-              </template>
+              <tr v-for="b in WEIGHT_BANDS" :key="b.band + b.period">
+                <th scope="row">{{ b.band }}</th>
+                <td>{{ b.period }}</td>
+                <td class="num">{{ padPct(b.weight) }}</td>
+                <td class="pp-left">{{ b.desc }}</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -751,6 +748,10 @@ async function loadCourseRatings(): Promise<void> {
 .policy-table.pp-center-all th,
 .policy-table.pp-center-all td:not([colspan]) {
   text-align: center;
+}
+.policy-table.pp-center-all th.pp-left,
+.policy-table.pp-center-all td.pp-left {
+  text-align: left;
 }
 .policy-desc-row td {
   padding-left: 1.25rem;
