@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { ChevronRight } from 'lucide-vue-next';
 import { supabase } from '@/lib/supabase';
+import RowDetailDialog from '@/components/ui/RowDetailDialog.vue';
+import DetailItem from '@/components/ui/DetailItem.vue';
 
 // 회원별 2027 기준핸디 산정결과(안). v_handicap_annual 에서 year=2027 을 읽는다.
 // 값은 DB 에 적재된 그대로 보여 주고 화면에서 다시 계산하지 않는다.
@@ -105,14 +106,16 @@ function ariaSort(key: SortKey): 'ascending' | 'descending' | 'none' {
   return sortAsc.value ? 'ascending' : 'descending';
 }
 
-// ── 펼침 ─────────────────────────────────────────────────────────────────────
-const expanded = ref<Set<number>>(new Set());
-function toggle(id: number): void {
-  const next = new Set(expanded.value);
-  if (next.has(id)) next.delete(id);
-  else next.add(id);
-  expanded.value = next;
-}
+// ── 상세 창 ──────────────────────────────────────────────────────────────────
+// 성명을 누르면 그 회원의 산정 근거를 모달로 보여 준다 (RowDetailDialog).
+const selectedId = ref<number | null>(null);
+const selected = computed(() => rows.value.find((r) => r.member_id === selectedId.value) ?? null);
+const dialogOpen = computed({
+  get: () => selected.value !== null,
+  set: (v: boolean) => {
+    if (!v) selectedId.value = null;
+  },
+});
 
 // ── 표기 ─────────────────────────────────────────────────────────────────────
 const MINUS = '−'; // 지시서 표기와 같은 − (U+2212)
@@ -189,7 +192,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 
     <template v-else>
       <p class="policy-note mt-0 mb-2">
-        행 선택 시 산정 근거(구간별 평균·가중 라운드·시상보정·산출핸디 등) 표시. 열 제목 선택 시 정렬 변경
+        성명 선택 시 산정 근거(구간별 평균·가중 라운드·시상보정·산출핸디 등) 창 표시. 열 제목 선택 시 정렬 변경
       </p>
       <div class="policy-table-wrap">
         <table class="policy-table pp-results">
@@ -213,19 +216,8 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
             <template v-for="r in sorted" :key="r.member_id">
               <tr class="pp-row">
                 <th scope="row">
-                  <button
-                    type="button"
-                    class="pp-expand"
-                    :aria-expanded="expanded.has(r.member_id)"
-                    :aria-controls="`pp-detail-${r.member_id}`"
-                    @click="toggle(r.member_id)"
-                  >
-                    <ChevronRight
-                      class="pp-chevron"
-                      :class="{ 'rotate-90': expanded.has(r.member_id) }"
-                      aria-hidden="true"
-                    />
-                    <span>{{ r.member_name }}</span>
+                  <button type="button" class="pp-expand" @click="selectedId = r.member_id">
+                    {{ r.member_name }}
                   </button>
                   <span v-if="r.capped" class="policy-flag">한도</span>
                   <span v-if="r.low_sample" class="policy-flag">표본부족</span>
@@ -240,39 +232,6 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                 <td class="num pp-hide-sm">{{ fmt(r.w_avg) }}</td>
                 <td class="num pp-hide-sm">{{ fmt(r.attend_rate) }}%</td>
               </tr>
-              <tr v-show="expanded.has(r.member_id)" :id="`pp-detail-${r.member_id}`" class="pp-detail">
-                <td colspan="7">
-                  <dl class="pp-dl">
-                    <div class="pp-show-sm"><dt>2025 기준</dt><dd>{{ r.std_hc_2025 ?? '—' }}</dd></div>
-                    <div class="pp-show-sm"><dt>2026 기준</dt><dd>{{ r.prev_std_hc ?? '—' }}</dd></div>
-                    <div class="pp-show-sm"><dt>가중평균 오버파</dt><dd>{{ fmt(r.w_avg) }}</dd></div>
-                    <div class="pp-show-sm"><dt>참석률</dt><dd>{{ fmt(r.attend_rate) }}%</dd></div>
-                    <div><dt>A 구간 평균</dt><dd>{{ fmt(r.avg_a) }}</dd></div>
-                    <div><dt>B 구간 평균</dt><dd>{{ fmt(r.avg_b) }}</dd></div>
-                    <div><dt>C 구간 평균</dt><dd>{{ fmt(r.avg_c) }}</dd></div>
-                    <div><dt>가중 라운드</dt><dd>{{ fmt(r.w_sum, 2) }}</dd></div>
-                    <div><dt>가중 시상횟수 (W / M / H)</dt><dd>{{ fmtAwardCounts(r) }}</dd></div>
-                    <div><dt>시상 원점수</dt><dd :class="deltaClass(r.award_raw ?? null)">{{ fmtSigned3(r.award_raw) }}</dd></div>
-                    <div><dt>시상보정</dt><dd>{{ fmtSigned2(r.award_adj) }}</dd></div>
-                    <div><dt>산출핸디</dt><dd>{{ fmt(r.calc_hc) }}</dd></div>
-                    <div><dt>참석률 반영률</dt><dd>{{ r.apply_rate === null ? '—' : (r.apply_rate * 100).toFixed(1) + '%' }}</dd></div>
-                    <div>
-                      <dt>한도 적용 전 증감</dt>
-                      <dd :class="deltaClass(r.raw_delta)">{{ fmtSigned(r.raw_delta) }}</dd>
-                    </div>
-                    <div>
-                      <dt>한도 적용 후 증감</dt>
-                      <dd :class="deltaClass(r.final_delta)">{{ fmtSigned(r.final_delta) }}</dd>
-                    </div>
-                  </dl>
-                  <p v-if="r.capped" class="pp-detail-note pp-up">
-                    한도 적용 : 적용 전 {{ fmtSigned(r.raw_delta) }} → 적용 후 {{ fmtSigned(r.final_delta) }}
-                  </p>
-                  <p v-if="r.note" class="pp-detail-note">
-                    <span v-if="r.low_sample" class="pp-up">표본 부족 · </span>{{ r.note }}
-                  </p>
-                </td>
-              </tr>
             </template>
           </tbody>
           <tfoot>
@@ -285,15 +244,56 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
         </table>
       </div>
     </template>
+
+    <RowDetailDialog v-model:open="dialogOpen" :title="selected?.member_name ?? ''" subtitle="2027 기준핸디 산정결과 (안)">
+      <template v-if="selected">
+        <DetailItem label="2025 기준">{{ selected.std_hc_2025 ?? '—' }}</DetailItem>
+        <DetailItem label="2026 기준">{{ selected.prev_std_hc ?? '—' }}</DetailItem>
+        <DetailItem label="2027 기준(안)"><span class="pp-std">{{ selected.std_hc }}</span></DetailItem>
+        <DetailItem label="증감">
+          <span :class="deltaClass(selected.final_delta)">
+            {{ fmtSigned(selected.final_delta) }} {{ deltaLabel(selected.final_delta) }}
+          </span>
+        </DetailItem>
+        <DetailItem label="가중평균 오버파">{{ fmt(selected.w_avg) }}</DetailItem>
+        <DetailItem label="참석률">{{ fmt(selected.attend_rate) }}%</DetailItem>
+        <DetailItem label="A 구간 평균">{{ fmt(selected.avg_a) }}</DetailItem>
+        <DetailItem label="B 구간 평균">{{ fmt(selected.avg_b) }}</DetailItem>
+        <DetailItem label="C 구간 평균">{{ fmt(selected.avg_c) }}</DetailItem>
+        <DetailItem label="가중 라운드">{{ fmt(selected.w_sum, 2) }}</DetailItem>
+        <DetailItem label="가중 시상횟수 (W / M / H)">{{ fmtAwardCounts(selected) }}</DetailItem>
+        <DetailItem label="시상 원점수">
+          <span :class="deltaClass(selected.award_raw ?? null)">{{ fmtSigned3(selected.award_raw) }}</span>
+        </DetailItem>
+        <DetailItem label="시상보정">{{ fmtSigned2(selected.award_adj) }}</DetailItem>
+        <DetailItem label="산출핸디">{{ fmt(selected.calc_hc) }}</DetailItem>
+        <DetailItem label="참석률 반영률">
+          {{ selected.apply_rate === null ? '—' : (selected.apply_rate * 100).toFixed(1) + '%' }}
+        </DetailItem>
+        <DetailItem label="한도 적용 전 증감">
+          <span :class="deltaClass(selected.raw_delta)">{{ fmtSigned(selected.raw_delta) }}</span>
+        </DetailItem>
+        <DetailItem label="한도 적용 후 증감">
+          <span :class="deltaClass(selected.final_delta)">{{ fmtSigned(selected.final_delta) }}</span>
+        </DetailItem>
+        <DetailItem v-if="selected.capped" label="한도 적용">
+          <span class="pp-up">적용 전 {{ fmtSigned(selected.raw_delta) }} → 적용 후 {{ fmtSigned(selected.final_delta) }}</span>
+        </DetailItem>
+        <DetailItem v-if="selected.note" label="비고">
+          <span class="pp-note-text"><span v-if="selected.low_sample" class="pp-up">표본 부족 · </span>{{ selected.note }}</span>
+        </DetailItem>
+      </template>
+    </RowDetailDialog>
   </div>
 </template>
 
 <style>
 .pp-up {
-  color: var(--pp-up);
+  /* 모달은 body 로 옮겨져 .policy-page 변수를 못 받으므로 대체값을 둔다. */
+  color: var(--pp-up, oklch(0.55 0.22 25));
 }
 .pp-down {
-  color: var(--pp-down);
+  color: var(--pp-down, #2563eb);
 }
 .pp-std {
   /* 2027 기준핸디 강조색 (보라, violet-700) */
@@ -323,47 +323,22 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   cursor: pointer;
   text-align: inherit;
 }
+.pp-expand {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
 .pp-sort:focus-visible,
 .pp-expand:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 2px;
-}
-.pp-chevron {
-  width: 0.9rem;
-  height: 0.9rem;
-  flex: none;
-  transition: transform 0.15s;
-}
-.pp-detail td {
-  background: var(--pp-blue);
-  border-bottom: 1px solid var(--pp-border);
-}
-.pp-dl {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.375rem 0.75rem;
-  margin: 0;
-  font-size: 0.8125rem;
-}
-.pp-dl dt {
-  font-size: 0.75rem;
-}
-.pp-dl dd {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-weight: 600;
-}
-.pp-detail-note {
-  margin: 0.5rem 0 0;
-  font-size: 0.8125rem;
-  font-weight: 600;
 }
 .pp-results tfoot td {
   background: var(--pp-sage);
   border-top: 1px solid var(--pp-border);
   text-align: right;
 }
-/* 좁은 화면: 성명 · 2027 기준 · 증감 세 열만 남기고 나머지는 행 펼침에서 본다. */
+/* 좁은 화면: 성명 · 2027 기준 · 증감 세 열만 남기고 나머지는 성명을 눌러 열리는 창에서 본다. */
 .pp-hide-sm {
   display: none;
 }
@@ -371,19 +346,10 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   .pp-hide-sm {
     display: table-cell;
   }
-  .pp-show-sm {
-    display: none;
-  }
-  .pp-dl {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
 }
-@media print {
-  .pp-detail {
-    display: table-row !important;
-  }
-  .pp-chevron {
-    display: none;
-  }
+.pp-note-text {
+  display: block;
+  font-weight: 500;
+  text-align: right;
 }
 </style>
