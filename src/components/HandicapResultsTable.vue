@@ -13,6 +13,11 @@ interface Row {
   std_hc_2025?: number | null;
   std_hc: number;
   w_sum: number | null;
+  /** 가중 시상횟수와 시상 원점수 (마이그레이션 20261108000400 적용 전에는 null) */
+  w_win?: number | null;
+  w_med?: number | null;
+  w_host?: number | null;
+  award_raw?: number | null;
   w_avg: number | null;
   avg_a: number | null;
   avg_b: number | null;
@@ -36,7 +41,7 @@ const loading = ref(true);
 const error = ref<string | null>(null);
 
 const NUMERIC_KEYS = [
-  'w_sum', 'w_avg', 'avg_a', 'avg_b', 'avg_c', 'award_adj', 'calc_hc',
+  'w_sum', 'w_win', 'w_med', 'w_host', 'award_raw', 'w_avg', 'avg_a', 'avg_b', 'avg_c', 'award_adj', 'calc_hc',
   'attend_rate', 'apply_rate', 'raw_delta', 'final_delta',
 ] as const;
 
@@ -122,6 +127,18 @@ function fmtSigned(v: number | null): string {
   if (v < 0) return `${MINUS}${t}`;
   return t;
 }
+// 시상 원점수는 소수 셋째 자리까지 쓴다.
+function fmtSigned3(v: number | null | undefined): string {
+  if (v === null || v === undefined) return '—';
+  const t = Math.abs(v).toFixed(3);
+  if (v > 0) return `+${t}`;
+  if (v < 0) return `${MINUS}${t}`;
+  return t;
+}
+function fmtAwardCounts(r: Row): string {
+  if (r.w_win == null || r.w_med == null || r.w_host == null) return '—';
+  return `${fmt(r.w_win, 2)} / ${fmt(r.w_med, 2)} / ${fmt(r.w_host, 2)}`;
+}
 // 시상보정은 소수 둘째 자리까지 쓰는 열이라 별도 포맷터를 둔다.
 function fmtSigned2(v: number | null): string {
   if (v === null) return '—';
@@ -156,7 +173,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   { key: 'prev_std_hc', label: '2026 기준', cls: 'num pp-hide-sm' },
   { key: 'std_hc', label: '2027 기준', cls: 'num' },
   { key: 'final_delta', label: '증감', cls: 'num' },
-  { key: 'w_avg', label: '가중평균', cls: 'num pp-hide-sm' },
+  { key: 'w_avg', label: '가중평균 오버파', cls: 'num pp-hide-sm' },
   { key: 'attend_rate', label: '참석률', cls: 'num pp-hide-sm' },
 ];
 </script>
@@ -172,7 +189,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 
     <template v-else>
       <p class="policy-note mt-0 mb-2">
-        행 선택 시 산정 근거(구간별 평균·가중합·시상보정·산출핸디 등) 표시. 열 제목 선택 시 정렬 변경
+        행 선택 시 산정 근거(구간별 평균·가중 라운드·시상보정·산출핸디 등) 표시. 열 제목 선택 시 정렬 변경
       </p>
       <div class="policy-table-wrap">
         <table class="policy-table pp-results">
@@ -228,12 +245,14 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                   <dl class="pp-dl">
                     <div class="pp-show-sm"><dt>2025 기준</dt><dd>{{ r.std_hc_2025 ?? '—' }}</dd></div>
                     <div class="pp-show-sm"><dt>2026 기준</dt><dd>{{ r.prev_std_hc ?? '—' }}</dd></div>
-                    <div class="pp-show-sm"><dt>가중평균</dt><dd>{{ fmt(r.w_avg) }}</dd></div>
+                    <div class="pp-show-sm"><dt>가중평균 오버파</dt><dd>{{ fmt(r.w_avg) }}</dd></div>
                     <div class="pp-show-sm"><dt>참석률</dt><dd>{{ fmt(r.attend_rate) }}%</dd></div>
                     <div><dt>A 구간 평균</dt><dd>{{ fmt(r.avg_a) }}</dd></div>
                     <div><dt>B 구간 평균</dt><dd>{{ fmt(r.avg_b) }}</dd></div>
                     <div><dt>C 구간 평균</dt><dd>{{ fmt(r.avg_c) }}</dd></div>
-                    <div><dt>가중합</dt><dd>{{ fmt(r.w_sum, 2) }}</dd></div>
+                    <div><dt>가중 라운드</dt><dd>{{ fmt(r.w_sum, 2) }}</dd></div>
+                    <div><dt>가중 시상횟수 (W / M / H)</dt><dd>{{ fmtAwardCounts(r) }}</dd></div>
+                    <div><dt>시상 원점수</dt><dd :class="deltaClass(r.award_raw ?? null)">{{ fmtSigned3(r.award_raw) }}</dd></div>
                     <div><dt>시상보정</dt><dd>{{ fmtSigned2(r.award_adj) }}</dd></div>
                     <div><dt>산출핸디</dt><dd>{{ fmt(r.calc_hc) }}</dd></div>
                     <div><dt>참석률 반영률</dt><dd>{{ r.apply_rate === null ? '—' : (r.apply_rate * 100).toFixed(1) + '%' }}</dd></div>
