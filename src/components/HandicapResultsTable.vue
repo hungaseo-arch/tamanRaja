@@ -177,7 +177,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   { key: 'std_hc', label: '2027 기준', cls: 'num' },
   { key: 'final_delta', label: '증감', cls: 'num' },
   { key: 'w_avg', label: '가중평균 오버파', cls: 'num pp-hide-sm' },
-  { key: 'attend_rate', label: '참석률', cls: 'num pp-hide-sm' },
+  { key: 'attend_rate', label: '2026 참석률', cls: 'num pp-hide-sm' },
 ];
 </script>
 
@@ -256,7 +256,10 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
           </span>
         </DetailItem>
         <DetailItem label="가중평균 오버파">{{ fmt(selected.w_avg) }}</DetailItem>
-        <DetailItem label="참석률">{{ fmt(selected.attend_rate) }}%</DetailItem>
+        <DetailItem label="2026 참석률">
+          {{ fmt(selected.attend_rate) }}%
+          <span class="pp-caption">2026년 11개 모임 기준, 휴면·불참 기간 제외</span>
+        </DetailItem>
         <DetailItem label="A 구간 평균">{{ fmt(selected.avg_a) }}</DetailItem>
         <DetailItem label="B 구간 평균">{{ fmt(selected.avg_b) }}</DetailItem>
         <DetailItem label="C 구간 평균">{{ fmt(selected.avg_c) }}</DetailItem>
@@ -366,6 +369,13 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   .pp-hide-sm {
     display: table-cell;
   }
+}
+.pp-caption {
+  display: block;
+  margin-top: 0.125rem;
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--muted-foreground, #6b7280);
 }
 .pp-note-text {
   display: block;

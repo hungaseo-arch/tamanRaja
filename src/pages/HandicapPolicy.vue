@@ -249,7 +249,8 @@ async function loadCourseRatings(): Promise<void> {
       <PolicySection id="sec-weights" no="3" title="구간 가중">
         <p class="policy-lead">최근 라운드일수록 가중 상향, 오래된 라운드일수록 가중 하향</p>
         <div class="policy-table-wrap">
-          <table class="policy-table">
+          <table class="policy-table pp-fixed">
+            <colgroup><col style="width:20%" /><col style="width:50%" /><col style="width:30%" /></colgroup>
             <thead>
               <tr>
                 <th scope="col">구간</th>
@@ -279,7 +280,8 @@ async function loadCourseRatings(): Promise<void> {
 
       <PolicySection id="sec-awards" no="4" title="시상 가중치">
         <div class="policy-table-wrap">
-          <table class="policy-table">
+          <table class="policy-table pp-fixed">
+            <colgroup><col style="width:28%" /><col style="width:18%" /><col style="width:54%" /></colgroup>
             <thead>
               <tr>
                 <th scope="col">시상</th>
@@ -373,7 +375,8 @@ async function loadCourseRatings(): Promise<void> {
           신뢰하기 어려움
         </p>
         <div class="policy-table-wrap">
-          <table class="policy-table">
+          <table class="policy-table pp-fixed">
+            <colgroup><col style="width:50%" /><col style="width:50%" /></colgroup>
             <thead>
               <tr>
                 <th scope="col">연간 참석률</th>
@@ -404,7 +407,8 @@ async function loadCourseRatings(): Promise<void> {
 
       <PolicySection id="sec-limits" no="6" title="증감 한도">
         <div class="policy-table-wrap">
-          <table class="policy-table">
+          <table class="policy-table pp-fixed">
+            <colgroup><col style="width:60%" /><col style="width:40%" /></colgroup>
             <thead>
               <tr>
                 <th scope="col">구분</th>
@@ -445,7 +449,8 @@ async function loadCourseRatings(): Promise<void> {
 가중적용치 = 난이도지수 × (모임 수 ÷ 4, 최대 1.0)   ※ 표본 적은 구장은 영향 축소</pre>
         <p class="policy-note">산출 창 : 2025-07 ~ 2026-11</p>
         <div class="policy-table-wrap mt-2">
-          <table class="policy-table">
+          <table class="policy-table pp-fixed">
+            <colgroup><col style="width:40%" /><col style="width:30%" /><col style="width:30%" /></colgroup>
             <thead>
               <tr>
                 <th scope="col">구장</th>
@@ -484,7 +489,8 @@ async function loadCourseRatings(): Promise<void> {
             <button type="button" class="policy-link" @click="loadCourseRatings">다시 시도</button>
           </p>
           <div v-else class="policy-table-wrap">
-            <table class="policy-table">
+            <table class="policy-table pp-fixed">
+              <colgroup><col style="width:40%" /><col style="width:30%" /><col style="width:30%" /></colgroup>
               <thead>
                 <tr>
                   <th scope="col">구장</th>
@@ -731,6 +737,10 @@ async function loadCourseRatings(): Promise<void> {
 }
 .policy-table.pp-whs thead th.num {
   white-space: normal;
+}
+/* 열 폭을 colgroup 비율로 고정한다 (내용 길이에 따라 열이 쏠리지 않게). */
+.policy-table.pp-fixed {
+  table-layout: fixed;
 }
 .policy-desc-row td {
   padding-left: 1.25rem;
