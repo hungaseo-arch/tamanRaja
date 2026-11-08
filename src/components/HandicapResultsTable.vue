@@ -304,7 +304,8 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   font-weight: 700;
 }
 .pp-delta-label {
-  display: block;
+  display: inline;
+  margin-left: 0.25rem;
   font-family: var(--font-sans);
   font-size: 0.6875rem;
   font-weight: 600;
