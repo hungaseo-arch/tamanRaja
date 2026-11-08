@@ -99,6 +99,28 @@ const COURSE_DIFFICULTY = [
   { name: '보고라야', par: 71, meetings: 1, rounds: 10, over: '20.1', net: '4.4', index: '−2.9', applied: '−0.7' },
 ];
 
+// WHS Handicap Index 대조 (3-9절). 차이 = Handicap Index − 2026 기준핸디.
+const WHS_ROWS = [
+  { name: '박영진', index: '11.6', std: 10, diff: '+1.6' },
+  { name: '박재현', index: '12.2', std: 11, diff: '+1.2' },
+  { name: '정인원', index: '12.3', std: 12, diff: '+0.3' },
+  { name: '서종환', index: '13.1', std: 13, diff: '+0.1' },
+  { name: '김재헌', index: '13.8', std: 14, diff: '−0.2' },
+  { name: '유영보', index: '14.9', std: 15, diff: '−0.1' },
+  { name: '장효익', index: '15.5', std: 14, diff: '+1.5' },
+  { name: '고영춘', index: '16.7', std: 17, diff: '−0.3' },
+  { name: '남정곤', index: '17.3', std: 15, diff: '+2.3' },
+  { name: '정재욱', index: '18.5', std: 18, diff: '+0.5' },
+  { name: '조학영', index: '18.5', std: 19, diff: '−0.5' },
+  { name: '정기혁', index: '20.3', std: 20, diff: '+0.3' },
+  { name: '손동현', index: '23.2', std: 24, diff: '−0.8' },
+  { name: '신승민', index: '26.2', std: 24, diff: '+2.2' },
+];
+/** 차이 부호별 글자색 (+ 붉은색, − 파란색). 부호 문자가 항상 함께 표시된다. */
+function diffClass(d: string): string {
+  return d.startsWith('+') ? 'pp-up' : d.startsWith('\u2212') ? 'pp-down' : '';
+}
+
 // 구장별 Course Rating · Slope (참고). 2027년 산정에는 쓰지 않는다.
 interface CourseRating {
   id: number;
@@ -362,6 +384,50 @@ async function loadCourseRatings(): Promise<void> {
       <PolicySection id="sec-results" no="7" title="회원별 산정결과 (안)" default-open>
         <HandicapResultsTable />
       </PolicySection>
+
+      <PolicySection id="sec-whs" no="8" title="참고: WHS Handicap Index 대조">
+        <p class="policy-lead">외부 표준(WHS)으로 계산해도 비슷한 결과가 나온다는 대조 자료입니다.</p>
+        <div class="policy-table-wrap">
+          <table class="policy-table">
+            <thead>
+              <tr>
+                <th scope="col">성명</th>
+                <th scope="col" class="num">Handicap Index</th>
+                <th scope="col" class="num">2026 기준핸디</th>
+                <th scope="col" class="num">차이</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="w in WHS_ROWS" :key="w.name">
+                <th scope="row">{{ w.name }}</th>
+                <td class="num">{{ w.index }}</td>
+                <td class="num">{{ w.std }}</td>
+                <td class="num" :class="diffClass(w.diff)">{{ w.diff }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="policy-note mt-2">
+          산출: 최근 20라운드 Score Differential 중 최저 8개 평균. 표의 차이 열 기준 평균 절대차는 약
+          0.9타이며, 순서도 거의 같습니다.
+        </p>
+      </PolicySection>
+
+      <PolicySection id="sec-schedule" no="9" title="적용 일정 · 유의사항">
+        <ul class="policy-list policy-list-first">
+          <li>2027년 1월 모임부터 적용합니다.</li>
+          <li>
+            조별 금회적용 핸디 ±1 규칙은 현행 유지합니다 (1등조 −1 / 2등조 +1). 본 기준은 연 1회
+            기준핸디 산정에만 적용합니다.
+          </li>
+          <li>손동현 · 신승민: 2027년 상반기 성적으로 7월 중간 재산정을 검토합니다.</li>
+          <li>이성남: 휴면 중. 복귀 후 3회 참석 시 재산정합니다.</li>
+          <li>
+            2028년부터 정식 WHS Handicap Index 전환을 목표로 합니다. 2027년 1월 모임부터 홀별 스코어
+            기록으로 전환이 필요합니다.
+          </li>
+        </ul>
+      </PolicySection>
     </div>
   </div>
 </template>
@@ -517,6 +583,9 @@ async function loadCourseRatings(): Promise<void> {
   margin: 0.5rem 0 0;
   padding-left: 1.1rem;
   font-size: 0.875rem;
+}
+.policy-list-first {
+  margin-top: 0;
 }
 .policy-list li + li {
   margin-top: 0.25rem;
