@@ -32,10 +32,10 @@ const navItems = computed<NavItem[]>(() => {
     items.push({ path: ROUTE_PATHS.PROFILE, label: '나의 기록', line1: '나의', line2: '기록', icon: UserRound });
     items.push({
       path: ROUTE_PATHS.HANDICAP_POLICY,
-      label: '핸디캡 산정기준',
-      tabLabel: '핸디 기준',
-      line1: '핸디캡',
-      line2: '산정기준',
+      label: '27년 핸디캡 (안)',
+      tabLabel: '27년 핸디(안)',
+      line1: '27년',
+      line2: '핸디캡 (안)',
       icon: Scale,
     });
   }

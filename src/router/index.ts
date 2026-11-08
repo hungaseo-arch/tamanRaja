@@ -57,7 +57,7 @@ const routes: RouteRecordRaw[] = [
   {
     path: ROUTE_PATHS.HANDICAP_POLICY,
     name: 'handicap-policy',
-    meta: { title: '핸디캡 산정기준' },
+    meta: { title: '27년 핸디캡 (안)' },
     component: () => import('@/pages/HandicapPolicy.vue'),
   },
   {

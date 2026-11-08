@@ -6,7 +6,7 @@ import PolicySection from '@/components/PolicySection.vue';
 import HandicapResultsTable from '@/components/HandicapResultsTable.vue';
 
 onMounted(() => {
-  setPageTitle('핸디캡 산정기준');
+  setPageTitle('27년 핸디캡 (안)');
   void loadCourseRatings();
 });
 
@@ -160,7 +160,7 @@ async function loadCourseRatings(): Promise<void> {
   <div class="policy-page">
     <div class="container mx-auto px-4 max-w-5xl py-2 space-y-3">
       <header class="space-y-2">
-        <h1 class="text-lg font-bold">2027년 기준 핸디캡 산정기준</h1>
+        <h1 class="text-lg font-bold">27년 핸디캡 (안)</h1>
         <!-- 확정 전 안(案)임을 페이지 맨 위에서 밝힌다. 색만으로 전달하지 않도록 문구가 본체다. -->
         <p class="policy-status" role="status">
           <span class="policy-status-dot" aria-hidden="true" />
