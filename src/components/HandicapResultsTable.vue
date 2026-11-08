@@ -9,6 +9,8 @@ interface Row {
   member_id: number;
   member_name: string;
   prev_std_hc: number | null;
+  /** 비교자료: 2025년 기준핸디 (year=2025 행에서 가져온다. 없으면 null) */
+  std_hc_2025?: number | null;
   std_hc: number;
   w_sum: number | null;
   w_avg: number | null;
@@ -28,6 +30,7 @@ interface Row {
 }
 
 const YEAR = 2027;
+const COMPARE_YEAR = 2025;
 const rows = ref<Row[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
@@ -43,23 +46,30 @@ async function load(): Promise<void> {
   const { data, error: err } = await supabase
     .from('v_handicap_annual')
     .select('*')
-    .eq('year', YEAR);
+    .in('year', [COMPARE_YEAR, YEAR]);
   loading.value = false;
   if (err) {
     error.value = err.message;
     return;
   }
   // numeric 열이 문자열로 올 수 있어 숫자로 맞춘다 (null 은 그대로 둔다).
-  rows.value = (data ?? []).map((r) => {
-    const out: Record<string, unknown> = { ...r };
-    for (const k of NUMERIC_KEYS) out[k] = r[k] === null || r[k] === undefined ? null : Number(r[k]);
-    return out as unknown as Row;
-  });
+  const all = data ?? [];
+  const std2025 = new Map<number, number>(
+    all.filter((r) => r.year === COMPARE_YEAR).map((r) => [r.member_id as number, Number(r.std_hc)]),
+  );
+  rows.value = all
+    .filter((r) => r.year === YEAR)
+    .map((r) => {
+      const out: Record<string, unknown> = { ...r };
+      for (const k of NUMERIC_KEYS) out[k] = r[k] === null || r[k] === undefined ? null : Number(r[k]);
+      out.std_hc_2025 = std2025.get(r.member_id as number) ?? null;
+      return out as unknown as Row;
+    });
 }
 onMounted(load);
 
 // ── 정렬 ─────────────────────────────────────────────────────────────────────
-type SortKey = 'member_name' | 'prev_std_hc' | 'std_hc' | 'final_delta' | 'w_avg' | 'attend_rate';
+type SortKey = 'member_name' | 'std_hc_2025' | 'prev_std_hc' | 'std_hc' | 'final_delta' | 'w_avg' | 'attend_rate';
 const sortKey = ref<SortKey>('std_hc');
 const sortAsc = ref(true);
 
@@ -142,6 +152,7 @@ const totalLabel = computed(() => {
 
 const COLS: { key: SortKey; label: string; cls: string }[] = [
   { key: 'member_name', label: '성명', cls: '' },
+  { key: 'std_hc_2025', label: '2025 기준', cls: 'num pp-hide-sm' },
   { key: 'prev_std_hc', label: '2026 기준', cls: 'num pp-hide-sm' },
   { key: 'std_hc', label: '2027 기준', cls: 'num' },
   { key: 'final_delta', label: '증감', cls: 'num' },
@@ -202,6 +213,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                   <span v-if="r.capped" class="policy-flag">한도</span>
                   <span v-if="r.low_sample" class="policy-flag">표본부족</span>
                 </th>
+                <td class="num pp-hide-sm">{{ r.std_hc_2025 ?? '—' }}</td>
                 <td class="num pp-hide-sm">{{ r.prev_std_hc ?? '—' }}</td>
                 <td class="num pp-std">{{ r.std_hc }}</td>
                 <td class="num" :class="deltaClass(r.final_delta)">
@@ -212,8 +224,9 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                 <td class="num pp-hide-sm">{{ fmt(r.attend_rate) }}%</td>
               </tr>
               <tr v-show="expanded.has(r.member_id)" :id="`pp-detail-${r.member_id}`" class="pp-detail">
-                <td colspan="6">
+                <td colspan="7">
                   <dl class="pp-dl">
+                    <div class="pp-show-sm"><dt>2025 기준</dt><dd>{{ r.std_hc_2025 ?? '—' }}</dd></div>
                     <div class="pp-show-sm"><dt>2026 기준</dt><dd>{{ r.prev_std_hc ?? '—' }}</dd></div>
                     <div class="pp-show-sm"><dt>가중평균</dt><dd>{{ fmt(r.w_avg) }}</dd></div>
                     <div class="pp-show-sm"><dt>참석률</dt><dd>{{ fmt(r.attend_rate) }}%</dd></div>
@@ -245,7 +258,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
           </tbody>
           <tfoot>
             <tr>
-              <td colspan="6">
+              <td colspan="7">
                 <strong>핸디 총합 {{ totalPrev }} → {{ totalStd }} ({{ totalLabel }})</strong>
               </td>
             </tr>
