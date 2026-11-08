@@ -714,7 +714,7 @@ async function loadCourseRatings(): Promise<void> {
   font-weight: 700;
 }
 .policy-table .num {
-  text-align: right;
+  text-align: center;
   font-family: var(--font-mono);
   white-space: nowrap;
 }
@@ -722,9 +722,6 @@ async function loadCourseRatings(): Promise<void> {
 .policy-table.pp-whs td {
   padding-left: 0.4rem;
   padding-right: 0.4rem;
-}
-.policy-table.pp-whs .num {
-  text-align: center;
 }
 .policy-table.pp-whs tfoot th,
 .policy-table.pp-whs tfoot td {
