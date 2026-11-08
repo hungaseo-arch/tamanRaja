@@ -282,7 +282,7 @@ async function loadCourseRatings(): Promise<void> {
       <PolicySection id="sec-awards" no="4" title="시상 가중치">
         <div class="policy-table-wrap">
           <table class="policy-table pp-fixed pp-center-all">
-            <colgroup><col style="width:25%" /><col style="width:20%" /><col style="width:55%" /></colgroup>
+            <colgroup><col style="width:34%" /><col style="width:33%" /><col style="width:33%" /></colgroup>
             <thead>
               <tr>
                 <th scope="col">시상</th>
@@ -409,7 +409,7 @@ async function loadCourseRatings(): Promise<void> {
       <PolicySection id="sec-limits" no="6" title="증감 한도">
         <div class="policy-table-wrap">
           <table class="policy-table pp-fixed pp-center-all">
-            <colgroup><col style="width:60%" /><col style="width:40%" /></colgroup>
+            <colgroup><col style="width:50%" /><col style="width:50%" /></colgroup>
             <thead>
               <tr>
                 <th scope="col">구분</th>
@@ -451,7 +451,7 @@ async function loadCourseRatings(): Promise<void> {
         <p class="policy-note">산출 창 : 2025-07 ~ 2026-11</p>
         <div class="policy-table-wrap mt-2">
           <table class="policy-table pp-fixed pp-center-all">
-            <colgroup><col style="width:40%" /><col style="width:30%" /><col style="width:30%" /></colgroup>
+            <colgroup><col style="width:34%" /><col style="width:33%" /><col style="width:33%" /></colgroup>
             <thead>
               <tr>
                 <th scope="col">구장</th>
@@ -491,7 +491,7 @@ async function loadCourseRatings(): Promise<void> {
           </p>
           <div v-else class="policy-table-wrap">
             <table class="policy-table pp-fixed pp-center-all">
-              <colgroup><col style="width:40%" /><col style="width:30%" /><col style="width:30%" /></colgroup>
+              <colgroup><col style="width:34%" /><col style="width:33%" /><col style="width:33%" /></colgroup>
               <thead>
                 <tr>
                   <th scope="col">구장</th>
