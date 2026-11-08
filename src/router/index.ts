@@ -55,6 +55,12 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/pages/Monthly.vue'),
   },
   {
+    path: ROUTE_PATHS.HANDICAP_POLICY,
+    name: 'handicap-policy',
+    meta: { title: '핸디캡 산정기준' },
+    component: () => import('@/pages/HandicapPolicy.vue'),
+  },
+  {
     path: ROUTE_PATHS.ADMIN_LOGS,
     name: 'admin-logs',
     meta: { title: '접속 기록' },
@@ -90,6 +96,7 @@ const AUTH_REQUIRED = new Set<string>([
   ROUTE_PATHS.RANKING,
   ROUTE_PATHS.PROFILE,
   ROUTE_PATHS.ATTENDANCE,
+  ROUTE_PATHS.HANDICAP_POLICY,
   ROUTE_PATHS.ADMIN_LOGS,
   ROUTE_PATHS.ADMIN_MEMBERS,
 ]);

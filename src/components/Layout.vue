@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, type Component } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
-import { User, CalendarDays, Trophy, UserRound, History, Users } from 'lucide-vue-next';
+import { User, CalendarDays, Trophy, UserRound, History, Users, Scale } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
 import { useAuth } from '@/composables/useAuth';
 import { ROUTE_PATHS } from '@/lib';
@@ -18,7 +18,8 @@ const route = useRoute();
 
 // line1/line2 는 sm~xl 구간에서 두 줄로 접기 위한 것. 좁은 폭(<sm)에서는
 // 상단 nav 자체를 쓰지 않고 하단 탭 바로 내려가므로 label 만 쓴다.
-interface NavItem { path: string; label: string; line1: string; line2: string; icon: Component }
+// tabLabel 은 하단 탭 바 전용 짧은 이름 (항목이 5개 이상이면 긴 이름이 잘린다).
+interface NavItem { path: string; label: string; tabLabel?: string; line1: string; line2: string; icon: Component }
 
 const navItems = computed<NavItem[]>(() => {
   const items: NavItem[] = [
@@ -29,6 +30,14 @@ const navItems = computed<NavItem[]>(() => {
   // 계정 버튼(계정 창의 첫 탭)으로 모았다. #/attendance 주소는 그대로 살아 있다.
   if (isLoggedIn.value) {
     items.push({ path: ROUTE_PATHS.PROFILE, label: '나의 기록', line1: '나의', line2: '기록', icon: UserRound });
+    items.push({
+      path: ROUTE_PATHS.HANDICAP_POLICY,
+      label: '핸디캡 산정기준',
+      tabLabel: '핸디 기준',
+      line1: '핸디캡',
+      line2: '산정기준',
+      icon: Scale,
+    });
   }
   // 접속 기록은 관리자에게만 보인다. 메뉴를 감추는 것은 편의일 뿐 권한
   // 경계가 아니다 — 주소를 직접 쳐도 서버 RPC 가 거절한다.
@@ -143,7 +152,7 @@ function isActive(path: string): boolean {
           :aria-current="isActive(item.path) ? 'page' : undefined"
         >
           <component :is="item.icon" class="w-5 h-5 shrink-0" aria-hidden="true" />
-          {{ item.label }}
+          {{ item.tabLabel ?? item.label }}
         </RouterLink>
       </div>
     </nav>

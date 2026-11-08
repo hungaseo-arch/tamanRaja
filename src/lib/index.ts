@@ -16,6 +16,9 @@ export const ROUTE_PATHS = {
   // 관리자 전용 회원 관리. 마찬가지로 실제 차단은 회원 관리 RPC 안의
   // app.require_admin() 이 한다.
   ADMIN_MEMBERS: '/admin/members',
+  // 연 1회 기준 핸디캡 산정기준과 회원별 산정결과. 이름이 실린 데이터라
+  // 다른 회원 화면처럼 로그인 회원에게만 연다 (실제 차단은 RLS).
+  HANDICAP_POLICY: '/handicap-policy',
 } as const;
 
 // 예전 경로(끝 슬래시 포함). 북마크·공유 링크가 살아 있도록 리다이렉트만 남긴다.
