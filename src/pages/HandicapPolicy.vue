@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import { setPageTitle } from '@/lib/title';
+import { supabase } from '@/lib/supabase';
 import PolicySection from '@/components/PolicySection.vue';
 
-onMounted(() => setPageTitle('핸디캡 산정기준'));
+onMounted(() => {
+  setPageTitle('핸디캡 산정기준');
+  void loadCourseRatings();
+});
 
 // 산식 6단계. 수식은 지시서 원문 그대로다 (재계산·재표기하지 않는다).
 const FORMULA_STEPS = [
@@ -52,6 +56,81 @@ const WEIGHT_BANDS = [
   { band: 'C', period: '2025-07 ~ 2025-12', weight: '25%', desc: '전년 하반기. 장기 추세를 확인합니다.' },
   { band: '—', period: '2025-06 이전', weight: '0%', desc: '미반영. 2년 전 성적까지 끌면 핸디가 현재를 따라가지 못합니다.' },
 ];
+
+// 시상 가중치 (3-4절)
+const AWARDS = [
+  { name: 'Winner', weight: '−0.50', meaning: '핸디 대비 호성적 → 핸디 축소' },
+  { name: 'Medalist', weight: '−0.25', meaning: 'Gross 최저타 → 실력 입증' },
+  { name: 'Host', weight: '+0.50', meaning: '최하위 → 핸디 확대' },
+];
+
+// 참석률 반영률 (3-5절)
+const ATTEND_RATES = [
+  { range: '80% 이상', rate: '100%' },
+  { range: '50 ~ 80%', rate: '70%' },
+  { range: '50% 미만', rate: '50%' },
+];
+
+// 증감 한도 (3-6절)
+const LIMITS = [
+  { kind: '인하 (핸디↓, 불리)', limit: '연 2타', reason: '한 해 성적만으로 급히 깎으면 다음 해 부담이 과도함' },
+  { kind: '인상 (핸디↑, 유리)', limit: '연 3타', reason: '연령·건강 변화는 빠르게 반영해야 계속 참여할 수 있음' },
+  { kind: '표본 부족 시', limit: '±1타', reason: '가중합 3.0 미만' },
+];
+
+// 2027년 한도 적용자 5명 (한도 적용 전 → 후). 표 값은 지시서가 정본이다.
+const CAPPED_MEMBERS = [
+  { name: '서종환', before: '−2.2', after: '−2.0' },
+  { name: '남정곤', before: '+3.2', after: '+3.0' },
+  { name: '정재욱', before: '+3.7', after: '+3.0' },
+  { name: '신승민', before: '+2.3', after: '+1.0' },
+  { name: '이성남', before: '+6.1', after: '+1.0' },
+];
+
+// 코스 난이도 지수 (3-7절). 산출 창: 2025-07 ~ 2026-11
+const COURSE_DIFFICULTY = [
+  { name: '리버사이드', par: 72, meetings: 1, rounds: 12, over: '24.4', net: '11.0', index: '+3.7', applied: '+0.9' },
+  { name: '센툴하일랜드', par: 72, meetings: 2, rounds: 22, over: '23.8', net: '8.5', index: '+1.2', applied: '+0.6' },
+  { name: '자고라위', par: 72, meetings: 5, rounds: 57, over: '22.4', net: '7.8', index: '+0.5', applied: '+0.5' },
+  { name: '레인보우', par: 72, meetings: 3, rounds: 25, over: '23.2', net: '7.5', index: '+0.2', applied: '+0.1' },
+  { name: '구눙굴리스', par: 72, meetings: 4, rounds: 47, over: '21.8', net: '6.0', index: '−1.3', applied: '−1.3' },
+  { name: '끄다똔', par: 72, meetings: 1, rounds: 8, over: '18.1', net: '5.1', index: '−2.2', applied: '−0.5' },
+  { name: '보고라야', par: 71, meetings: 1, rounds: 10, over: '20.1', net: '4.4', index: '−2.9', applied: '−0.7' },
+];
+
+// 구장별 Course Rating · Slope (참고). 2027년 산정에는 쓰지 않는다.
+interface CourseRating {
+  id: number;
+  name: string;
+  tee_box: string | null;
+  par: number | null;
+  course_rating: number | null;
+  slope_rating: number | null;
+  course_variant: string | null;
+  rating_note: string | null;
+}
+const courseRatings = ref<CourseRating[]>([]);
+const courseRatingsError = ref<string | null>(null);
+const courseRatingsLoading = ref(true);
+
+async function loadCourseRatings(): Promise<void> {
+  courseRatingsLoading.value = true;
+  courseRatingsError.value = null;
+  const { data, error } = await supabase
+    .from('golf_courses')
+    .select('id, name, tee_box, par, course_rating, slope_rating, course_variant, rating_note')
+    .not('course_rating', 'is', null)
+    .order('name');
+  courseRatingsLoading.value = false;
+  if (error) {
+    courseRatingsError.value = error.message;
+    return;
+  }
+  courseRatings.value = (data ?? []).map((c) => ({
+    ...c,
+    course_rating: c.course_rating === null ? null : Number(c.course_rating),
+  })) as CourseRating[];
+}
 </script>
 
 <template>
@@ -110,6 +189,173 @@ const WEIGHT_BANDS = [
           최근 6개월 비중이 전체의 60% 이상을 차지하므로 최근 기량이 여전히 결과를 주도합니다.
           예시로 정기혁님은 가중합 9.50 중 6.00(63.2%)이 최근 6개월분입니다.
         </p>
+      </PolicySection>
+
+      <PolicySection id="sec-awards" no="3" title="시상 가중치">
+        <div class="policy-table-wrap">
+          <table class="policy-table">
+            <thead>
+              <tr>
+                <th scope="col">시상</th>
+                <th scope="col" class="num">가중</th>
+                <th scope="col">의미</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="a in AWARDS" :key="a.name">
+                <th scope="row">{{ a.name }}</th>
+                <td class="num">{{ a.weight }}</td>
+                <td>{{ a.meaning }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <ul class="policy-list">
+          <li>시상 횟수에도 구간가중을 곱합니다. 최근 Winner 가 1년 반 전 Winner 보다 4배 무겁게 반영됩니다.</li>
+          <li>6라운드 상당으로 환산한 뒤 ±1.0타 한도로 절사합니다.</li>
+        </ul>
+      </PolicySection>
+
+      <PolicySection id="sec-attend" no="4" title="참석률 반영률">
+        <p class="policy-lead">
+          평균값이 아니라 <strong>변동폭의 반영률</strong>로 적용합니다. 참석이 적으면 표본이 부족해
+          평균을 그대로 신뢰하기 어렵기 때문입니다.
+        </p>
+        <div class="policy-table-wrap">
+          <table class="policy-table">
+            <thead>
+              <tr>
+                <th scope="col">연간 참석률</th>
+                <th scope="col" class="num">반영률</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="r in ATTEND_RATES" :key="r.range">
+                <th scope="row">{{ r.range }}</th>
+                <td class="num">{{ r.rate }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="policy-card mt-3">
+          <p class="policy-card-title">표본 부족 보완 규칙</p>
+          <p class="policy-note m-0">
+            가중합이 3.0 미만이면 실질 3라운드에 미달하므로 변동 한도를 ±1타로 좁힙니다. WHS 최소 산정
+            요건과 같은 기준입니다. 동결하지 않는 이유는 핸디가 실제 기량과 크게 벌어진 신규·복귀
+            회원을 방치하지 않기 위함입니다.
+          </p>
+        </div>
+      </PolicySection>
+
+      <PolicySection id="sec-limits" no="5" title="증감 한도">
+        <div class="policy-table-wrap">
+          <table class="policy-table">
+            <thead>
+              <tr>
+                <th scope="col">구분</th>
+                <th scope="col" class="num">한도</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="l in LIMITS" :key="l.kind">
+                <tr>
+                  <th scope="row">{{ l.kind }}</th>
+                  <td class="num">{{ l.limit }}</td>
+                </tr>
+                <tr class="policy-desc-row">
+                  <td colspan="2">{{ l.reason }}</td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <p class="policy-note mt-2">
+          한도에 걸려 잘린 잔여분은 2028년 산정에 자연히 이월됩니다. 2027년 한도 적용자는 아래 5명입니다.
+        </p>
+        <ul class="policy-list">
+          <li v-for="m in CAPPED_MEMBERS" :key="m.name">
+            <strong>{{ m.name }}</strong>
+            <span class="policy-flag">한도 적용</span>
+            <span class="font-mono">{{ m.before }} → {{ m.after }}</span>
+          </li>
+        </ul>
+      </PolicySection>
+
+      <PolicySection id="sec-course" no="6" title="코스 난이도 지수">
+        <p class="policy-lead">
+          같은 회원들이 같은 핸디로 쳤는데 특정 구장에서 Net 이 높게 나오면 그 구장이 어려운 것입니다.
+          WHS 의 PCC 와 원리가 같습니다.
+        </p>
+        <pre class="policy-formula">난이도지수 = 해당 구장 평균 Net − 전체 평균 Net
+가중적용치 = 난이도지수 × (모임 수 ÷ 4, 최대 1.0)   ※ 표본 적은 구장은 영향 축소</pre>
+        <p class="policy-note">산출 창: 2025-07 ~ 2026-11</p>
+        <div class="policy-table-wrap mt-2">
+          <table class="policy-table">
+            <thead>
+              <tr>
+                <th scope="col">구장</th>
+                <th scope="col" class="num">난이도지수</th>
+                <th scope="col" class="num">가중적용치</th>
+              </tr>
+            </thead>
+            <tbody>
+              <template v-for="c in COURSE_DIFFICULTY" :key="c.name">
+                <tr>
+                  <th scope="row">{{ c.name }}</th>
+                  <td class="num">{{ c.index }}</td>
+                  <td class="num">{{ c.applied }}</td>
+                </tr>
+                <tr class="policy-desc-row">
+                  <td colspan="3">
+                    Par {{ c.par }} · 모임 {{ c.meetings }} · 라운드 {{ c.rounds }} · 실오버파 {{ c.over }} · 평균 Net {{ c.net }}
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+        <p class="policy-note mt-2">
+          구눙굴리스에서만 많이 친 회원과 리버사이드에서만 친 회원의 점수를 그대로 비교하면 2.2타 차이가
+          생깁니다. 이를 상쇄하는 장치입니다.
+        </p>
+
+        <details class="policy-details mt-3">
+          <summary>참고: 구장별 Course Rating · Slope</summary>
+          <p class="policy-note">
+            2027년 산정에는 쓰지 않습니다. 2028년 WHS 전환에 대비해 수집한 값입니다.
+          </p>
+          <p v-if="courseRatingsLoading" class="policy-note" role="status">불러오는 중...</p>
+          <p v-else-if="courseRatingsError" class="policy-note" role="alert">
+            불러오기 실패: {{ courseRatingsError }}
+            <button type="button" class="policy-link" @click="loadCourseRatings">다시 시도</button>
+          </p>
+          <div v-else class="policy-table-wrap">
+            <table class="policy-table">
+              <thead>
+                <tr>
+                  <th scope="col">구장</th>
+                  <th scope="col" class="num">CR</th>
+                  <th scope="col" class="num">Slope</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template v-for="c in courseRatings" :key="c.id">
+                  <tr>
+                    <th scope="row">{{ c.name }}</th>
+                    <td class="num">{{ c.course_rating?.toFixed(1) ?? '—' }}</td>
+                    <td class="num">{{ c.slope_rating ?? '—' }}</td>
+                  </tr>
+                  <tr class="policy-desc-row">
+                    <td colspan="3">
+                      {{ c.tee_box }} tee · Par {{ c.par }}<template v-if="c.course_variant"> · {{ c.course_variant }}</template>
+                      <template v-if="c.rating_note"> · {{ c.rating_note }}</template>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+          </div>
+        </details>
       </PolicySection>
     </div>
   </div>
@@ -262,6 +508,41 @@ const WEIGHT_BANDS = [
   border-bottom: 1px solid var(--pp-text);
 }
 
+.policy-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.875rem;
+}
+.policy-list li + li {
+  margin-top: 0.25rem;
+}
+/* 한도 적용·표본 부족 표시. 색(붉은 글자)과 함께 문자 라벨을 항상 붙인다. */
+.policy-flag {
+  display: inline-block;
+  margin: 0 0.375rem;
+  padding: 0 0.375rem;
+  border: 1px solid var(--pp-up);
+  border-radius: 0.25rem;
+  color: var(--pp-up);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+.policy-details {
+  border: 1px solid var(--pp-text);
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--pp-bg);
+}
+.policy-details summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.policy-link {
+  margin-left: 0.375rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 /* 인쇄: 접힌 섹션도 모두 펼치고 접기 버튼의 화살표는 숨긴다. */
 @media print {
   .policy-page {
@@ -272,6 +553,10 @@ const WEIGHT_BANDS = [
   }
   .policy-chevron {
     display: none;
+  }
+  /* 참고 접이식도 인쇄에서는 펼친 채로 나오도록 한다. */
+  .policy-details > :not(summary) {
+    display: block;
   }
   .policy-section {
     break-inside: avoid-page;
