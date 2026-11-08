@@ -33,6 +33,8 @@ interface Row {
   low_sample: boolean;
   note: string | null;
   status: string;
+  /** 휴면 개시 연월 (없으면 null). 휴면 뱃지에 쓴다. */
+  dormant_from?: string | null;
 }
 
 const YEAR = 2027;
@@ -106,6 +108,12 @@ function ariaSort(key: SortKey): 'ascending' | 'descending' | 'none' {
   return sortAsc.value ? 'ascending' : 'descending';
 }
 
+// 참석률 분모 설명. 작업지시서 3-5절 "참석률 분모(필수 문구)" 와 같은 문장이다.
+const ATTEND_DENOM_TEXT =
+  '2026년 중 해당 회원이 모임 명부에 등재된 횟수임. 휴면 개시 이후 모임과 명부 미등재 모임은 분모에서 제외함. ' +
+  '13명은 분모 11이며, 이성남 3(2026-04 휴면) · 박재현 10(2026-06-06 모임 명부 미등재)임.';
+const DORMANT_TIP = '휴면 중. 복귀 전까지 적용되지 않는 참고값임 (9번 섹션 안내 참조)';
+
 // ── 상세 창 ──────────────────────────────────────────────────────────────────
 // 성명을 누르면 그 회원의 산정 근거를 모달로 보여 준다 (RowDetailDialog).
 const selectedId = ref<number | null>(null);
@@ -172,9 +180,9 @@ const totalLabel = computed(() => {
 
 const COLS: { key: SortKey; label: string; cls: string }[] = [
   { key: 'member_name', label: '성명', cls: '' },
-  { key: 'std_hc_2025', label: '2025 기준', cls: 'num pp-hide-sm' },
+  { key: 'std_hc_2025', label: '2025 기준(연말)', cls: 'num pp-hide-sm' },
   { key: 'prev_std_hc', label: '2026 기준', cls: 'num pp-hide-sm' },
-  { key: 'std_hc', label: '2027 기준', cls: 'num' },
+  { key: 'std_hc', label: '2027 기준', cls: 'num pp-col-std' },
   { key: 'final_delta', label: '증감', cls: 'num' },
   { key: 'w_avg', label: '가중평균 오버파', cls: 'num pp-hide-sm' },
   { key: 'attend_rate', label: '2026 참석률', cls: 'num pp-hide-sm' },
@@ -219,6 +227,14 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                   <button type="button" class="pp-expand" @click="selectedId = r.member_id">
                     {{ r.member_name }}
                   </button>
+                  <span
+                    v-if="r.dormant_from"
+                    class="policy-flag pp-dormant"
+                    tabindex="0"
+                    role="note"
+                    :title="DORMANT_TIP"
+                    :aria-label="`휴면. ${DORMANT_TIP}`"
+                  >휴면</span>
                   <span v-if="r.capped" class="policy-flag">한도</span>
                   <span v-if="r.low_sample" class="policy-flag">표본부족</span>
                 </th>
@@ -226,7 +242,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                 <td class="num pp-hide-sm">{{ r.prev_std_hc ?? '—' }}</td>
                 <td class="num pp-std">{{ r.std_hc }}</td>
                 <td class="num" :class="deltaClass(r.final_delta)">
-                  {{ fmtSigned(r.final_delta) }}
+                  {{ fmtSigned2(r.final_delta) }}
                   <span class="pp-delta-label">{{ deltaLabel(r.final_delta) }}</span>
                 </td>
                 <td class="num pp-hide-sm">{{ fmt(r.w_avg) }}</td>
@@ -247,18 +263,18 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 
     <RowDetailDialog v-model:open="dialogOpen" :title="selected?.member_name ?? ''" subtitle="2027 기준핸디 산정결과 (안)">
       <template v-if="selected">
-        <DetailItem label="2025 기준">{{ selected.std_hc_2025 ?? '—' }}</DetailItem>
+        <DetailItem label="2025 기준(연말)">{{ selected.std_hc_2025 ?? '—' }}</DetailItem>
         <DetailItem label="2026 기준">{{ selected.prev_std_hc ?? '—' }}</DetailItem>
         <DetailItem label="2027 기준(안)"><span class="pp-std">{{ selected.std_hc }}</span></DetailItem>
         <DetailItem label="증감">
           <span :class="deltaClass(selected.final_delta)">
-            {{ fmtSigned(selected.final_delta) }} {{ deltaLabel(selected.final_delta) }}
+            {{ fmtSigned2(selected.final_delta) }} {{ deltaLabel(selected.final_delta) }}
           </span>
         </DetailItem>
         <DetailItem label="가중평균 오버파">{{ fmt(selected.w_avg) }}</DetailItem>
         <DetailItem label="2026 참석률">
           {{ fmt(selected.attend_rate) }}%
-          <span class="pp-caption">2026년 11개 모임 기준, 휴면·불참 기간 제외</span>
+          <span class="pp-caption">{{ ATTEND_DENOM_TEXT }}</span>
         </DetailItem>
         <DetailItem label="A 구간 평균">{{ fmt(selected.avg_a) }}</DetailItem>
         <DetailItem label="B 구간 평균">{{ fmt(selected.avg_b) }}</DetailItem>
@@ -274,13 +290,13 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
           {{ selected.apply_rate === null ? '—' : (selected.apply_rate * 100).toFixed(1) + '%' }}
         </DetailItem>
         <DetailItem label="한도 적용 전 증감">
-          <span :class="deltaClass(selected.raw_delta)">{{ fmtSigned(selected.raw_delta) }}</span>
+          <span :class="deltaClass(selected.raw_delta)">{{ fmtSigned2(selected.raw_delta) }}</span>
         </DetailItem>
         <DetailItem label="한도 적용 후 증감">
-          <span :class="deltaClass(selected.final_delta)">{{ fmtSigned(selected.final_delta) }}</span>
+          <span :class="deltaClass(selected.final_delta)">{{ fmtSigned2(selected.final_delta) }}</span>
         </DetailItem>
         <DetailItem v-if="selected.capped" label="한도 적용">
-          <span class="pp-up">적용 전 {{ fmtSigned(selected.raw_delta) }} → 적용 후 {{ fmtSigned(selected.final_delta) }}</span>
+          <span class="pp-up">적용 전 {{ fmtSigned2(selected.raw_delta) }} → 적용 후 {{ fmtSigned2(selected.final_delta) }}</span>
         </DetailItem>
         <DetailItem v-if="selected.note" label="비고">
           <span class="pp-note-text"><span v-if="selected.low_sample" class="pp-up">표본 부족 · </span>{{ selected.note }}</span>
@@ -314,7 +330,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 .pp-results td {
   padding: 0.4rem 0.5rem;
 }
-/* 열 폭 배분: 성명 열을 고정 비율로 두고 나머지 숫자 열은 균등 분할한다. */
+/* 열 폭 배분: 375px 에서도 헤더가 겹치지 않게 성명 90px · 2027 기준 90px 로 고정하고 나머지는 증감이 쓴다. */
 .pp-results {
   table-layout: fixed;
 }
@@ -325,13 +341,28 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 }
 .pp-results thead th:first-child,
 .pp-results tbody th {
-  width: 40%;
+  width: 90px;
   text-align: left;
+}
+.pp-results thead th.pp-col-std {
+  width: 90px;
+}
+.pp-sort {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.pp-dormant {
+  cursor: help;
+  border-color: var(--muted-foreground, #6b7280);
+  color: var(--muted-foreground, #6b7280);
 }
 @media (min-width: 640px) {
   .pp-results thead th:first-child,
   .pp-results tbody th {
     width: 19%;
+  }
+  .pp-results thead th.pp-col-std {
+    width: auto;
   }
 }
 .pp-results tbody th {
