@@ -252,7 +252,12 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
           </tbody>
           <tfoot>
             <tr>
-              <td colspan="7">
+              <!-- 좁은 화면은 보이는 열이 3개뿐이다. colspan 을 7 로 두면 숨은 열 4개가 폭을 나눠 가져가
+                   증감 열이 쪼그라들므로, 폭에 맞는 칸을 따로 둔다. -->
+              <td colspan="3" class="pp-foot-sm">
+                <strong>핸디 총합 {{ totalPrev }} → {{ totalStd }} ({{ totalLabel }})</strong>
+              </td>
+              <td colspan="7" class="pp-hide-sm">
                 <strong>핸디 총합 {{ totalPrev }} → {{ totalStd }} ({{ totalLabel }})</strong>
               </td>
             </tr>
@@ -400,6 +405,9 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 @media (min-width: 640px) {
   .pp-hide-sm {
     display: table-cell;
+  }
+  .pp-foot-sm {
+    display: none;
   }
 }
 .pp-caption {
