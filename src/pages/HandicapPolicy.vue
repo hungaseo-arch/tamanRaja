@@ -95,6 +95,10 @@ const AWARD_CONSTANTS = [
   { k: '×8', over: '2명', verdict: '상위권이 뭉개짐', chosen: false },
   { k: '×10', over: '4명', verdict: '박영진 −1.32와 정인원 −2.02가 같은 −1.00이 됨', chosen: false },
 ];
+/** 가운데 정렬해도 % 값의 자릿수가 세로로 맞도록 앞을 공백(NBSP)으로 채운다. */
+function padPct(v: string): string {
+  return v.padStart(6, '\u00A0');
+}
 /** 부호 문자열(+/−) 글자색. 부호 문자가 항상 함께 표시된다. */
 function signClass(v: string): string {
   return v.startsWith('+') ? 'pp-up' : v.startsWith('\u2212') ? 'pp-down' : '';
@@ -249,7 +253,7 @@ async function loadCourseRatings(): Promise<void> {
       <PolicySection id="sec-weights" no="3" title="구간 가중">
         <p class="policy-lead">최근 라운드일수록 가중 상향, 오래된 라운드일수록 가중 하향</p>
         <div class="policy-table-wrap">
-          <table class="policy-table pp-fixed">
+          <table class="policy-table pp-fixed pp-center-all">
             <colgroup><col style="width:20%" /><col style="width:50%" /><col style="width:30%" /></colgroup>
             <thead>
               <tr>
@@ -263,7 +267,7 @@ async function loadCourseRatings(): Promise<void> {
                 <tr>
                   <th scope="row">{{ b.band }}</th>
                   <td>{{ b.period }}</td>
-                  <td class="num">{{ b.weight }}</td>
+                  <td class="num">{{ padPct(b.weight) }}</td>
                 </tr>
                 <tr class="policy-desc-row">
                   <td colspan="3">{{ b.desc }}</td>
@@ -386,7 +390,7 @@ async function loadCourseRatings(): Promise<void> {
             <tbody>
               <tr v-for="r in ATTEND_RATES" :key="r.range">
                 <th scope="row">{{ r.range }}</th>
-                <td class="num">{{ r.rate }}</td>
+                <td class="num">{{ padPct(r.rate) }}</td>
               </tr>
             </tbody>
           </table>
@@ -742,6 +746,11 @@ async function loadCourseRatings(): Promise<void> {
 /* 열 폭을 colgroup 비율로 고정한다 (내용 길이에 따라 열이 쏠리지 않게). */
 .policy-table.pp-fixed {
   table-layout: fixed;
+}
+/* 모든 열을 가운데 정렬한다. 행 아래 설명(colspan 행)은 왼쪽 그대로 둔다. */
+.policy-table.pp-center-all th,
+.policy-table.pp-center-all td:not([colspan]) {
+  text-align: center;
 }
 .policy-desc-row td {
   padding-left: 1.25rem;
