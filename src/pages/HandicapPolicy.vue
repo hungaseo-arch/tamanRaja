@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue';
 import { setPageTitle } from '@/lib/title';
 import { supabase } from '@/lib/supabase';
 import PolicySection from '@/components/PolicySection.vue';
+import HandicapResultsTable from '@/components/HandicapResultsTable.vue';
 
 onMounted(() => {
   setPageTitle('핸디캡 산정기준');
@@ -356,6 +357,10 @@ async function loadCourseRatings(): Promise<void> {
             </table>
           </div>
         </details>
+      </PolicySection>
+
+      <PolicySection id="sec-results" no="7" title="회원별 산정결과 (안)" default-open>
+        <HandicapResultsTable />
       </PolicySection>
     </div>
   </div>
