@@ -409,23 +409,20 @@ async function loadCourseRatings(): Promise<void> {
       <PolicySection id="sec-limits" no="6" title="증감 한도">
         <div class="policy-table-wrap">
           <table class="policy-table pp-fixed pp-center-all">
-            <colgroup><col style="width:50%" /><col style="width:50%" /></colgroup>
+            <colgroup><col style="width:30%" /><col style="width:16%" /><col style="width:54%" /></colgroup>
             <thead>
               <tr>
                 <th scope="col">구분</th>
                 <th scope="col" class="num">한도</th>
+                <th scope="col" class="pp-left">사유</th>
               </tr>
             </thead>
             <tbody>
-              <template v-for="l in LIMITS" :key="l.kind">
-                <tr>
-                  <th scope="row">{{ l.kind }}</th>
-                  <td class="num">{{ l.limit }}</td>
-                </tr>
-                <tr class="policy-desc-row">
-                  <td colspan="2">{{ l.reason }}</td>
-                </tr>
-              </template>
+              <tr v-for="l in LIMITS" :key="l.kind">
+                <th scope="row">{{ l.kind }}</th>
+                <td class="num">{{ l.limit }}</td>
+                <td class="pp-left">{{ l.reason }}</td>
+              </tr>
             </tbody>
           </table>
         </div>
