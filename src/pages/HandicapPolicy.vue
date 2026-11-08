@@ -129,6 +129,17 @@ function fmtDiff(d: number): string {
 function diffClass(d: number): string {
   return d > 0 ? 'pp-up' : d < 0 ? 'pp-down' : '';
 }
+/** 열 평균 (소수 첫째 자리 반올림). 차이 평균은 부호를 유지한 평균이다. */
+function mean(values: number[]): number {
+  return Math.round((values.reduce((a, v) => a + v, 0) / values.length) * 10) / 10;
+}
+const WHS_AVG = {
+  index: mean(WHS_ROWS.map((r) => r.index)),
+  std2026: mean(WHS_ROWS.map((r) => r.std2026)),
+  std2027: mean(WHS_ROWS.map((r) => r.std2027)),
+  diff2026: mean(WHS_ROWS.map((r) => whsDiff(r.index, r.std2026))),
+  diff2027: mean(WHS_ROWS.map((r) => whsDiff(r.index, r.std2027))),
+};
 function meanAbsDiff(key: 'std2026' | 'std2027'): string {
   const sum = WHS_ROWS.reduce((acc, r) => acc + Math.abs(whsDiff(r.index, r[key])), 0);
   return (sum / WHS_ROWS.length).toFixed(1);
@@ -420,6 +431,16 @@ async function loadCourseRatings(): Promise<void> {
                 <td class="num" :class="diffClass(whsDiff(w.index, w.std2027))">{{ fmtDiff(whsDiff(w.index, w.std2027)) }}</td>
               </tr>
             </tbody>
+            <tfoot>
+              <tr>
+                <th scope="row">평균</th>
+                <td class="num">{{ WHS_AVG.index.toFixed(1) }}</td>
+                <td class="num">{{ WHS_AVG.std2026.toFixed(1) }}</td>
+                <td class="num pp-std">{{ WHS_AVG.std2027.toFixed(1) }}</td>
+                <td class="num" :class="diffClass(WHS_AVG.diff2026)">{{ fmtDiff(WHS_AVG.diff2026) }}</td>
+                <td class="num" :class="diffClass(WHS_AVG.diff2027)">{{ fmtDiff(WHS_AVG.diff2027) }}</td>
+              </tr>
+            </tfoot>
           </table>
         </div>
         <p class="policy-note mt-2">
@@ -595,6 +616,12 @@ async function loadCourseRatings(): Promise<void> {
 }
 .policy-table.pp-whs .num {
   text-align: center;
+}
+.policy-table.pp-whs tfoot th,
+.policy-table.pp-whs tfoot td {
+  background: var(--pp-sage);
+  border-top: 1px solid var(--pp-border);
+  font-weight: 700;
 }
 .policy-table.pp-whs thead th.num {
   white-space: normal;
