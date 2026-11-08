@@ -1,10 +1,10 @@
 import { onUnmounted, watch } from 'vue';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/composables/useAuth';
-import { IDLE_TIMEOUT_MS, idleRemainingMs, touchSession } from '@/lib/session';
+import { idleRemainingMs, touchSession } from '@/lib/session';
 
 /**
- * 30분 무활동 자동 로그아웃.
+ * 무활동 자동 로그아웃 (회원 3시간, 관리자 30분 — src/lib/session.ts).
  *
  * 세 겹으로 본다.
  *  1. 조작 감지 — 누르기·타이핑·스크롤이 있을 때마다 유휴 시계를 되돌린다.
@@ -23,12 +23,12 @@ import { IDLE_TIMEOUT_MS, idleRemainingMs, touchSession } from '@/lib/session';
 // 하면 세션이 계속 살아나 "30분" 이 사실상 무한이 된다.
 const ACTIVITY_EVENTS = ['pointerdown', 'keydown', 'wheel', 'touchstart'] as const;
 
-// 시계가 0이 되는 순간을 얼마나 촘촘히 잡을지. 30분 기준에서 이 정도면
+// 시계가 0이 되는 순간을 얼마나 촘촘히 잡을지. 30분 기준에서도 이 정도면
 // 사용자가 체감하는 오차가 없다.
 const CHECK_INTERVAL_MS = 20 * 1000;
 
 // 서버에 활동을 알리는 간격. 조작마다 보내면 요청이 폭주하므로 묶는다.
-// 서버의 유휴 기준(35분)이 프런트(30분)보다 넉넉한 것이 이 간격 때문이다.
+// 서버의 유휴 기준이 프런트보다 5분 넉넉한 것이 이 간격 때문이다.
 const SERVER_TOUCH_INTERVAL_MS = 5 * 60 * 1000;
 
 export function useIdleLogout(onTimeout: () => void | Promise<void>): void {
@@ -109,5 +109,3 @@ export function useIdleLogout(onTimeout: () => void | Promise<void>): void {
   });
 }
 
-/** 화면 안내에 쓰는 값. "30분 동안 사용하지 않아…" 같은 문구가 상수와 어긋나지 않게. */
-export const IDLE_TIMEOUT_MINUTES = Math.round(IDLE_TIMEOUT_MS / 60000);

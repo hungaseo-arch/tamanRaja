@@ -29,8 +29,8 @@ const pin = ref('');
 const loginError = ref('');
 const submitting = ref(false);
 // 기본은 켜짐 (4-3 안 A). 회원 대부분이 자기 휴대폰으로 들어와 매번 PIN 을
-// 치는 수고가 더 크다. 공용 기기에 남는 위험은 30분 무활동 자동 로그아웃
-// (IDLE_TIMEOUT_MS, 서버 app.idle_timeout())이 그대로 막는다 — 유지를 켜도
+// 치는 수고가 더 크다. 공용 기기에 남는 위험은 무활동 자동 로그아웃(회원 3시간·관리자 30분,
+// idleTimeoutMs(), 서버 app.idle_timeout_for())이 그대로 막는다 — 유지를 켜도
 // 그 한도는 똑같이 걸린다. 공용 기기라면 본인이 끄면 된다.
 const remember = ref(true);
 
