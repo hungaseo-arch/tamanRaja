@@ -284,8 +284,8 @@ async function loadCourseRatings(): Promise<void> {
 
       <PolicySection id="sec-awards" no="4" title="시상 가중치">
         <div class="policy-table-wrap">
-          <table class="policy-table pp-fixed">
-            <colgroup><col style="width:28%" /><col style="width:18%" /><col style="width:54%" /></colgroup>
+          <table class="policy-table pp-fixed pp-center-all">
+            <colgroup><col style="width:25%" /><col style="width:20%" /><col style="width:55%" /></colgroup>
             <thead>
               <tr>
                 <th scope="col">시상</th>
@@ -379,7 +379,7 @@ async function loadCourseRatings(): Promise<void> {
           신뢰하기 어려움
         </p>
         <div class="policy-table-wrap">
-          <table class="policy-table pp-fixed">
+          <table class="policy-table pp-fixed pp-center-all">
             <colgroup><col style="width:50%" /><col style="width:50%" /></colgroup>
             <thead>
               <tr>
@@ -411,7 +411,7 @@ async function loadCourseRatings(): Promise<void> {
 
       <PolicySection id="sec-limits" no="6" title="증감 한도">
         <div class="policy-table-wrap">
-          <table class="policy-table pp-fixed">
+          <table class="policy-table pp-fixed pp-center-all">
             <colgroup><col style="width:60%" /><col style="width:40%" /></colgroup>
             <thead>
               <tr>
@@ -453,7 +453,7 @@ async function loadCourseRatings(): Promise<void> {
 가중적용치 = 난이도지수 × (모임 수 ÷ 4, 최대 1.0)   ※ 표본 적은 구장은 영향 축소</pre>
         <p class="policy-note">산출 창 : 2025-07 ~ 2026-11</p>
         <div class="policy-table-wrap mt-2">
-          <table class="policy-table pp-fixed">
+          <table class="policy-table pp-fixed pp-center-all">
             <colgroup><col style="width:40%" /><col style="width:30%" /><col style="width:30%" /></colgroup>
             <thead>
               <tr>
@@ -493,7 +493,7 @@ async function loadCourseRatings(): Promise<void> {
             <button type="button" class="policy-link" @click="loadCourseRatings">다시 시도</button>
           </p>
           <div v-else class="policy-table-wrap">
-            <table class="policy-table pp-fixed">
+            <table class="policy-table pp-fixed pp-center-all">
               <colgroup><col style="width:40%" /><col style="width:30%" /><col style="width:30%" /></colgroup>
               <thead>
                 <tr>
@@ -697,8 +697,8 @@ async function loadCourseRatings(): Promise<void> {
   font-size: 0.8125rem;
 }
 /* 표·수식 바로 아래의 설명은 각주로 보고 들여쓴다. */
-.policy-table-wrap + .policy-note,
-.policy-formula + .policy-note {
+.policy-table-wrap ~ .policy-note,
+.policy-formula ~ .policy-note {
   padding-left: 0.625rem;
 }
 
