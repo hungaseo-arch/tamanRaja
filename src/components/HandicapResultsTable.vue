@@ -277,8 +277,8 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   color: var(--pp-down);
 }
 .pp-std {
-  /* 앱 공통 규칙: 기준 핸디는 주황 */
-  color: #c2410c;
+  /* 2027 기준핸디 강조색 (보라, violet-700) */
+  color: #6d28d9;
   font-weight: 700;
 }
 .pp-delta-label {
