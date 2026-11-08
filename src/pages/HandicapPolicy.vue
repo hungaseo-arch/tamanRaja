@@ -254,7 +254,7 @@ async function loadCourseRatings(): Promise<void> {
         <p class="policy-lead">최근 라운드일수록 가중 상향, 오래된 라운드일수록 가중 하향</p>
         <div class="policy-table-wrap">
           <table class="policy-table pp-fixed pp-center-all">
-            <colgroup><col style="width:14%" /><col style="width:28%" /><col style="width:18%" /><col style="width:40%" /></colgroup>
+            <colgroup><col style="width:10%" /><col style="width:28%" /><col style="width:22%" /><col style="width:40%" /></colgroup>
             <thead>
               <tr>
                 <th scope="col">구간</th>
@@ -565,28 +565,40 @@ async function loadCourseRatings(): Promise<void> {
                 <th scope="col" class="num">Handicap Index</th>
                 <th scope="col" class="num">2026 기준</th>
                 <th scope="col" class="num">2027 기준(안)</th>
-                <th scope="col" class="num">차이 (2026)</th>
-                <th scope="col" class="num">차이 (2027안)</th>
+                <th scope="col" class="num pw-hide">차이 (2026)</th>
+                <th scope="col" class="num pw-hide">차이 (2027안)</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="w in WHS_ROWS" :key="w.name">
                 <th scope="row">{{ w.name }}</th>
                 <td class="num">{{ w.index.toFixed(1) }}</td>
-                <td class="num">{{ w.std2026 }}</td>
-                <td class="num pp-std">{{ w.std2027 }}</td>
-                <td class="num" :class="diffClass(whsDiff(w.index, w.std2026))">{{ fmtDiff(whsDiff(w.index, w.std2026)) }}</td>
-                <td class="num" :class="diffClass(whsDiff(w.index, w.std2027))">{{ fmtDiff(whsDiff(w.index, w.std2027)) }}</td>
+                <td class="num">
+                  {{ w.std2026 }}
+                  <small class="pw-only pw-cap" :class="diffClass(whsDiff(w.index, w.std2026))">{{ fmtDiff(whsDiff(w.index, w.std2026)) }}</small>
+                </td>
+                <td class="num">
+                  <span class="pp-std">{{ w.std2027 }}</span>
+                  <small class="pw-only pw-cap" :class="diffClass(whsDiff(w.index, w.std2027))">{{ fmtDiff(whsDiff(w.index, w.std2027)) }}</small>
+                </td>
+                <td class="num pw-hide" :class="diffClass(whsDiff(w.index, w.std2026))">{{ fmtDiff(whsDiff(w.index, w.std2026)) }}</td>
+                <td class="num pw-hide" :class="diffClass(whsDiff(w.index, w.std2027))">{{ fmtDiff(whsDiff(w.index, w.std2027)) }}</td>
               </tr>
             </tbody>
             <tfoot>
               <tr>
                 <th scope="row">평균</th>
                 <td class="num">{{ WHS_AVG.index.toFixed(1) }}</td>
-                <td class="num">{{ WHS_AVG.std2026.toFixed(1) }}</td>
-                <td class="num pp-std">{{ WHS_AVG.std2027.toFixed(1) }}</td>
-                <td class="num" :class="diffClass(WHS_AVG.diff2026)">{{ fmtDiff(WHS_AVG.diff2026) }}</td>
-                <td class="num" :class="diffClass(WHS_AVG.diff2027)">{{ fmtDiff(WHS_AVG.diff2027) }}</td>
+                <td class="num">
+                  {{ WHS_AVG.std2026.toFixed(1) }}
+                  <small class="pw-only pw-cap" :class="diffClass(WHS_AVG.diff2026)">{{ fmtDiff(WHS_AVG.diff2026) }}</small>
+                </td>
+                <td class="num">
+                  <span class="pp-std">{{ WHS_AVG.std2027.toFixed(1) }}</span>
+                  <small class="pw-only pw-cap" :class="diffClass(WHS_AVG.diff2027)">{{ fmtDiff(WHS_AVG.diff2027) }}</small>
+                </td>
+                <td class="num pw-hide" :class="diffClass(WHS_AVG.diff2026)">{{ fmtDiff(WHS_AVG.diff2026) }}</td>
+                <td class="num pw-hide" :class="diffClass(WHS_AVG.diff2027)">{{ fmtDiff(WHS_AVG.diff2027) }}</td>
               </tr>
             </tfoot>
           </table>
@@ -793,6 +805,48 @@ async function loadCourseRatings(): Promise<void> {
 }
 .policy-table.pp-whs thead th.num {
   white-space: normal;
+}
+/* 375px 표 보정 (작업지시서 4-4). 가로 스크롤 대신 글자·여백을 줄이고, 넘치는 열은 숨긴다. */
+.pw-only {
+  display: block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.pw-hide {
+  display: none;
+}
+@media (min-width: 640px) {
+  .pw-only {
+    display: none;
+  }
+  .pw-hide {
+    display: table-cell;
+  }
+}
+@media (max-width: 639px) {
+  .policy-table.pp-whs {
+    font-size: 0.75rem;
+  }
+  .policy-table.pp-whs th,
+  .policy-table.pp-whs td {
+    padding: 0.3rem 0.25rem;
+  }
+  .policy-table.pp-whs thead th {
+    white-space: normal;
+    line-height: 1.25;
+  }
+  /* 성명·날짜처럼 줄바꿈하면 읽기 어려운 첫 열은 한 줄로 유지한다. */
+  .policy-table.pp-whs tbody th,
+  .policy-table.pp-whs tfoot th {
+    min-width: 4.5rem;
+    white-space: nowrap;
+  }
+  .policy-table.pp-fixed td,
+  .policy-table.pp-fixed th {
+    padding-left: 0.375rem;
+    padding-right: 0.375rem;
+  }
 }
 /* 열 폭을 colgroup 비율로 고정한다 (내용 길이에 따라 열이 쏠리지 않게). */
 .policy-table.pp-fixed {
