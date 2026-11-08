@@ -99,26 +99,39 @@ const COURSE_DIFFICULTY = [
   { name: '보고라야', par: 71, meetings: 1, rounds: 10, over: '20.1', net: '4.4', index: '−2.9', applied: '−0.7' },
 ];
 
-// WHS Handicap Index 대조 (3-9절). 차이 = Handicap Index − 2026 기준핸디.
+// WHS Handicap Index 대조. 차이 = Handicap Index − 기준핸디 (표기 시 계산).
+// std2026 은 2026 기준핸디, std2027 은 2027 산정(안) 값이다 (DB handicap_annual 과 동일).
 const WHS_ROWS = [
-  { name: '박영진', index: '11.6', std: 10, diff: '+1.6' },
-  { name: '박재현', index: '12.2', std: 11, diff: '+1.2' },
-  { name: '정인원', index: '12.3', std: 12, diff: '+0.3' },
-  { name: '서종환', index: '13.1', std: 13, diff: '+0.1' },
-  { name: '김재헌', index: '13.8', std: 14, diff: '−0.2' },
-  { name: '유영보', index: '14.9', std: 15, diff: '−0.1' },
-  { name: '장효익', index: '15.5', std: 14, diff: '+1.5' },
-  { name: '고영춘', index: '16.7', std: 17, diff: '−0.3' },
-  { name: '남정곤', index: '17.3', std: 15, diff: '+2.3' },
-  { name: '정재욱', index: '18.5', std: 18, diff: '+0.5' },
-  { name: '조학영', index: '18.5', std: 19, diff: '−0.5' },
-  { name: '정기혁', index: '20.3', std: 20, diff: '+0.3' },
-  { name: '손동현', index: '23.2', std: 24, diff: '−0.8' },
-  { name: '신승민', index: '26.2', std: 24, diff: '+2.2' },
+  { name: '박영진', index: 11.6, std2026: 10, std2027: 9 },
+  { name: '박재현', index: 12.2, std2026: 11, std2027: 11 },
+  { name: '정인원', index: 12.3, std2026: 12, std2027: 10 },
+  { name: '서종환', index: 13.1, std2026: 13, std2027: 11 },
+  { name: '김재헌', index: 13.8, std2026: 14, std2027: 12 },
+  { name: '유영보', index: 14.9, std2026: 15, std2027: 14 },
+  { name: '장효익', index: 15.5, std2026: 14, std2027: 15 },
+  { name: '고영춘', index: 16.7, std2026: 17, std2027: 16 },
+  { name: '남정곤', index: 17.3, std2026: 15, std2027: 18 },
+  { name: '정재욱', index: 18.5, std2026: 18, std2027: 21 },
+  { name: '조학영', index: 18.5, std2026: 19, std2027: 19 },
+  { name: '정기혁', index: 20.3, std2026: 20, std2027: 20 },
+  { name: '손동현', index: 23.2, std2026: 24, std2027: 24 },
+  { name: '신승민', index: 26.2, std2026: 24, std2027: 25 },
 ];
+/** Handicap Index − 기준핸디 (소수 첫째 자리). */
+function whsDiff(index: number, std: number): number {
+  return Math.round((index - std) * 10) / 10;
+}
+function fmtDiff(d: number): string {
+  if (d === 0) return '0.0';
+  return (d > 0 ? '+' : '\u2212') + Math.abs(d).toFixed(1);
+}
 /** 차이 부호별 글자색 (+ 붉은색, − 파란색). 부호 문자가 항상 함께 표시된다. */
-function diffClass(d: string): string {
-  return d.startsWith('+') ? 'pp-up' : d.startsWith('\u2212') ? 'pp-down' : '';
+function diffClass(d: number): string {
+  return d > 0 ? 'pp-up' : d < 0 ? 'pp-down' : '';
+}
+function meanAbsDiff(key: 'std2026' | 'std2027'): string {
+  const sum = WHS_ROWS.reduce((acc, r) => acc + Math.abs(whsDiff(r.index, r[key])), 0);
+  return (sum / WHS_ROWS.length).toFixed(1);
 }
 
 // 구장별 Course Rating · Slope (참고). 2027년 산정에는 미사용.
@@ -384,29 +397,33 @@ async function loadCourseRatings(): Promise<void> {
       </PolicySection>
 
       <PolicySection id="sec-whs" no="8" title="참고: WHS Handicap Index 대조">
-        <p class="policy-lead">외부 표준(WHS) 산출 결과와 유사함을 보여주는 대조 자료</p>
+        <p class="policy-lead">외부 표준(WHS) 산출 결과와 기준핸디 비교 자료</p>
         <div class="policy-table-wrap">
-          <table class="policy-table">
+          <table class="policy-table pp-whs">
             <thead>
               <tr>
                 <th scope="col">성명</th>
                 <th scope="col" class="num">Handicap Index</th>
-                <th scope="col" class="num">2026 기준핸디</th>
-                <th scope="col" class="num">차이</th>
+                <th scope="col" class="num">2026 기준</th>
+                <th scope="col" class="num">2027 기준(안)</th>
+                <th scope="col" class="num">차이 (2026)</th>
+                <th scope="col" class="num">차이 (2027안)</th>
               </tr>
             </thead>
             <tbody>
               <tr v-for="w in WHS_ROWS" :key="w.name">
                 <th scope="row">{{ w.name }}</th>
-                <td class="num">{{ w.index }}</td>
-                <td class="num">{{ w.std }}</td>
-                <td class="num" :class="diffClass(w.diff)">{{ w.diff }}</td>
+                <td class="num">{{ w.index.toFixed(1) }}</td>
+                <td class="num">{{ w.std2026 }}</td>
+                <td class="num pp-std">{{ w.std2027 }}</td>
+                <td class="num" :class="diffClass(whsDiff(w.index, w.std2026))">{{ fmtDiff(whsDiff(w.index, w.std2026)) }}</td>
+                <td class="num" :class="diffClass(whsDiff(w.index, w.std2027))">{{ fmtDiff(whsDiff(w.index, w.std2027)) }}</td>
               </tr>
             </tbody>
           </table>
         </div>
         <p class="policy-note mt-2">
-          산출 : 최근 20라운드 Score Differential 중 최저 8개 평균. 차이 열 기준 평균 절대차 약 0.9타, 순서 거의 동일
+          산출 : 최근 20라운드 Score Differential 중 최저 8개 평균. 평균 절대차 : 2026 기준 {{ meanAbsDiff('std2026') }}타, 2027 기준(안) {{ meanAbsDiff('std2027') }}타
         </p>
       </PolicySection>
 
@@ -570,6 +587,14 @@ async function loadCourseRatings(): Promise<void> {
   text-align: right;
   font-family: var(--font-mono);
   white-space: nowrap;
+}
+.policy-table.pp-whs th,
+.policy-table.pp-whs td {
+  padding-left: 0.4rem;
+  padding-right: 0.4rem;
+}
+.policy-table.pp-whs thead th.num {
+  white-space: normal;
 }
 .policy-desc-row td {
   padding-top: 0;
