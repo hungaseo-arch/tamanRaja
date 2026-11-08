@@ -310,6 +310,26 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 .pp-results td {
   padding: 0.4rem 0.5rem;
 }
+/* 열 폭 배분: 성명 열을 고정 비율로 두고 나머지 숫자 열은 균등 분할한다. */
+.pp-results {
+  table-layout: fixed;
+}
+.pp-results thead th {
+  white-space: normal;
+  vertical-align: bottom;
+  line-height: 1.3;
+}
+.pp-results thead th:first-child,
+.pp-results tbody th {
+  width: 40%;
+  text-align: left;
+}
+@media (min-width: 640px) {
+  .pp-results thead th:first-child,
+  .pp-results tbody th {
+    width: 19%;
+  }
+}
 .pp-results tbody th {
   font-weight: 600;
 }
