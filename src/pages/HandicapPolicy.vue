@@ -120,11 +120,11 @@ const LIMITS = [
 
 // 2027년 한도 적용자 5명 (한도 적용 전 → 후). 표 값은 지시서가 정본이다.
 const CAPPED_MEMBERS = [
-  { name: '서종환', before: '−2.2', after: '−2.0' },
-  { name: '남정곤', before: '+3.2', after: '+3.0' },
-  { name: '정재욱', before: '+3.7', after: '+3.0' },
-  { name: '신승민', before: '+2.3', after: '+1.0' },
-  { name: '이성남', before: '+6.1', after: '+1.0' },
+  { name: '서종환', before: '−2.17', after: '−2.00' },
+  { name: '남정곤', before: '+3.16', after: '+3.00' },
+  { name: '정재욱', before: '+3.74', after: '+3.00' },
+  { name: '신승민', before: '+2.25', after: '+1.00' },
+  { name: '이성남', before: '+6.12', after: '+1.00' },
 ];
 
 // 코스 난이도 지수 (3-7절). 산출 창: 2025-07 ~ 2026-11
@@ -371,7 +371,12 @@ async function loadCourseRatings(): Promise<void> {
       </PolicySection>
 
       <PolicySection id="sec-attend" no="5" title="참석률 반영률">
-        <p class="policy-lead">
+        <p class="policy-note mt-0">
+          <strong>참석률 분모</strong> : 2026년 중 해당 회원이 모임 명부에 등재된 횟수임. 휴면 개시 이후 모임과
+          명부 미등재 모임은 분모에서 제외함. 13명은 분모 11이며, 이성남 3(2026-04 휴면) · 박재현
+          10(2026-06-06 모임 명부 미등재)임.
+        </p>
+        <p class="policy-lead mt-3">
           <strong>변동폭의 반영률</strong> 방식 적용. 참석이 적으면 표본 부족으로 평균값을 그대로
           신뢰하기 어려움
         </p>
@@ -393,9 +398,9 @@ async function loadCourseRatings(): Promise<void> {
           </table>
         </div>
         <p class="policy-note mt-2">
-          <strong>참석률과 가중 라운드는 다른 값</strong> : 참석률은 2026년 11개 모임 기준 단순 비율, 가중 라운드는
-          2025-07 ~ 2026-11 의 17개 모임에 구간가중을 적용한 값. 예시 : 남정곤은 참석률 90.9%인데
-          가중 라운드는 8.00 (2025년 하반기 전부 불참)
+          <strong>참석률과 가중 라운드는 다른 값</strong> : 참석률은 2026년 중 명부 등재 모임 대비 비율이고, 가중 라운드는
+          2025-07 ~ 2026-11 의 17개 모임에 구간가중을 적용한 값임. 남정곤 회원이 예로, 참석률 90.9%인데
+          가중 라운드는 8.00임 (2025년 하반기 전부 불참)
         </p>
         <div class="policy-card mt-3">
           <p class="policy-card-title">표본 부족 보완 규칙</p>
@@ -436,6 +441,40 @@ async function loadCourseRatings(): Promise<void> {
             <span class="font-mono">{{ m.before }} → {{ m.after }}</span>
           </li>
         </ul>
+
+        <details class="policy-details mt-3">
+          <summary>3타 인상 2명 설명 : 남정곤 · 정재욱</summary>
+          <p class="policy-note">
+            <strong>핸디 인상은 불이익이 아니라 혜택</strong>임. 핸디가 커진다는 것은 그만큼 타수를 더 받는다는
+            뜻임.
+          </p>
+          <p class="policy-note">두 회원은 2026년 기준핸디가 실제 기량보다 낮게 묶여 있었음.</p>
+          <div class="policy-table-wrap mt-2">
+            <table class="policy-table pp-whs">
+              <thead>
+                <tr>
+                  <th scope="col">성명</th>
+                  <th scope="col" class="num">2026 기준</th>
+                  <th scope="col" class="num">가중평균 오버파</th>
+                  <th scope="col" class="num">실질 Net</th>
+                  <th scope="col" class="num">목표 6.2 대비</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><th scope="row">남정곤</th><td class="num">15</td><td class="num">23.8</td><td class="num">8.8</td><td class="num pp-up">2.6타 불리</td></tr>
+                <tr><th scope="row">정재욱</th><td class="num">18</td><td class="num">27.4</td><td class="num">9.4</td><td class="num pp-up">3.2타 불리</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="policy-note mt-2">
+            산출상 필요한 인상폭은 남정곤 +3.16 · 정재욱 +3.74 였으나 연 3타 한도로 각각 +3.00 만 적용함. 잔여분
+            0.16 · 0.74 는 2028년 산정에 자연히 이월됨.
+          </p>
+          <p class="policy-note">
+            두 회원은 Host(최하위) 가중 횟수도 각각 1.50 · 1.75 로 전 회원 중 가장 많음. 핸디 대비 고전해 왔다는
+            뜻이며 시상보정에서도 +0.56 · +0.54 가 인상 방향으로 작용함.
+          </p>
+        </details>
       </PolicySection>
 
       <PolicySection id="sec-course" no="7" title="코스 난이도 지수">
@@ -553,7 +592,7 @@ async function loadCourseRatings(): Promise<void> {
           </table>
         </div>
         <p class="policy-note mt-2">
-          산출 : 최근 20라운드 Score Differential 중 최저 8개 평균. 평균 절대차 : 2026 기준 {{ meanAbsDiff('std2026') }}타, 2027 기준(안) {{ meanAbsDiff('std2027') }}타
+          산출 : 최근 20라운드 Score Differential 중 최저 8개 평균. 평균 절대차 : 2026 기준 {{ meanAbsDiff('std2026') }}타, 2027 기준(안) {{ meanAbsDiff('std2027') }}타. {{ meanAbsDiff('std2026') }}타는 위 표의 활동회원 14명 기준이며, 휴면 3명(허우석 · 남경훈 · 이성남)을 포함하면 1.1타가 됨. 화면에는 표에 실린 14명으로 계산한 값을 표시함
         </p>
       </PolicySection>
 
@@ -564,11 +603,29 @@ async function loadCourseRatings(): Promise<void> {
             조별 금회적용 핸디 ±1 규칙 현행 유지 (1등조 −1 / 2등조 +1). 본 기준은 연 1회 기준핸디 산정에만 적용
           </li>
           <li>손동현 · 신승민 : 2027년 상반기 성적 기준 7월 중간 재산정 검토</li>
-          <li>이성남 : 휴면 중. 복귀 후 3회 참석 시 재산정</li>
+          <li>이성남 : 휴면 중. 복귀 후 3회 참석 시 재산정 (아래 안내문 참조)</li>
           <li>
             2028년부터 정식 WHS Handicap Index 전환 목표. 2027년 1월 모임부터 홀별 스코어 기록 필요
           </li>
         </ul>
+
+        <div class="policy-card mt-3">
+          <p class="policy-card-title">이성남 회원 안내</p>
+          <p class="policy-note m-0">
+            이성남 회원은 2026년 4월부터 휴면 상태임. 2026년 참석은 1 ~ 3월 중 2회뿐이며 가중 라운드는 2.00 임.
+          </p>
+          <p class="policy-note">
+            산출상 인상폭은 <strong>+6.12</strong> 였으나 가중 라운드 3.00 미만이므로 표본 부족 규칙에 따라
+            <strong>+1.00</strong> 만 적용해 27 로 산정함. 2회 기록만으로 6타를 올리는 것은 근거가 약하기 때문임.
+          </p>
+          <p class="policy-note">
+            이 값은 <strong>복귀 전까지 적용되지 않는 참고값</strong>임. 실제 적용은 복귀한 라운드부터이며, 복귀 후 3회
+            참석 시점에 그간 성적으로 다시 산정함.
+          </p>
+          <p class="policy-note">
+            표에서 빼지 않고 남겨 둔 이유는 복귀 시 시작 핸디를 미리 알 수 있게 하기 위함임.
+          </p>
+        </div>
       </PolicySection>
     </div>
   </div>
