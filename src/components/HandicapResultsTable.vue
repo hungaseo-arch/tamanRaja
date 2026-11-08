@@ -152,16 +152,16 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 
 <template>
   <div>
-    <p v-if="loading" class="policy-note" role="status">산정결과를 불러오는 중...</p>
+    <p v-if="loading" class="policy-note" role="status">산정결과 불러오는 중</p>
     <p v-else-if="error" class="policy-note" role="alert">
-      산정결과 불러오기 실패: {{ error }}
+      산정결과 불러오기 실패 : {{ error }}
       <button type="button" class="policy-link" @click="load">다시 시도</button>
     </p>
-    <p v-else-if="rows.length === 0" class="policy-note">표시할 산정결과가 없습니다.</p>
+    <p v-else-if="rows.length === 0" class="policy-note">표시할 산정결과 없음</p>
 
     <template v-else>
       <p class="policy-note mt-0 mb-2">
-        행을 누르면 산정 근거(구간별 평균·가중합·시상보정·산출핸디 등)가 펼쳐집니다. 열 제목을 누르면 정렬이 바뀝니다.
+        행 선택 시 산정 근거(구간별 평균·가중합·시상보정·산출핸디 등) 표시. 열 제목 선택 시 정렬 변경
       </p>
       <div class="policy-table-wrap">
         <table class="policy-table pp-results">
@@ -223,7 +223,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                     <div><dt>가중합</dt><dd>{{ fmt(r.w_sum, 2) }}</dd></div>
                     <div><dt>시상보정</dt><dd>{{ fmtSigned2(r.award_adj) }}</dd></div>
                     <div><dt>산출핸디</dt><dd>{{ fmt(r.calc_hc) }}</dd></div>
-                    <div><dt>참석률 반영률</dt><dd>{{ r.apply_rate === null ? '—' : Math.round(r.apply_rate * 100) + '%' }}</dd></div>
+                    <div><dt>참석률 반영률</dt><dd>{{ r.apply_rate === null ? '—' : (r.apply_rate * 100).toFixed(1) + '%' }}</dd></div>
                     <div>
                       <dt>한도 적용 전 증감</dt>
                       <dd :class="deltaClass(r.raw_delta)">{{ fmtSigned(r.raw_delta) }}</dd>
@@ -234,7 +234,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                     </div>
                   </dl>
                   <p v-if="r.capped" class="pp-detail-note pp-up">
-                    한도 적용: 한도 적용 전 {{ fmtSigned(r.raw_delta) }} → 적용 후 {{ fmtSigned(r.final_delta) }}
+                    한도 적용 : 적용 전 {{ fmtSigned(r.raw_delta) }} → 적용 후 {{ fmtSigned(r.final_delta) }}
                   </p>
                   <p v-if="r.note" class="pp-detail-note">
                     <span v-if="r.low_sample" class="pp-up">표본 부족 · </span>{{ r.note }}

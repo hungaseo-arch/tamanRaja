@@ -16,46 +16,46 @@ const FORMULA_STEPS = [
     no: '①',
     name: '라운드별 보정 오버파',
     formula: '실오버파 − 해당 구장 난이도 가중적용치',
-    note: '실오버파는 총타수 − 해당 구장 Par 입니다. Par 71 구장은 +1 보정합니다.',
+    note: '실오버파 : 총타수 − 해당 구장 Par. Par 71 구장은 +1 보정',
   },
   {
     no: '②',
     name: '가중평균',
     formula: 'Σ(보정 오버파 × 구간가중) ÷ Σ(구간가중)',
-    note: '최근 라운드일수록 무겁게 반영한 평균입니다. 구간별 가중은 아래 2번 섹션에 있습니다.',
+    note: '최근 라운드일수록 가중을 높게 반영한 평균. 구간별 가중은 3번 섹션 참조',
   },
   {
     no: '③',
     name: '시상보정',
     formula: '(−0.5×W + −0.25×M + +0.5×H) × 6 ÷ Σ구간가중   ※ ±1.0 한도',
-    note: 'W·M·H 는 Winner·Medalist·Host 횟수입니다. 시상 횟수에도 구간가중을 곱합니다.',
+    note: 'W·M·H : Winner·Medalist·Host 횟수. 시상 횟수에도 구간가중 적용',
   },
   {
     no: '④',
     name: '산출핸디',
     formula: '가중평균 − 6.2 + 시상보정',
-    note: '6.2 는 모임 전체 핸디 총합이 2026년과 같아지도록 맞춘 기준점입니다. 회원별 (가중평균 − 현재 핸디) 의 평균값입니다.',
+    note: '6.2 : 모임 전체 핸디 총합을 2026년과 동일하게 맞추는 기준점. 회원별 (가중평균 − 현재 핸디)의 평균값',
   },
   {
     no: '⑤',
     name: '증감',
     formula: '(산출핸디 − 2026년 기준핸디) × 참석률 반영률',
-    note: '참석이 적으면 변동폭을 줄여 반영합니다. 반영률은 4번 섹션에 있습니다.',
+    note: '참석이 적으면 변동폭 축소 반영. 반영률은 5번 섹션 참조',
   },
   {
     no: '⑥',
     name: '2027년 기준핸디',
     formula: '2026년 기준핸디 + 증감   ※ −2 ~ +3 한도, 0.5는 올림',
-    note: '0.5 는 올림: 경계값은 회원에게 유리한 쪽(핸디가 큰 쪽)으로 처리합니다.',
+    note: '0.5 올림 : 경계값은 회원에게 유리한 쪽(핸디가 큰 쪽)으로 처리',
   },
 ];
 
 // 구간 가중 (3-3절)
 const WEIGHT_BANDS = [
-  { band: 'A', period: '2026-06 ~ 2026-11', weight: '100%', desc: '최근 6개월. 현재 기량을 가장 무겁게 반영합니다.' },
-  { band: 'B', period: '2026-01 ~ 2026-05', weight: '50%', desc: '당해년 전반. 한 시즌 전체 흐름을 보완합니다.' },
-  { band: 'C', period: '2025-07 ~ 2025-12', weight: '25%', desc: '전년 하반기. 장기 추세를 확인합니다.' },
-  { band: '—', period: '2025-06 이전', weight: '0%', desc: '미반영. 2년 전 성적까지 끌면 핸디가 현재를 따라가지 못합니다.' },
+  { band: 'A', period: '2026-06 ~ 2026-11', weight: '100.0%', desc: '최근 6개월. 현재 기량을 가장 높게 반영' },
+  { band: 'B', period: '2026-01 ~ 2026-05', weight: '50.0%', desc: '당해년 전반. 한 시즌 전체 흐름 보완' },
+  { band: 'C', period: '2025-07 ~ 2025-12', weight: '25.0%', desc: '전년 하반기. 장기 추세 확인' },
+  { band: '—', period: '2025-06 이전', weight: '0.0%', desc: '미반영. 2년 전 성적까지 포함하면 핸디가 현재 기량을 반영하지 못함' },
 ];
 
 // 시상 가중치 (3-4절)
@@ -67,15 +67,15 @@ const AWARDS = [
 
 // 참석률 반영률 (3-5절)
 const ATTEND_RATES = [
-  { range: '80% 이상', rate: '100%' },
-  { range: '50 ~ 80%', rate: '70%' },
-  { range: '50% 미만', rate: '50%' },
+  { range: '80.0% 이상', rate: '100.0%' },
+  { range: '50.0 ~ 80.0%', rate: '70.0%' },
+  { range: '50.0% 미만', rate: '50.0%' },
 ];
 
 // 증감 한도 (3-6절)
 const LIMITS = [
-  { kind: '인하 (핸디↓, 불리)', limit: '연 2타', reason: '한 해 성적만으로 급히 깎으면 다음 해 부담이 과도함' },
-  { kind: '인상 (핸디↑, 유리)', limit: '연 3타', reason: '연령·건강 변화는 빠르게 반영해야 계속 참여할 수 있음' },
+  { kind: '인하 (핸디↓, 불리)', limit: '연 2타', reason: '한 해 성적만으로 급하게 낮추면 다음 해 부담 과다' },
+  { kind: '인상 (핸디↑, 유리)', limit: '연 3타', reason: '연령·건강 변화를 빠르게 반영해야 지속 참여 가능' },
   { kind: '표본 부족 시', limit: '±1타', reason: '가중합 3.0 미만' },
 ];
 
@@ -121,7 +121,7 @@ function diffClass(d: string): string {
   return d.startsWith('+') ? 'pp-up' : d.startsWith('\u2212') ? 'pp-down' : '';
 }
 
-// 구장별 Course Rating · Slope (참고). 2027년 산정에는 쓰지 않는다.
+// 구장별 Course Rating · Slope (참고). 2027년 산정에는 미사용.
 interface CourseRating {
   id: number;
   name: string;
@@ -167,8 +167,8 @@ async function loadCourseRatings(): Promise<void> {
           2027년 적용(안) · 2026-11-08 기준 · 회원 확정 전
         </p>
         <p class="text-sm leading-relaxed">
-          이 페이지는 2027년 기준핸디를 어떻게 정했는지, 회원별 숫자가 어떻게 나왔는지를 공개하는
-          설명 자료입니다. 내용은 <strong>확정 전 안(案)</strong>이며 회원 확정 전에는 바뀔 수 있습니다.
+          2027년 기준핸디 산정 방식과 회원별 산출 근거 공개 자료. 내용은 <strong>확정 전 안(案)</strong>이며
+          회원 확정 전 변경 가능
         </p>
       </header>
 
@@ -177,7 +177,7 @@ async function loadCourseRatings(): Promise<void> {
       </PolicySection>
 
       <PolicySection id="sec-formula" no="2" title="산정 산식" default-open>
-        <p class="policy-lead">기준핸디는 아래 6단계로 계산합니다. 숫자를 순서대로 따라가면 본인 결과를 직접 확인할 수 있습니다.</p>
+        <p class="policy-lead">기준핸디 산출 6단계. 순서대로 대입하면 본인 결과 직접 확인 가능</p>
         <ol class="space-y-2 list-none p-0 m-0">
           <li v-for="step in FORMULA_STEPS" :key="step.no" class="policy-card">
             <p class="policy-card-title"><span class="policy-step-no" aria-hidden="true">{{ step.no }}</span>{{ step.name }}</p>
@@ -188,7 +188,7 @@ async function loadCourseRatings(): Promise<void> {
       </PolicySection>
 
       <PolicySection id="sec-weights" no="3" title="구간 가중">
-        <p class="policy-lead">라운드가 최근일수록 무겁게, 오래될수록 가볍게 반영합니다.</p>
+        <p class="policy-lead">최근 라운드일수록 가중 상향, 오래된 라운드일수록 가중 하향</p>
         <div class="policy-table-wrap">
           <table class="policy-table">
             <thead>
@@ -213,8 +213,8 @@ async function loadCourseRatings(): Promise<void> {
           </table>
         </div>
         <p class="policy-note mt-2">
-          최근 6개월 비중이 전체의 60% 이상을 차지하므로 최근 기량이 여전히 결과를 주도합니다.
-          예시로 정기혁님은 가중합 9.50 중 6.00(63.2%)이 최근 6개월분입니다.
+          최근 6개월 비중이 전체의 60.0% 이상으로 최근 기량 중심 결과.
+          예시 : 정기혁 가중합 9.50 중 6.00(63.2%)이 최근 6개월분
         </p>
       </PolicySection>
 
@@ -238,15 +238,15 @@ async function loadCourseRatings(): Promise<void> {
           </table>
         </div>
         <ul class="policy-list">
-          <li>시상 횟수에도 구간가중을 곱합니다. 최근 Winner 가 1년 반 전 Winner 보다 4배 무겁게 반영됩니다.</li>
-          <li>6라운드 상당으로 환산한 뒤 ±1.0타 한도로 절사합니다.</li>
+          <li>시상 횟수에도 구간가중 적용. 최근 Winner가 1년 반 전 Winner보다 4배 높게 반영</li>
+          <li>6라운드 기준으로 환산 후 ±1.0타 한도 적용</li>
         </ul>
       </PolicySection>
 
       <PolicySection id="sec-attend" no="5" title="참석률 반영률">
         <p class="policy-lead">
-          평균값이 아니라 <strong>변동폭의 반영률</strong>로 적용합니다. 참석이 적으면 표본이 부족해
-          평균을 그대로 신뢰하기 어렵기 때문입니다.
+          <strong>변동폭의 반영률</strong> 방식 적용. 참석이 적으면 표본 부족으로 평균값을 그대로
+          신뢰하기 어려움
         </p>
         <div class="policy-table-wrap">
           <table class="policy-table">
@@ -267,9 +267,8 @@ async function loadCourseRatings(): Promise<void> {
         <div class="policy-card mt-3">
           <p class="policy-card-title">표본 부족 보완 규칙</p>
           <p class="policy-note m-0">
-            가중합이 3.0 미만이면 실질 3라운드에 미달하므로 변동 한도를 ±1타로 좁힙니다. WHS 최소 산정
-            요건과 같은 기준입니다. 동결하지 않는 이유는 핸디가 실제 기량과 크게 벌어진 신규·복귀
-            회원을 방치하지 않기 위함입니다.
+            가중합 3.0 미만은 실질 3라운드 미달로 변동 한도를 ±1타로 축소. WHS 최소 산정 요건과 동일 기준.
+            동결하지 않는 이유는 실제 기량과 핸디 차이가 큰 신규·복귀 회원 방치 방지
           </p>
         </div>
       </PolicySection>
@@ -297,7 +296,7 @@ async function loadCourseRatings(): Promise<void> {
           </table>
         </div>
         <p class="policy-note mt-2">
-          한도에 걸려 잘린 잔여분은 2028년 산정에 자연히 이월됩니다. 2027년 한도 적용자는 아래 5명입니다.
+          한도 초과분은 2028년 산정에 이월. 2027년 한도 적용자 5명
         </p>
         <ul class="policy-list">
           <li v-for="m in CAPPED_MEMBERS" :key="m.name">
@@ -310,12 +309,12 @@ async function loadCourseRatings(): Promise<void> {
 
       <PolicySection id="sec-course" no="7" title="코스 난이도 지수">
         <p class="policy-lead">
-          같은 회원들이 같은 핸디로 쳤는데 특정 구장에서 Net 이 높게 나오면 그 구장이 어려운 것입니다.
-          WHS 의 PCC 와 원리가 같습니다.
+          동일 회원·동일 핸디 조건에서 특정 구장 Net이 높으면 난이도 높은 구장으로 판단.
+          WHS의 PCC와 동일 원리
         </p>
         <pre class="policy-formula">난이도지수 = 해당 구장 평균 Net − 전체 평균 Net
 가중적용치 = 난이도지수 × (모임 수 ÷ 4, 최대 1.0)   ※ 표본 적은 구장은 영향 축소</pre>
-        <p class="policy-note">산출 창: 2025-07 ~ 2026-11</p>
+        <p class="policy-note">산출 창 : 2025-07 ~ 2026-11</p>
         <div class="policy-table-wrap mt-2">
           <table class="policy-table">
             <thead>
@@ -342,18 +341,17 @@ async function loadCourseRatings(): Promise<void> {
           </table>
         </div>
         <p class="policy-note mt-2">
-          구눙굴리스에서만 많이 친 회원과 리버사이드에서만 친 회원의 점수를 그대로 비교하면 2.2타 차이가
-          생깁니다. 이를 상쇄하는 장치입니다.
+          구눙굴리스 위주 회원과 리버사이드 위주 회원의 점수를 그대로 비교하면 2.2타 차이 발생. 이를 상쇄하는 장치
         </p>
 
         <details class="policy-details mt-3">
           <summary>참고: 구장별 Course Rating · Slope</summary>
           <p class="policy-note">
-            2027년 산정에는 쓰지 않습니다. 2028년 WHS 전환에 대비해 수집한 값입니다.
+            2027년 산정 미사용. 2028년 WHS 전환 대비 수집값
           </p>
-          <p v-if="courseRatingsLoading" class="policy-note" role="status">불러오는 중...</p>
+          <p v-if="courseRatingsLoading" class="policy-note" role="status">불러오는 중</p>
           <p v-else-if="courseRatingsError" class="policy-note" role="alert">
-            불러오기 실패: {{ courseRatingsError }}
+            불러오기 실패 : {{ courseRatingsError }}
             <button type="button" class="policy-link" @click="loadCourseRatings">다시 시도</button>
           </p>
           <div v-else class="policy-table-wrap">
@@ -386,7 +384,7 @@ async function loadCourseRatings(): Promise<void> {
       </PolicySection>
 
       <PolicySection id="sec-whs" no="8" title="참고: WHS Handicap Index 대조">
-        <p class="policy-lead">외부 표준(WHS)으로 계산해도 비슷한 결과가 나온다는 대조 자료입니다.</p>
+        <p class="policy-lead">외부 표준(WHS) 산출 결과와 유사함을 보여주는 대조 자료</p>
         <div class="policy-table-wrap">
           <table class="policy-table">
             <thead>
@@ -408,23 +406,20 @@ async function loadCourseRatings(): Promise<void> {
           </table>
         </div>
         <p class="policy-note mt-2">
-          산출: 최근 20라운드 Score Differential 중 최저 8개 평균. 표의 차이 열 기준 평균 절대차는 약
-          0.9타이며, 순서도 거의 같습니다.
+          산출 : 최근 20라운드 Score Differential 중 최저 8개 평균. 차이 열 기준 평균 절대차 약 0.9타, 순서 거의 동일
         </p>
       </PolicySection>
 
       <PolicySection id="sec-schedule" no="9" title="적용 일정 · 유의사항">
         <ul class="policy-list policy-list-first">
-          <li>2027년 1월 모임부터 적용합니다.</li>
+          <li>2027년 1월 모임부터 적용</li>
           <li>
-            조별 금회적용 핸디 ±1 규칙은 현행 유지합니다 (1등조 −1 / 2등조 +1). 본 기준은 연 1회
-            기준핸디 산정에만 적용합니다.
+            조별 금회적용 핸디 ±1 규칙 현행 유지 (1등조 −1 / 2등조 +1). 본 기준은 연 1회 기준핸디 산정에만 적용
           </li>
-          <li>손동현 · 신승민: 2027년 상반기 성적으로 7월 중간 재산정을 검토합니다.</li>
-          <li>이성남: 휴면 중. 복귀 후 3회 참석 시 재산정합니다.</li>
+          <li>손동현 · 신승민 : 2027년 상반기 성적 기준 7월 중간 재산정 검토</li>
+          <li>이성남 : 휴면 중. 복귀 후 3회 참석 시 재산정</li>
           <li>
-            2028년부터 정식 WHS Handicap Index 전환을 목표로 합니다. 2027년 1월 모임부터 홀별 스코어
-            기록으로 전환이 필요합니다.
+            2028년부터 정식 WHS Handicap Index 전환 목표. 2027년 1월 모임부터 홀별 스코어 기록 필요
           </li>
         </ul>
       </PolicySection>
