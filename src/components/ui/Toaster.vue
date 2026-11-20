@@ -12,7 +12,7 @@ const { toasts, dismiss } = useToast();
          떠 있어야 하므로 v-if 로 감싸지 말 것 — 나중에 생긴 라이브 영역은
          브라우저가 무시한다. (P2-1) -->
     <div
-      class="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom)+1rem)] right-4 sm:bottom-4 z-60 flex w-full max-w-sm flex-col gap-2"
+      class="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom)+1rem)] right-4 lg:bottom-4 z-60 flex w-full max-w-sm flex-col gap-2"
       role="status"
       aria-live="polite"
       aria-atomic="false"
