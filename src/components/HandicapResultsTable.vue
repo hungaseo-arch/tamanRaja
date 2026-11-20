@@ -340,13 +340,13 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
         </p>
         <div v-if="isAdmin" class="pp-edit-bar">
           <template v-if="!editing">
-            <Button variant="outline" size="xs" @click="startEdit()">인간미 수정</Button>
+            <Button variant="outline" size="xs" class="h-9 px-2.5 text-xs sm:h-8" @click="startEdit()">인간미 수정</Button>
           </template>
           <template v-else>
-            <Button size="xs" :disabled="saving || hasInvalid || changed.length === 0" @click="requestSave">
+            <Button size="xs" class="h-9 px-2.5 text-xs sm:h-8" :disabled="saving || hasInvalid || changed.length === 0" @click="requestSave">
               {{ saving ? '저장 중' : `저장${changed.length ? ` (${changed.length}건)` : ''}` }}
             </Button>
-            <Button variant="outline" size="xs" :disabled="saving" @click="cancelEdit">취소</Button>
+            <Button variant="outline" size="xs" class="h-9 px-2.5 text-xs sm:h-8" :disabled="saving" @click="cancelEdit">취소</Button>
             <span v-if="hasInvalid" class="pp-edit-msg pp-up" role="alert">인간미는 −2 ~ +2 사이 정수만 입력 가능</span>
           </template>
         </div>
