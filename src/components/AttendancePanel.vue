@@ -91,7 +91,8 @@ function handleSubmit(e: Event): void {
       </div>
     </div>
     <div v-else class="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground text-center">
-      핸디캡 정보 없음
+      <p class="m-0">핸디캡 정보 없음</p>
+      <p class="m-0 mt-1 text-sm">직전 달 핸디캡이 등록되면 표시</p>
     </div>
 
     <!-- 참석 / 미정 / 불참 선택 -->

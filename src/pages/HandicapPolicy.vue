@@ -782,6 +782,12 @@ async function loadCourseRatings(): Promise<void> {
   border-radius: 0.375rem;
   overflow: hidden;
 }
+/* 좁은 화면 글자를 14px 로 올리면 6열 표가 폭을 넘을 수 있다. 잘리지 않고 가로로 밀리게 한다 (화면 전용). */
+@media (max-width: 639px) {
+  .policy-table-wrap {
+    overflow-x: auto;
+  }
+}
 .policy-table {
   width: 100%;
   border-collapse: collapse;
@@ -821,7 +827,7 @@ async function loadCourseRatings(): Promise<void> {
 /* 375px 표 보정 (작업지시서 4-4). 가로 스크롤 대신 글자·여백을 줄이고, 넘치는 열은 숨긴다. */
 .pw-only {
   display: block;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.2;
 }
@@ -838,7 +844,7 @@ async function loadCourseRatings(): Promise<void> {
 }
 @media (max-width: 639px) {
   .policy-table.pp-whs {
-    font-size: 0.75rem;
+    font-size: 0.875rem;
   }
   .policy-table.pp-whs th,
   .policy-table.pp-whs td {
@@ -943,7 +949,7 @@ async function loadCourseRatings(): Promise<void> {
   border: 1px solid var(--pp-up);
   border-radius: 0.25rem;
   color: var(--pp-up);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 700;
 }
 .policy-details {

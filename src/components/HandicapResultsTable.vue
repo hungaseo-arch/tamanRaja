@@ -5,6 +5,8 @@ import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/composables/useToast';
 import { describeError } from '@/lib/errors';
 import { cn } from '@/lib/utils';
+import AsyncState from '@/components/ui/AsyncState.vue';
+import Dialog from '@/components/ui/Dialog.vue';
 import RowDetailDialog from '@/components/ui/RowDetailDialog.vue';
 import DetailItem from '@/components/ui/DetailItem.vue';
 import Button from '@/components/ui/Button.vue';
@@ -265,6 +267,29 @@ function cancelEdit(): void {
   editing.value = false;
   draft.value = {};
 }
+// 저장 버튼은 바로 보내지 않고 변경 건수와 이름을 보여 주는 확인 창을 먼저 연다.
+// 인간미는 연말 기준핸디 제안에 바로 더해지므로 잘못 누른 저장을 한 번 걸러 준다.
+const confirmOpen = ref(false);
+function requestSave(): void {
+  if (hasInvalid.value || changed.value.length === 0 || saving.value) return;
+  confirmOpen.value = true;
+}
+/** 확인 창 목록: 이름과 기존 값 → 새 값. 서버 판단값(제안 등)은 여기서 계산하지 않는다. */
+const confirmItems = computed(() =>
+  changed.value.map((r) => {
+    const next = parseHumanity(draft.value[r.member_id] ?? '');
+    return {
+      id: r.member_id,
+      name: r.member_name,
+      from: r.humanity == null ? '미입력' : fmtSignedInt(r.humanity),
+      to: next === null ? '지움' : fmtSignedInt(next),
+    };
+  }),
+);
+async function confirmSave(): Promise<void> {
+  confirmOpen.value = false;
+  await saveEdit();
+}
 async function saveEdit(): Promise<void> {
   if (hasInvalid.value || changed.value.length === 0 || saving.value) return;
   saving.value = true;
@@ -301,14 +326,17 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 
 <template>
   <div>
-    <p v-if="loading" class="policy-note" role="status">산정결과 불러오는 중</p>
-    <p v-else-if="error" class="policy-note" role="alert">
-      산정결과 불러오기 실패 : {{ error }}
-      <button type="button" class="policy-link" @click="load">다시 시도</button>
-    </p>
-    <p v-else-if="rows.length === 0" class="policy-note">표시할 산정결과 없음</p>
-
-    <template v-else>
+    <!-- 불러오는 중·실패·빈 상태는 다른 화면과 같은 AsyncState 로 그린다 (골격 · 다시 시도). -->
+    <AsyncState
+      :loading="loading"
+      :error="error"
+      :empty="rows.length === 0"
+      label="산정결과"
+      :skeleton-rows="8"
+      empty-title="표시할 산정결과 없음"
+      empty-hint="2027 산정결과가 등록되면 표시 · 관리자에게 문의"
+      @retry="load"
+    >
       <p class="policy-note mt-0 mb-2">
         성명 선택 시 산정 근거(구간별 평균·가중 라운드·시상보정·산출핸디 등) 창 표시. 열 제목 선택 시 정렬 변경
       </p>
@@ -317,7 +345,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
           <Button variant="outline" size="xs" @click="startEdit()">인간미 수정</Button>
         </template>
         <template v-else>
-          <Button size="xs" :disabled="saving || hasInvalid || changed.length === 0" @click="saveEdit">
+          <Button size="xs" :disabled="saving || hasInvalid || changed.length === 0" @click="requestSave">
             {{ saving ? '저장 중' : `저장${changed.length ? ` (${changed.length}건)` : ''}` }}
           </Button>
           <Button variant="outline" size="xs" :disabled="saving" @click="cancelEdit">취소</Button>
@@ -372,7 +400,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                     step="1"
                     :ariaLabel="`${r.member_name} 인간미 (${HUMANITY_MIN} ~ +${HUMANITY_MAX})`"
                     :ariaInvalid="isInvalid(r)"
-                    @keydown.enter.prevent="saveEdit"
+                    @keydown.enter.prevent="requestSave"
                   />
                   <button
                     v-else-if="isAdmin"
@@ -448,7 +476,24 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
           </tbody>
         </table>
       </div>
-    </template>
+    </AsyncState>
+
+    <Dialog v-model:open="confirmOpen" label="인간미 저장 확인" content-class="sm:max-w-sm">
+      <div class="space-y-3 px-1 pt-1">
+        <h2 class="text-base font-bold m-0">인간미 {{ confirmItems.length }}건 저장</h2>
+        <p class="text-sm text-muted-foreground m-0">아래 회원의 인간미를 저장 · 저장 후 서버 값으로 다시 표시</p>
+        <ul class="m-0 max-h-60 list-none space-y-1 overflow-y-auto p-0 text-sm">
+          <li v-for="it in confirmItems" :key="it.id" class="flex justify-between gap-3 border-b border-border py-1.5">
+            <span class="font-medium">{{ it.name }}</span>
+            <span class="font-mono">{{ it.from }} → {{ it.to }}</span>
+          </li>
+        </ul>
+        <div class="flex justify-end gap-2 pt-1">
+          <Button variant="outline" @click="confirmOpen = false">취소</Button>
+          <Button :disabled="saving" @click="confirmSave">저장</Button>
+        </div>
+      </div>
+    </Dialog>
 
     <RowDetailDialog v-model:open="dialogOpen" :title="selected?.member_name ?? ''" subtitle="2027 기준핸디 산정결과 (안)">
       <template v-if="selected">
