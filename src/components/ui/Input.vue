@@ -11,6 +11,9 @@ interface Props {
   maxlength?: number;
   min?: number | string;
   max?: number | string;
+  step?: number | string;
+  ariaLabel?: string;
+  ariaInvalid?: boolean;
   readonly?: boolean;
   disabled?: boolean;
   required?: boolean;
@@ -24,6 +27,8 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
+  // Enter 로 저장하는 입력 칸처럼 키 입력을 받아야 하는 곳이 쓴다.
+  (e: 'keydown', event: KeyboardEvent): void;
 }>();
 
 function onInput(event: Event): void {
@@ -43,6 +48,9 @@ function onInput(event: Event): void {
     :maxlength="maxlength"
     :min="min"
     :max="max"
+    :step="step"
+    :aria-label="ariaLabel"
+    :aria-invalid="ariaInvalid"
     :readonly="readonly"
     :disabled="disabled"
     :required="required"
@@ -51,5 +59,6 @@ function onInput(event: Event): void {
       props.class
     )"
     @input="onInput"
+    @keydown="emit('keydown', $event)"
   />
 </template>

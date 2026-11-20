@@ -4,8 +4,11 @@ import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/composables/useToast';
 import { describeError } from '@/lib/errors';
+import { cn } from '@/lib/utils';
 import RowDetailDialog from '@/components/ui/RowDetailDialog.vue';
 import DetailItem from '@/components/ui/DetailItem.vue';
+import Button from '@/components/ui/Button.vue';
+import Input from '@/components/ui/Input.vue';
 
 // 회원별 2027 기준핸디 산정결과(안). v_handicap_annual 에서 year=2027 을 읽는다.
 // 값은 DB 에 적재된 그대로 보여 주고 화면에서 다시 계산하지 않는다.
@@ -311,13 +314,13 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
       </p>
       <div v-if="isAdmin" class="pp-edit-bar">
         <template v-if="!editing">
-          <button type="button" class="pp-btn" @click="startEdit()">인간미 수정</button>
+          <Button variant="outline" size="xs" @click="startEdit()">인간미 수정</Button>
         </template>
         <template v-else>
-          <button type="button" class="pp-btn pp-btn-primary" :disabled="saving || hasInvalid || changed.length === 0" @click="saveEdit">
+          <Button size="xs" :disabled="saving || hasInvalid || changed.length === 0" @click="saveEdit">
             {{ saving ? '저장 중' : `저장${changed.length ? ` (${changed.length}건)` : ''}` }}
-          </button>
-          <button type="button" class="pp-btn" :disabled="saving" @click="cancelEdit">취소</button>
+          </Button>
+          <Button variant="outline" size="xs" :disabled="saving" @click="cancelEdit">취소</Button>
           <span v-if="hasInvalid" class="pp-edit-msg pp-up" role="alert">인간미는 −2 ~ +2 사이 정수만 입력 가능</span>
         </template>
       </div>
@@ -361,18 +364,18 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                 <td class="num pp-hide-sm">{{ r.prev_std_hc ?? '—' }}</td>
                 <td class="num pp-std">{{ r.std_hc }}</td>
                 <td class="num pp-hum" :class="deltaClass(humanityOf(r) || null)">
-                  <input
+                  <!-- ui/Input 은 문자열을 내보낸다. parseHumanity 가 String(raw ?? '') 로 읽으므로 그대로 받는다. -->
+                  <Input
                     v-if="editing"
                     v-model="draft[r.member_id]"
                     type="number"
-                    class="pp-hum-input"
                     :id="`hum-${r.member_id}`"
-                    :class="{ 'pp-hum-invalid': isInvalid(r) }"
+                    :class="cn('mx-auto h-8 w-12 sm:w-14 px-1 text-center', isInvalid(r) && 'border-destructive bg-destructive/10')"
                     :min="HUMANITY_MIN"
                     :max="HUMANITY_MAX"
                     step="1"
-                    :aria-label="`${r.member_name} 인간미 (${HUMANITY_MIN} ~ +${HUMANITY_MAX})`"
-                    :aria-invalid="isInvalid(r)"
+                    :ariaLabel="`${r.member_name} 인간미 (${HUMANITY_MIN} ~ +${HUMANITY_MAX})`"
+                    :ariaInvalid="isInvalid(r)"
                     @keydown.enter.prevent="saveEdit"
                   />
                   <button
@@ -549,9 +552,6 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
     padding-left: 0.25rem;
     padding-right: 0.25rem;
   }
-  .pp-hum-input {
-    width: 3rem;
-  }
   /* 머리글은 고정폭 숫자 글꼴이라 넓다. 좁은 화면에서만 줄여 셀 안에 넣는다. */
   .pp-results thead th {
     font-size: 0.6875rem;
@@ -573,46 +573,10 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   font-size: 0.75rem;
   font-weight: 600;
 }
-.pp-btn {
-  padding: 0.3rem 0.75rem;
-  border: 1px solid var(--pp-border, #d1d5db);
-  border-radius: 0.375rem;
-  background: transparent;
-  font: inherit;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.pp-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.pp-btn-primary {
-  background: #15803d;
-  border-color: #15803d;
-  color: #fff;
-}
-.pp-btn:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 2px;
-}
-.pp-hum-input {
-  width: 3.5rem;
-  padding: 0.15rem 0.25rem;
-  border: 1px solid var(--pp-border, #d1d5db);
-  border-radius: 0.25rem;
-  background: #fff;
-  font: inherit;
-  text-align: center;
-}
-.pp-hum-input:focus-visible {
-  outline: 2px solid var(--ring);
-  outline-offset: 1px;
-}
 .pp-hum-cell {
   min-width: 2.5rem;
   padding: 0.15rem 0.35rem;
-  border: 1px dashed var(--pp-border, #d1d5db);
+  border: 1px dashed var(--pp-border, var(--border));
   border-radius: 0.25rem;
   background: transparent;
   color: inherit;
@@ -622,16 +586,12 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 .pp-hum-cell:hover,
 .pp-hum-cell:focus-visible {
   border-style: solid;
-  border-color: #15803d;
-}
-.pp-hum-invalid {
-  border-color: #dc2626;
-  background: #fef2f2;
+  border-color: var(--primary);
 }
 .pp-dormant {
   cursor: help;
-  border-color: var(--muted-foreground, #6b7280);
-  color: var(--muted-foreground, #6b7280);
+  border-color: var(--muted-foreground);
+  color: var(--muted-foreground);
 }
 @media (min-width: 640px) {
   .pp-results thead th:first-child,
@@ -688,7 +648,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   margin-top: 0.125rem;
   font-size: 0.6875rem;
   font-weight: 400;
-  color: var(--muted-foreground, #6b7280);
+  color: var(--muted-foreground);
 }
 .pp-note-text {
   display: block;
