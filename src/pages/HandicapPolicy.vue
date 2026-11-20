@@ -486,28 +486,33 @@ async function loadCourseRatings(): Promise<void> {
 가중적용치 = 난이도지수 × (모임 수 ÷ 4, 최대 1.0)   ※ 표본 적은 구장은 영향 축소</pre>
         <p class="policy-note">산출 창 : 2025-07 ~ 2026-11</p>
         <div class="policy-table-wrap mt-2">
-          <table class="policy-table pp-fixed pp-center-all">
-            <colgroup><col style="width:34%" /><col style="width:33%" /><col style="width:33%" /></colgroup>
+          <table class="policy-table pp-fixed pp-center-all pp-course">
             <thead>
               <tr>
-                <th scope="col">구장</th>
-                <th scope="col" class="num">난이도지수</th>
-                <th scope="col" class="num">가중적용치</th>
+                <th scope="col" class="pc-name">구장</th>
+                <th scope="col" class="num pw-hide pc-par">Par</th>
+                <th scope="col" class="num pc-mtg">모임</th>
+                <th scope="col" class="num pc-rnd">라운드</th>
+                <th scope="col" class="num pw-hide pc-over">실오버파</th>
+                <th scope="col" class="num pw-hide pc-net">평균 Net</th>
+                <th scope="col" class="num pc-idx">난이도<wbr />지수</th>
+                <th scope="col" class="num pc-app">가중<wbr />적용치</th>
               </tr>
             </thead>
             <tbody>
-              <template v-for="c in COURSE_DIFFICULTY" :key="c.name">
-                <tr>
-                  <th scope="row">{{ c.name }}</th>
-                  <td class="num">{{ c.index }}</td>
-                  <td class="num">{{ c.applied }}</td>
-                </tr>
-                <tr class="policy-desc-row">
-                  <td colspan="3">
-                    Par {{ c.par }} · 모임 {{ c.meetings }} · 라운드 {{ c.rounds }} · 실오버파 {{ c.over }} · 평균 Net {{ c.net }}
-                  </td>
-                </tr>
-              </template>
+              <tr v-for="c in COURSE_DIFFICULTY" :key="c.name">
+                <th scope="row">
+                  {{ c.name }}
+                  <small class="pw-only pw-cap">Par {{ c.par }} · 오버파 {{ c.over }} · Net {{ c.net }}</small>
+                </th>
+                <td class="num pw-hide">{{ c.par }}</td>
+                <td class="num">{{ c.meetings }}</td>
+                <td class="num">{{ c.rounds }}</td>
+                <td class="num pw-hide">{{ c.over }}</td>
+                <td class="num pw-hide">{{ c.net }}</td>
+                <td class="num">{{ c.index }}</td>
+                <td class="num">{{ c.applied }}</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -526,29 +531,33 @@ async function loadCourseRatings(): Promise<void> {
             <button type="button" class="policy-link" @click="loadCourseRatings">다시 시도</button>
           </p>
           <div v-else class="policy-table-wrap">
-            <table class="policy-table pp-fixed pp-center-all">
-              <colgroup><col style="width:34%" /><col style="width:33%" /><col style="width:33%" /></colgroup>
+            <table class="policy-table pp-fixed pp-center-all pp-rating">
               <thead>
                 <tr>
-                  <th scope="col">구장</th>
-                  <th scope="col" class="num">CR</th>
-                  <th scope="col" class="num">Slope</th>
+                  <th scope="col" class="pr-name">구장</th>
+                  <th scope="col" class="num pr-tee">Tee</th>
+                  <th scope="col" class="num pr-par">Par</th>
+                  <th scope="col" class="num pr-cr">CR</th>
+                  <th scope="col" class="num pr-slope">Slope</th>
+                  <th scope="col" class="pw-hide pr-var">코스 구분</th>
+                  <th scope="col" class="pw-hide pr-note">비고</th>
                 </tr>
               </thead>
               <tbody>
-                <template v-for="c in courseRatings" :key="c.id">
-                  <tr>
-                    <th scope="row">{{ c.name }}</th>
-                    <td class="num">{{ c.course_rating?.toFixed(1) ?? '—' }}</td>
-                    <td class="num">{{ c.slope_rating ?? '—' }}</td>
-                  </tr>
-                  <tr class="policy-desc-row">
-                    <td colspan="3">
-                      {{ c.tee_box }} tee · Par {{ c.par }}<template v-if="c.course_variant"> · {{ c.course_variant }}</template>
-                      <template v-if="c.rating_note"> · {{ c.rating_note }}</template>
-                    </td>
-                  </tr>
-                </template>
+                <tr v-for="c in courseRatings" :key="c.id">
+                  <th scope="row">
+                    {{ c.name }}
+                    <small v-if="c.course_variant || c.rating_note" class="pw-only pw-cap">
+                      {{ [c.course_variant, c.rating_note].filter(Boolean).join(' · ') }}
+                    </small>
+                  </th>
+                  <td class="num">{{ c.tee_box ?? '—' }}</td>
+                  <td class="num">{{ c.par ?? '—' }}</td>
+                  <td class="num">{{ c.course_rating?.toFixed(1) ?? '—' }}</td>
+                  <td class="num">{{ c.slope_rating ?? '—' }}</td>
+                  <td class="pw-hide pp-left">{{ c.course_variant ?? '—' }}</td>
+                  <td class="pw-hide pp-left">{{ c.rating_note ?? '—' }}</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -878,11 +887,39 @@ async function loadCourseRatings(): Promise<void> {
 .policy-table.pp-center-all td.pp-left {
   text-align: left;
 }
-.policy-desc-row td {
-  padding-left: 1.25rem;
-  padding-top: 0;
-  font-size: 0.8125rem;
-  border-bottom: 1px solid var(--pp-border);
+.policy-table.pp-course th,
+.policy-table.pp-course td {
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
+}
+/* 열 폭: 숨기는 열은 colgroup 으로 맞추면 열이 밀리므로 머리글 셀에 폭을 준다. 좁은 화면 6열 / 넓은 화면 8열. */
+.pp-course .pc-name { width: 31%; }
+.pp-course .pc-mtg { width: 14%; }
+.pp-course .pc-rnd { width: 14%; }
+.pp-course .pc-net { width: 14%; }
+.pp-course .pc-idx { width: 20%; }
+.pp-course .pc-app { width: 21%; }
+.pp-rating .pr-name { width: 30%; }
+.pp-rating .pr-tee { width: 22%; }
+.pp-rating .pr-par { width: 14%; }
+.pp-rating .pr-cr { width: 16%; }
+.pp-rating .pr-slope { width: 18%; }
+@media (min-width: 640px) {
+  .pp-course .pc-name { width: 16%; }
+  .pp-course .pc-par { width: 8%; }
+  .pp-course .pc-mtg { width: 9%; }
+  .pp-course .pc-rnd { width: 10%; }
+  .pp-course .pc-over { width: 13%; }
+  .pp-course .pc-net { width: 13%; }
+  .pp-course .pc-idx { width: 15%; }
+  .pp-course .pc-app { width: 16%; }
+  .pp-rating .pr-name { width: 20%; }
+  .pp-rating .pr-tee { width: 10%; }
+  .pp-rating .pr-par { width: 8%; }
+  .pp-rating .pr-cr { width: 9%; }
+  .pp-rating .pr-slope { width: 9%; }
+  .pp-rating .pr-var { width: 16%; }
+  .pp-rating .pr-note { width: 28%; }
 }
 
 .policy-list {
