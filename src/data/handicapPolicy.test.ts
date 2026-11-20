@@ -248,9 +248,11 @@ describe('페이지 상수와 작업지시서', () => {
 describe('화면 문구', () => {
   let text = '';
   let sections: Record<string, string> = {};
+  let rawHtml = '';
 
   it('렌더링', async () => {
     const html = await renderToString(createSSRApp(Page));
+    rawHtml = html;
     text = html.replace(/<style[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
     sections = {};
     for (const m of html.matchAll(/policy-no[^>]*>\s*(\d)\s*<\/span>[\s\S]*?<span[^>]*>\s*([^<]+?)\s*<\/span>/g)) sections[m[1]] = m[2];
@@ -299,6 +301,18 @@ describe('화면 문구', () => {
     }
     // 위 네 문맥 밖의 "N번 섹션" 참조가 새로 생기면 여기서 알려 준다.
     expect([...text.matchAll(/(\d)번 섹션/g)]).toHaveLength(contexts.length);
+  });
+
+  it('섹션 토글 버튼 이름에 번호가 들어 있고 참조는 버튼이다', () => {
+    for (const [no, title] of Object.entries(sections)) {
+      expect(rawHtml, `${no}번`).toContain(`aria-label="${no}번 ${title}"`);
+    }
+    // "N번 섹션" 참조 4건은 모두 버튼이고, 참조 대상 섹션 id 가 실재한다.
+    const refs = [...rawHtml.matchAll(/class="policy-ref"[^>]*>(\d)번 섹션</g)];
+    expect(refs).toHaveLength(4);
+    for (const id of ['sec-weights', 'sec-awards', 'sec-attend', 'sec-schedule', 'sec-dormant-note']) {
+      expect(rawHtml, id).toContain(`id="${id}"`);
+    }
   });
 
   it('섹션 1~9 가 모두 있고 1번이 산정결과다', () => {

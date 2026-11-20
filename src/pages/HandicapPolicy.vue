@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue';
 import { setPageTitle } from '@/lib/title';
 import { supabase } from '@/lib/supabase';
-import PolicySection from '@/components/PolicySection.vue';
+import PolicySection, { openPolicySection } from '@/components/PolicySection.vue';
 import HandicapResultsTable from '@/components/HandicapResultsTable.vue';
 
 onMounted(() => {
@@ -28,19 +28,22 @@ const FORMULA_STEPS = [
     no: '③',
     name: '가중평균 오버파',
     formula: 'Σ(보정 오버파 × 구간가중) ÷ 가중 라운드',
-    note: '보정 오버파의 가중평균. 최근 라운드일수록 가중을 높게 반영. 구간별 가중은 3번 섹션 참조',
+    note: '보정 오버파의 가중평균. 최근 라운드일수록 가중을 높게 반영. 구간별 가중은 {ref} 참조',
+    ref: { id: 'sec-weights', label: '3번 섹션' },
   },
   {
     no: '④',
     name: '시상 원점수',
     formula: 'Σ(시상 계수 × 그 날의 구간가중)',
-    note: '시상 계수와 계산 예시는 4번 섹션 참조',
+    note: '시상 계수와 계산 예시는 {ref} 참조',
+    ref: { id: 'sec-awards', label: '4번 섹션' },
   },
   {
     no: '⑤',
     name: '시상보정',
     formula: '시상 원점수 ÷ 가중 라운드 × 6   ※ ±1.0타 한도',
-    note: '계수 6의 의미는 4번 섹션 참조',
+    note: '계수 6의 의미는 {ref} 참조',
+    ref: { id: 'sec-awards', label: '4번 섹션' },
   },
   {
     no: '⑥',
@@ -52,7 +55,8 @@ const FORMULA_STEPS = [
     no: '⑦',
     name: '증감',
     formula: '(산출핸디 − 2026년 기준핸디) × 참석률 반영률',
-    note: '참석이 적으면 변동폭 축소 반영. 반영률은 5번 섹션 참조',
+    note: '참석이 적으면 변동폭 축소 반영. 반영률은 {ref} 참조',
+    ref: { id: 'sec-attend', label: '5번 섹션' },
   },
   {
     no: '⑧',
@@ -240,7 +244,12 @@ async function loadCourseRatings(): Promise<void> {
           <li v-for="step in FORMULA_STEPS" :key="step.no" class="policy-card">
             <p class="policy-card-title"><span class="policy-step-no" aria-hidden="true">{{ step.no }}</span>{{ step.name }}</p>
             <pre class="policy-formula">{{ step.formula }}</pre>
-            <p class="policy-note">{{ step.note }}</p>
+            <p class="policy-note">
+              <template v-if="step.ref">
+                {{ step.note.split('{ref}')[0] }}<button type="button" class="policy-ref" @click="openPolicySection(step.ref.id)">{{ step.ref.label }}</button>{{ step.note.split('{ref}')[1] }}
+              </template>
+              <template v-else>{{ step.note }}</template>
+            </p>
           </li>
         </ol>
       </PolicySection>
@@ -619,13 +628,13 @@ async function loadCourseRatings(): Promise<void> {
             조별 금회적용 핸디 ±1 규칙 현행 유지 (1등조 −1 / 2등조 +1). 본 기준은 연 1회 기준핸디 산정에만 적용
           </li>
           <li>손동현 · 신승민 : 2027년 상반기 성적 기준 7월 중간 재산정 검토</li>
-          <li>이성남 : 휴면 중. 복귀 후 3회 참석 시 재산정 (아래 안내문 참조)</li>
+          <li>이성남 : 휴면 중. 복귀 후 3회 참석 시 재산정 (<button type="button" class="policy-ref" @click="openPolicySection('sec-dormant-note')">아래 안내문</button> 참조)</li>
           <li>
             2028년부터 정식 WHS Handicap Index 전환 목표. 2027년 1월 모임부터 홀별 스코어 기록 필요
           </li>
         </ul>
 
-        <div class="policy-card mt-3">
+        <div id="sec-dormant-note" class="policy-card mt-3">
           <p class="policy-card-title">이성남 회원 안내</p>
           <p class="policy-note m-0">
             이성남 회원은 2026년 4월부터 휴면 상태임. 2026년 참석은 1 ~ 3월 중 2회뿐이며 가중 라운드는 2.00 임.
@@ -672,11 +681,28 @@ async function loadCourseRatings(): Promise<void> {
 }
 
 .policy-section {
+  scroll-margin-top: 0.75rem;
   border: 1px solid var(--pp-border);
   border-radius: var(--radius);
   background: var(--pp-grey);
   box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
   overflow: hidden;
+}
+/* "N번 섹션 참조" 버튼: 본문 글자 안에서 링크처럼 보이고 터치 영역은 세로로 넓힌다. */
+.policy-ref {
+  display: inline;
+  padding: 0.5rem 0;
+  margin: -0.5rem 0;
+  color: var(--primary);
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+.policy-ref:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
 }
 .policy-toggle {
   display: flex;
@@ -961,6 +987,10 @@ async function loadCourseRatings(): Promise<void> {
 
 /* 인쇄: 접힌 섹션도 모두 펼치고 접기 버튼의 화살표는 숨긴다. */
 @media print {
+  .policy-ref {
+    color: inherit;
+    text-decoration: none;
+  }
   .policy-page {
     background: #fff;
   }

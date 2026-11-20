@@ -7,6 +7,7 @@ import { describeError } from '@/lib/errors';
 import { cn } from '@/lib/utils';
 import AsyncState from '@/components/ui/AsyncState.vue';
 import Dialog from '@/components/ui/Dialog.vue';
+import { openPolicySection } from '@/components/PolicySection.vue';
 import RowDetailDialog from '@/components/ui/RowDetailDialog.vue';
 import DetailItem from '@/components/ui/DetailItem.vue';
 import Button from '@/components/ui/Button.vue';
@@ -142,7 +143,13 @@ function ariaSort(key: SortKey): 'ascending' | 'descending' | 'none' {
   return sortAsc.value ? 'ascending' : 'descending';
 }
 
-const DORMANT_TIP = '휴면 중. 복귀 전까지 적용되지 않는 참고값임 (9번 섹션 안내 참조)';
+const DORMANT_TIP = '휴면 중. 복귀 전까지 적용되지 않는 참고값임';
+
+// 상세 창을 닫고 9번 섹션(적용 일정·유의사항)으로 이동한다. 창이 닫히며 포커스를 되돌린 뒤에 옮겨야 한다.
+function goDormantSection(): void {
+  selectedId.value = null;
+  setTimeout(() => openPolicySection('sec-schedule'), 150);
+}
 
 // ── 상세 창 ──────────────────────────────────────────────────────────────────
 // 성명을 누르면 그 회원의 산정 근거를 모달로 보여 준다 (RowDetailDialog).
@@ -531,7 +538,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
           <span :class="deltaClass(selected.final_delta)">{{ fmtSigned2(selected.final_delta) }}</span>
         </DetailItem>
         <DetailItem v-if="selected.dormant_from" label="휴면">
-          <span class="pp-note-text">{{ DORMANT_TIP }}</span>
+          <span class="pp-note-text">{{ DORMANT_TIP }} (<button type="button" class="policy-ref" @click="goDormantSection">9번 섹션</button> 안내 참조)</span>
         </DetailItem>
         <DetailItem v-if="selected.capped" label="한도 적용">
           <span class="pp-up">적용 전 {{ fmtSigned2(selected.raw_delta) }} → 적용 후 {{ fmtSigned2(selected.final_delta) }}</span>
