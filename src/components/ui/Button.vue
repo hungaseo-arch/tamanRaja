@@ -19,8 +19,8 @@ const buttonVariants = cva(
         default: 'h-11 px-4 py-2 sm:h-10',
         sm: 'h-11 rounded-md px-3 sm:h-9',
         // 화면 위쪽 툴바(엑셀·수정·저장 등)에 놓이는 규격. Select 의 size="xs" 와 짝이다.
-        // 모바일(<sm)은 터치 44px, sm 이상은 조밀한 32px. 글자는 어디서나 14px(text-sm).
-        xs: 'h-11 rounded-md px-3 text-sm sm:h-8 sm:px-2',
+        // 모바일(<sm)은 36px, sm 이상은 조밀한 32px. 글자는 어디서나 14px(text-sm).
+        xs: 'h-9 rounded-md px-2.5 text-sm sm:h-8 sm:px-2',
         lg: 'h-11 rounded-md px-6',
         icon: 'h-11 w-11 sm:h-10 sm:w-10',
       },

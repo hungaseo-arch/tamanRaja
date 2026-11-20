@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue';
-import { CalendarCheck, ChevronLeft, ChevronRight, CircleHelp, Download } from 'lucide-vue-next';
+import { CalendarCheck, CircleHelp, Download } from 'lucide-vue-next';
 import type { MonthlyRow, ResultRank, ResultGroup } from '@/lib';
 import { formatDate, formatMeetingHeading, formatYearMonth } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -53,9 +53,6 @@ interface Props {
   canUnlock?: boolean;
   selectedMonth: string;
   monthOptions: SelectOption[];
-  // 고를 수 있는 바로 이전·다음 달. 없으면 null 이고 이동 버튼은 비활성화된다.
-  prevMonth?: string | null;
-  nextMonth?: string | null;
   selectedYear: string;
   yearOptions: SelectOption[];
   manualDate: string;
@@ -654,20 +651,9 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             :options="yearOptions"
             placeholder=""
             size="xs"
-            class="w-28 sm:w-22 shrink-0"
+            class="w-24 sm:w-22 shrink-0"
           />
         </template>
-        <Button
-          variant="outline"
-          size="xs"
-          class="w-11 px-0 shrink-0 sm:w-8"
-          :disabled="!props.prevMonth"
-          aria-label="이전 달"
-          title="이전 달"
-          @click="props.prevMonth && emit('update:selectedMonth', props.prevMonth)"
-        >
-          <ChevronLeft class="w-4 h-4" aria-hidden="true" />
-        </Button>
         <label for="monthly-month" class="sr-only">조회할 월</label>
         <Select
           id="monthly-month"
@@ -676,19 +662,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           :options="monthOptions"
           placeholder="월 선택"
           size="xs"
-          class="w-24 sm:w-18 shrink-0"
+          class="w-20 sm:w-18 shrink-0"
         />
-        <Button
-          variant="outline"
-          size="xs"
-          class="w-11 px-0 shrink-0 sm:w-8"
-          :disabled="!props.nextMonth"
-          aria-label="다음 달"
-          title="다음 달"
-          @click="props.nextMonth && emit('update:selectedMonth', props.nextMonth)"
-        >
-          <ChevronRight class="w-4 h-4" aria-hidden="true" />
-        </Button>
 
         <!-- 엑셀(CSV) 다운로드 — 해당 연도 전체 기록.
              좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->
