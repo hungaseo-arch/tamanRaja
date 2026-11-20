@@ -359,14 +359,6 @@ function stickyTint(rank: number | null): string {
         </Button>
       </div>
 
-      <!-- 현재 랭킹 기준과 바꾸는 방법. 표 바로 위 제목 줄 근처에 두어 첫 화면에서
-           "무엇으로 매긴 순위인지"와 "열 제목을 누르면 바뀐다"가 함께 읽힌다. -->
-      <p class="text-sm text-muted-foreground leading-relaxed">
-        현재 기준
-        <strong class="text-foreground">{{ rankBasisLabel }}</strong>
-        (낮은 순) · 평균 Net·평균 스코어 열 제목 누르면 기준 변경
-      </p>
-
       <!-- 상위 4명 하이라이트 카드. 모바일에서는 한 줄 4칸에 이름과 기준 지표만 둔다.
            나머지(다른 지표·참석·시상)는 표와 줄 상세 창에 있고, sm 이상에서만 카드에 보인다. -->
       <div v-if="rankedQualified.length > 0" class="grid grid-cols-4 gap-2 sm:gap-3">

@@ -38,8 +38,9 @@ describe('월간 기록 표 모바일 규칙', () => {
     expect(detailButton).toContain('min-h-11');
   });
 
-  it('NET 은 낮을수록 좋다는 문구가 표 근처에 있다', () => {
-    expect(table).toContain('낮을수록 좋음');
+  it('표 위 NET 설명·이름 안내 문구는 두지 않는다', () => {
+    expect(table).not.toContain('낮을수록 좋음');
+    expect(table).not.toContain('이름을 누르면 숨은 열까지');
   });
 });
 

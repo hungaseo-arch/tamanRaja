@@ -43,11 +43,6 @@ describe('연간 랭킹', () => {
     expect(ranking).not.toContain('text-shadow');
   });
 
-  it('현재 기준 안내가 표보다 앞에 있다', () => {
-    expect(ranking.indexOf('현재 기준')).toBeGreaterThan(-1);
-    expect(ranking.indexOf('현재 기준')).toBeLessThan(ranking.indexOf('<Table\n'));
-  });
-
   it('정렬 버튼 4개는 모바일에서 44px', () => {
     expect(ranking.split('min-h-11 sm:min-h-0').length - 1).toBe(4);
   });
