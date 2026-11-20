@@ -8,6 +8,7 @@ import { supabase } from '@/lib/supabase';
 import { describeError } from '@/lib/errors';
 import { ROUTE_PATHS } from '@/lib';
 import { setPageTitle } from '@/lib/title';
+import { formatYearMonth } from '@/lib/format';
 import type { SavePayload } from '@/components/MonthlyTable.vue';
 import MonthlyTable from '@/components/MonthlyTable.vue';
 import Dialog from '@/components/ui/Dialog.vue';
@@ -94,7 +95,7 @@ watch(attendanceYM, (ym) => {
 });
 // 문서 제목에 보고 있는 달을 붙인다 (4-5). 참석 창은 라우터가 정한 제목 그대로.
 watch(selectedMonth, (m) => {
-  if (route.path === ROUTE_PATHS.MONTHLY) setPageTitle(`월간 기록 ${m}`);
+  if (route.path === ROUTE_PATHS.MONTHLY) setPageTitle(`월간 기록 ${formatYearMonth(m)}`);
 }, { immediate: true });
 watch(selectedMonth, (m) => {
   if (route.path !== ROUTE_PATHS.MONTHLY || route.query.month === m) return;
@@ -300,12 +301,12 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
     }
     toast({
       title: '저장 완료',
-      description: `${selectedMonth.value} 기록 ${res.saved ?? rows.length}건 저장 완료`,
+      description: `${formatYearMonth(selectedMonth.value)} 기록 ${res.saved ?? rows.length}건`,
     });
   } catch (err) {
     // 인라인 문구는 남겨 둔다 — 토스트는 몇 초 뒤 사라지는데, 저장에 실패했다는
     // 사실은 다시 저장할 때까지 화면에 남아 있어야 한다.
-    saveError.value = describeError(err, '저장 중 오류 발생');
+    saveError.value = describeError(err, '저장 실패');
     saveState.value = 'error';
     toast({ title: '저장 실패', description: saveError.value, variant: 'destructive' });
   }
@@ -345,8 +346,8 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
       <Dialog :open="leaveOpen" label="달 이동 확인" content-class="sm:max-w-sm" @update:open="(v: boolean) => { if (!v && pendingMonth) stayOnMonth(); }">
         <div class="space-y-3">
           <DialogTitle class="mb-0">달 이동 확인</DialogTitle>
-          <p class="text-sm">저장하지 않은 입력이 있습니다. 다른 달로 이동하면 입력한 내용이 사라집니다.</p>
-          <p v-if="pendingMonth" class="text-sm text-muted-foreground">{{ selectedMonth }} → {{ pendingMonth }}</p>
+          <p class="text-sm">저장하지 않은 입력 있음. 다른 달로 이동하면 입력한 내용 삭제</p>
+          <p v-if="pendingMonth" class="text-sm text-muted-foreground">{{ formatYearMonth(selectedMonth) }} → {{ formatYearMonth(pendingMonth) }}</p>
           <DialogFooter>
             <Button type="button" variant="outline" @click="stayOnMonth">이 달에 머물기</Button>
             <Button type="button" variant="destructive" @click="confirmLeave">입력 폐기하고 이동</Button>

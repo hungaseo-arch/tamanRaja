@@ -334,7 +334,7 @@ function handleSave(): void {
   if (props.saveState === 'saving' || missingHcNames.value.length > 0) return;
   if (invalidScoreNames.value.length > 0) {
     validationError.value =
-      `스코어(오버파)는 ${SCORE_MIN}에서 ${SCORE_MAX} 사이 정수로 입력해 주세요. 확인할 회원: ${invalidScoreNames.value.join(', ')}`;
+      `스코어(오버파)는 ${SCORE_MIN}에서 ${SCORE_MAX} 사이 정수 입력 필요. 확인할 회원: ${invalidScoreNames.value.join(', ')}`;
     return;
   }
   validationError.value = null;
@@ -412,7 +412,7 @@ function openUnlock(): void {
 function confirmUnlock(): void {
   const reason = unlockInput.value.trim();
   if (!reason) {
-    unlockError.value = '수정 사유를 입력해 주세요.';
+    unlockError.value = '수정 사유 입력 필요';
     return;
   }
   unlockReason.value = reason;
@@ -439,7 +439,7 @@ function requestCancel(): void {
   }
   askConfirm({
     title: '수정 취소',
-    lines: ['저장하지 않은 입력이 있습니다. 취소하면 입력한 내용이 사라집니다.'],
+    lines: ['저장하지 않은 입력 있음. 취소하면 입력한 내용 삭제'],
     okLabel: '입력 폐기',
     cancelLabel: '계속 수정',
     destructive: true,
@@ -472,7 +472,7 @@ function acceptConfirm(): void {
 }
 
 // ── 줄 상세 (디스클로저) ─────────────────────────────────────────────────────
-// 좁은 화면에서는 기준 핸디·차월 핸디·결과 그룹 열이 숨는다. 회원 이름을
+// 좁은 화면에서는 기준핸디·차월 핸디·결과조 열이 숨는다. 회원 이름을
 // 누르면 그 회원의 값을 숨은 것까지 모아 보여 준다.
 // md 부터는 열이 전부 보여 창을 열어도 표와 같은 내용이라 아예 열지 않는다.
 // detailRow 는 창을 닫아도 비우지 않는다 — 닫히는 동안 내용이 사라지면
@@ -645,7 +645,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         </div>
         <div v-else class="mx-auto flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm">
           <div class="flex items-center gap-1.5 shrink-0">
-            <span class="font-medium text-muted-foreground whitespace-nowrap">참석인원</span>
+            <span class="font-medium text-muted-foreground whitespace-nowrap">참석 인원</span>
             <span class="font-bold">{{ stats.attendedCount }}명</span>
           </div>
           <div :class="cn('items-center gap-1.5 min-w-0', isEditing ? 'hidden sm:flex' : 'flex')">
@@ -701,7 +701,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             :disabled="props.saveState === 'saving' || missingHcNames.length > 0"
             :aria-describedby="isEditing && missingHcNames.length > 0 ? 'monthly-missing-hc' : undefined"
             @click="handleSave"
-          >{{ props.saveState === 'saving' ? '저장 중...' : '저장' }}</Button>
+          >{{ props.saveState === 'saving' ? '저장 중…' : '저장' }}</Button>
           <!-- 취소는 모든 편집 모드에 둔다. 변경분이 있으면 폐기 확인을 거친다. -->
           <Button
             v-if="isEditing"
@@ -782,7 +782,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         class="text-sm text-destructive"
         role="status"
       >
-        당월 핸디가 없는 회원이 있습니다({{ missingHcNames.join(', ') }}). 직전 달 결과를 먼저 저장해야 이번 달을 저장할 수 있습니다.
+        당월 핸디가 없는 회원 있음({{ missingHcNames.join(', ') }}). 직전 달 결과를 먼저 저장해야 이번 달 저장 가능
       </p>
       <p
         v-if="isEditing && invalidScoreNames.length > 0 && !validationError"
@@ -790,10 +790,10 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         class="text-sm text-destructive"
         role="status"
       >
-        스코어(오버파)는 {{ SCORE_MIN }}에서 {{ SCORE_MAX }} 사이 정수만 저장됩니다. 총타수가 아니라 오버파를 입력해 주세요: {{ invalidScoreNames.join(', ') }}
+        스코어(오버파)는 {{ SCORE_MIN }}에서 {{ SCORE_MAX }} 사이 정수만 저장 가능. 총타수가 아닌 오버파 입력 필요: {{ invalidScoreNames.join(', ') }}
       </p>
       <p v-if="isEditing && manualCount > 0" class="text-sm text-muted-foreground">
-        직접 고른 조·시상은 점수를 더 입력해도 바뀌지 않습니다.
+        직접 고른 조·시상은 점수를 더 입력해도 변경 없음
         <button
           type="button"
           class="ml-1 inline-flex min-h-11 items-center rounded-sm px-1 font-medium text-primary underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-0"
@@ -816,7 +816,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           <AsyncState
             :empty="props.monthlyData.length === 0"
             :empty-title="`${heading} 기록 없음`"
-            empty-hint="다른 달을 선택하거나, 경기 결과를 저장하면 표가 나타납니다."
+            empty-hint="다른 달 선택 또는 모임 결과 저장 시 표 표시"
           >
           <!-- 평소에는 스크롤을 페이지가 한다. 그래야 위쪽 표제 줄이 함께
                밀려 올라가고, 열 제목만 화면 맨 위에 남는다.
@@ -832,8 +832,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
               <TableRow>
                 <!-- 가로 스크롤에도 회원명은 남는다 — 어느 행인지 잃지 않도록 -->
                 <TableHead class="font-bold text-foreground whitespace-nowrap sticky left-0 z-30 bg-card">회원</TableHead>
-                <TableHead v-if="isFutureMonth" class="font-bold text-center whitespace-nowrap">참석</TableHead>
-                <TableHead class="font-bold text-center hidden sm:table-cell">기준 핸디</TableHead>
+                <TableHead v-if="isFutureMonth" class="font-bold text-center whitespace-nowrap">참석 여부</TableHead>
+                <TableHead class="font-bold text-center hidden sm:table-cell">기준핸디</TableHead>
                 <!-- 모바일 14px 에서 열이 가로로 넘치므로 당월 핸디는 좁은 폭에서 숨긴다.
                      좁은 폭에서는 이름 아래 보조 줄(당월 · 차월)에 둔다. -->
                 <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">당월 핸디</TableHead>
@@ -841,8 +841,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 <TableHead class="font-bold text-center whitespace-nowrap">
                   스코어<span v-if="isEditing" class="block text-xs font-normal text-muted-foreground">오버파</span>
                 </TableHead>
-                <TableHead class="font-bold text-center whitespace-nowrap">NET 스코어</TableHead>
-                <TableHead class="font-bold text-center hidden md:table-cell">결과 그룹</TableHead>
+                <TableHead class="font-bold text-center whitespace-nowrap">Net</TableHead>
+                <TableHead class="font-bold text-center hidden md:table-cell">결과조</TableHead>
                 <TableHead class="font-bold text-center whitespace-nowrap">결과</TableHead>
               </TableRow>
             </TableHeader>
@@ -888,8 +888,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                   >
                     <span
                       class="sm:hidden"
-                      :aria-label="`당월 핸디 ${row.app_hc ?? '미정'}, 차월 핸디 ${miniNextHc(row) ?? '없음'}`"
-                    >당월 {{ row.app_hc ?? '미정' }} · 차월 {{ miniNextHc(row) ?? '-' }}</span>
+                      :aria-label="`당월 핸디 ${row.app_hc ?? '산정 전'}, 차월 핸디 ${miniNextHc(row) ?? '없음'}`"
+                    >당월 {{ row.app_hc ?? '산정 전' }} · 차월 {{ miniNextHc(row) ?? '-' }}</span>
                     <span v-if="isEditing && localGroups[row.member_id]" class="ml-1.5 sm:ml-0 font-sans">{{ localGroups[row.member_id] }}</span>
                   </span>
                 </TableCell>
@@ -910,7 +910,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 <TableCell class="text-center font-mono hidden sm:table-cell">{{ row.std_hc }}</TableCell>
                 <TableCell class="text-center font-mono hidden sm:table-cell">
                   <template v-if="row.app_hc !== null">{{ row.app_hc }}</template>
-                  <span v-else class="text-muted-foreground" title="직전 달 차월 핸디 미정">-</span>
+                  <span v-else class="text-muted-foreground" title="직전 달 차월 핸디 산정 전">-</span>
                 </TableCell>
                 <TableCell class="text-center font-mono hidden sm:table-cell">
                   <template v-if="isEditing && localNextHc[row.member_id] != null">{{ localNextHc[row.member_id] }}</template>
@@ -1015,10 +1015,10 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                   </template>
                   <template v-else-if="isRankName(row.result_rank)">
                     <RankBadge :rank="row.result_rank" />
-                    <!-- 결과 그룹 열이 숨는 폭에서는 배지에 가려 조가 사라진다 (5-5) -->
+                    <!-- 결과조 열이 숨는 폭에서는 배지에 가려 조가 사라진다 (5-5) -->
                     <span v-if="row.result_group" class="md:hidden block text-sm leading-tight text-muted-foreground mt-0.5">{{ row.result_group }}</span>
                   </template>
-                  <!-- 순위 없는 회원: 작은 화면(결과 그룹 컬럼 숨김)에서만 그룹 표시 -->
+                  <!-- 순위 없는 회원: 작은 화면(결과조 컬럼 숨김)에서만 그룹 표시 -->
                   <template v-else-if="row.result_group">
                     <Badge v-if="row.result_group === '1등조'" class="md:hidden bg-group-first text-white border-0">1등조</Badge>
                     <Badge v-else variant="secondary" class="md:hidden">2등조</Badge>
@@ -1047,12 +1047,12 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         :class="props.saveState === 'error' || invalidScoreNames.length || missingHcNames.length ? 'text-destructive' : 'text-muted-foreground'"
         :role="props.saveState === 'error' ? 'alert' : undefined"
       >
-        <template v-if="props.saveState === 'saving'">저장 중...</template>
-        <template v-else-if="props.saveState === 'error'">{{ props.saveError || '저장 중 오류가 발생했습니다.' }} 입력한 내용은 그대로 있습니다.</template>
-        <template v-else-if="missingHcNames.length">당월 핸디 없는 회원이 있어 저장할 수 없습니다.</template>
-        <template v-else-if="invalidScoreNames.length">스코어 범위를 확인해 주세요.</template>
-        <template v-else-if="isDirty">저장하지 않은 입력이 있습니다.</template>
-        <template v-else>입력한 내용이 없습니다.</template>
+        <template v-if="props.saveState === 'saving'">저장 중…</template>
+        <template v-else-if="props.saveState === 'error'">{{ props.saveError || '저장 실패' }} 입력한 내용은 그대로 있습니다.</template>
+        <template v-else-if="missingHcNames.length">당월 핸디 없는 회원이 있어 저장 불가</template>
+        <template v-else-if="invalidScoreNames.length">스코어 범위 확인 필요</template>
+        <template v-else-if="isDirty">저장하지 않은 입력 있음</template>
+        <template v-else>입력한 내용 없음</template>
       </p>
       <Button
         size="xs"
@@ -1066,7 +1066,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         class="shrink-0 min-h-11 sm:min-h-0"
         :disabled="props.saveState === 'saving' || missingHcNames.length > 0"
         @click="handleSave"
-      >{{ props.saveState === 'saving' ? '저장 중...' : '저장' }}</Button>
+      >{{ props.saveState === 'saving' ? '저장 중…' : '저장' }}</Button>
     </div>
 
     <!-- 회원 한 명의 그달 기록 전부 -->
@@ -1076,15 +1076,15 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
       :subtitle="heading"
     >
       <template v-if="detailRow">
-        <DetailItem label="참석">
+        <DetailItem label="참석 여부">
           <span :class="attendanceLabel(detailRow).class">{{ attendanceLabel(detailRow).text }}</span>
         </DetailItem>
-        <DetailItem label="기준 핸디">
+        <DetailItem label="기준핸디">
           <span class="font-mono">{{ detailRow.std_hc }}</span>
         </DetailItem>
         <DetailItem label="당월 핸디">
           <span v-if="detailRow.app_hc !== null" class="font-mono">{{ detailRow.app_hc }}</span>
-          <span v-else class="text-muted-foreground">미정 (직전 달 결과 저장 후)</span>
+          <span v-else class="text-muted-foreground">산정 전 (직전 달 결과 저장 후)</span>
         </DetailItem>
         <DetailItem label="차월 핸디">
           <span v-if="detailRow.attended && detailRow.score !== null && detailRow.next_hc !== null" class="font-mono">{{ detailRow.next_hc }}</span>
@@ -1095,14 +1095,14 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           <span v-if="detailRow.attended && detailRow.score !== null" class="font-mono">{{ detailRow.score }}</span>
           <span v-else class="text-muted-foreground">-</span>
         </DetailItem>
-        <DetailItem label="NET 스코어">
+        <DetailItem label="Net">
           <span
             v-if="detailRow.attended && detailRow.net_score !== null"
             :class="cn('font-mono', detailRow.net_score >= 0 ? 'text-net-plus font-semibold' : 'text-net-minus')"
           >{{ detailRow.net_score >= 0 ? '+' : '' }}{{ detailRow.net_score }}</span>
           <span v-else class="text-muted-foreground">-</span>
         </DetailItem>
-        <DetailItem label="결과 그룹">
+        <DetailItem label="결과조">
           <Badge v-if="detailRow.result_group === '1등조'" class="bg-group-first text-white border-0">1등조</Badge>
           <Badge v-else-if="detailRow.result_group" variant="secondary">2등조</Badge>
           <span v-else class="text-muted-foreground">-</span>
@@ -1130,14 +1130,16 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         <section class="space-y-1.5">
           <h3 class="text-sm font-semibold m-0">용어</h3>
           <dl class="grid grid-cols-[4.5rem_1fr] gap-x-3 gap-y-1.5 m-0 text-muted-foreground">
-            <dt class="font-semibold text-foreground">기준 핸디</dt>
+            <dt class="font-semibold text-foreground">기준핸디</dt>
             <dd class="m-0">매년 1월에 새로 정하는 그 해의 기본 핸디</dd>
+            <dt class="font-semibold text-foreground">스코어</dt>
+            <dd class="m-0">오버파(Par 대비 타수). Par 를 더하기 전 값이며 총타수가 아님</dd>
             <dt class="font-semibold text-foreground">당월 핸디</dt>
-            <dd class="m-0">이달 경기에 적용하는 핸디. NET = 스코어 − 당월 핸디</dd>
+            <dd class="m-0">이달 모임에 적용하는 핸디. Net = 스코어 − 당월 핸디</dd>
             <dt class="font-semibold text-foreground">차월 핸디</dt>
-            <dd class="m-0">이달 결과로 정해지는 다음 달의 당월 핸디</dd>
+            <dd class="m-0">이달 결과로 정해져 차월 모임에 적용되는 핸디</dd>
             <dt class="font-semibold text-foreground">조 편성</dt>
-            <dd class="m-0">NET 이 낮은 순으로 참석자 절반이 1등조, 나머지가 2등조</dd>
+            <dd class="m-0">Net 이 낮은 순으로 참석자 절반이 1등조, 나머지가 2등조</dd>
           </dl>
         </section>
 
@@ -1147,7 +1149,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             <table class="w-full border-collapse text-sm">
               <thead>
                 <tr class="bg-muted/50 border-b">
-                  <th class="px-2 py-1.5 text-left font-semibold">직전 라운드</th>
+                  <th class="px-2 py-1.5 text-left font-semibold">마지막 편성 달</th>
                   <th class="px-2 py-1.5 text-left font-semibold">이번 달</th>
                   <th class="px-2 py-1.5 text-left font-semibold">차월 핸디</th>
                 </tr>
@@ -1163,22 +1165,22 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 </tr>
                 <tr class="border-b">
                   <td class="px-2 py-1.5">1등조</td><td class="px-2 py-1.5">2등조</td>
-                  <td class="px-2 py-1.5 text-foreground">기준 핸디로 복귀</td>
+                  <td class="px-2 py-1.5 text-foreground">기준핸디로 복귀</td>
                 </tr>
                 <tr>
                   <td class="px-2 py-1.5">2등조</td><td class="px-2 py-1.5">1등조</td>
-                  <td class="px-2 py-1.5 text-foreground">기준 핸디로 복귀</td>
+                  <td class="px-2 py-1.5 text-foreground">기준핸디로 복귀</td>
                 </tr>
               </tbody>
             </table>
           </div>
           <ul class="list-disc pl-5 space-y-1 m-0 text-muted-foreground">
             <li>홀수 핸디도 그대로 인정</li>
-            <li>계속 1등조라 핸디가 내려가 있어도 <b class="text-foreground">단 한 번</b> 2등조에 들면 기준 핸디로 복귀. 2등조도 반대로 동일</li>
-            <li><b class="text-foreground">기준 핸디로 복귀하면 모든 것을 초기화</b></li>
-            <li>당월 핸디가 기준 핸디와 같은 달(매년 1월, 기준 핸디를 새로 정한 달, 조 변경으로 복귀한 다음 달)은 직전 라운드와 견주지 않고 그 달 결과만으로 ±1</li>
-            <li>"직전 라운드" = 마지막으로 조에 편성된 달. 불참한 달은 건너뛰고 비교</li>
-            <li>불참한 달은 당월 핸디를 그대로 다음 달로 이월</li>
+            <li>계속 1등조라 핸디가 내려가 있어도 <b class="text-foreground">단 한 번</b> 2등조에 들면 기준핸디로 복귀. 2등조도 반대로 동일</li>
+            <li><b class="text-foreground">기준핸디로 복귀하면 모든 것을 초기화</b></li>
+            <li>당월 핸디가 기준핸디와 같은 달(매년 1월, 기준핸디를 새로 정한 달, 조 변경으로 복귀한 다음 달)은 마지막 편성 달과 견주지 않고 그 달 결과만으로 ±1</li>
+            <li>마지막 편성 달 = 마지막으로 조에 편성된 달. 불참한 달은 건너뛰고 비교</li>
+            <li>불참한 달은 당월 핸디를 그대로 차월로 이월</li>
           </ul>
         </section>
       </div>
@@ -1202,9 +1204,9 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
     <Dialog v-model:open="unlockOpen" label="잠금 해제 후 수정" content-class="sm:max-w-sm">
       <form class="space-y-3" @submit.prevent="confirmUnlock">
         <DialogTitle class="mb-0">잠금 해제 후 수정</DialogTitle>
-        <p class="text-sm">확정된 기록입니다. 고치려면 수정 사유를 입력해 주세요.</p>
+        <p class="text-sm">확정된 기록. 수정 사유 입력 필요</p>
         <p class="text-sm text-muted-foreground">
-          저장하면 사유가 모임 메모에 <span class="whitespace-nowrap">[날짜 수정: 사유]</span> 형태로 쌓입니다.
+          저장 시 사유가 모임 메모에 <span class="whitespace-nowrap">[날짜 수정: 사유]</span> 형태로 누적
         </p>
         <div class="space-y-1">
           <label for="unlock-reason" class="text-sm font-medium">수정 사유</label>

@@ -10,7 +10,7 @@ describe('월간 기록 표 가드', () => {
   it('취소 버튼은 편집 모드면 항상 보이고 변경분이 있으면 폐기 확인을 거친다', () => {
     expect(table).not.toMatch(/v-if="isEditing && unlockReason !== null"/);
     expect(table).toMatch(/@click="requestCancel"/);
-    expect(table).toContain('저장하지 않은 입력이 있습니다. 취소하면 입력한 내용이 사라집니다.');
+    expect(table).toContain('저장하지 않은 입력 있음. 취소하면 입력한 내용 삭제');
   });
 
   it('저장은 요약 확인을 거쳐 doSave 에서 내보낸다', () => {
@@ -40,7 +40,7 @@ describe('월간 기록 표 모바일 규칙', () => {
 
   it('좁은 폭 읽기 모드에서도 이름 아래 보조 줄에 당월·차월 핸디를 보인다', () => {
     expect(table).toMatch(/isEditing \? 'md:hidden' : 'sm:hidden'/);
-    expect(table).toContain("당월 {{ row.app_hc ?? '미정' }} · 차월");
+    expect(table).toContain("당월 {{ row.app_hc ?? '산정 전' }} · 차월");
   });
 
   it('저장 실패 문구를 하단 고정 저장 줄에 alert 로 보인다', () => {
