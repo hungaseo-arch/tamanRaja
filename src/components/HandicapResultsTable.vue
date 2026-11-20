@@ -349,8 +349,13 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
       empty-hint="27년 산정결과가 등록되면 표시 · 관리자에게 문의"
       @retry="load"
     >
-      <!-- 관리자 버튼은 표 오른쪽 끝에 맞춘다. -->
+      <!-- 범례는 왼쪽, 관리자 버튼은 같은 줄 오른쪽 끝. 왼쪽에 빈 칸을 남기지 않는다. -->
       <div class="pp-head-row">
+        <ul class="pp-legend">
+          <li><strong>27년 제안</strong> = 27년 기준 + 인간미. 인간미는 운영진이 −2 ~ +2 정수로 가감하는 보정값</li>
+          <li><span class="pp-up">빨강 인상</span> = 타수를 더 받는 쪽(유리), <span class="pp-down">파랑 인하</span> = 타수를 덜 받는 쪽</li>
+          <li><strong>한도</strong> 증감 한도 적용 · <strong>부족</strong> 표본 부족(가중 라운드 3.00 미만) · <strong>휴면</strong> 복귀 전 참고값</li>
+        </ul>
         <div v-if="isAdmin" class="pp-edit-bar">
           <template v-if="!editing">
             <Button variant="outline" size="xs" class="h-8 px-2 text-xs" @click="startEdit()">인간미 수정</Button>
@@ -364,12 +369,6 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
           </template>
         </div>
       </div>
-      <!-- 열·색·배지 뜻은 표 바로 위에서 밝힌다. 모바일은 title 이 보이지 않으므로 글자로 둔다. -->
-      <ul class="pp-legend">
-        <li><strong>27년 제안</strong> = 27년 기준 + 인간미. 인간미는 운영진이 −2 ~ +2 정수로 가감하는 보정값</li>
-        <li><span class="pp-up">빨강 인상</span> = 타수를 더 받는 쪽(유리), <span class="pp-down">파랑 인하</span> = 타수를 덜 받는 쪽</li>
-        <li><strong>한도</strong> 증감 한도 적용 · <strong>부족</strong> 표본 부족(가중 라운드 3.00 미만) · <strong>휴면</strong> 복귀 전 참고값</li>
-      </ul>
       <div class="policy-table-wrap pp-results-wrap">
         <table class="policy-table pp-results">
           <thead>
@@ -595,7 +594,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   display: block;
   margin-top: 0.125rem;
   font-family: var(--font-sans);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   line-height: 1.25;
   color: var(--muted-foreground);
@@ -648,7 +647,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   margin: 0.125rem 0.125rem 0.125rem 0;
   padding: 0 0.1875rem;
   border-radius: 0.1875rem;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   line-height: 1.25;
 }
 .pp-results thead th:first-child,
@@ -683,9 +682,14 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
+}
+.pp-head-row .pp-legend {
+  flex: 1 1 16rem;
+  min-width: 0;
+  margin-bottom: 0;
 }
 .pp-edit-bar {
   display: flex;

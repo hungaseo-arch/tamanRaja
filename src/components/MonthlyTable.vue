@@ -808,7 +808,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">당월 핸디</TableHead>
                 <TableHead class="font-bold text-center hidden sm:table-cell">차월 핸디</TableHead>
                 <TableHead class="font-bold text-center whitespace-nowrap">
-                  스코어<span v-if="isEditing" class="block text-[11px] font-normal text-muted-foreground">오버파</span>
+                  스코어<span v-if="isEditing" class="block text-xs font-normal text-muted-foreground">오버파</span>
                 </TableHead>
                 <TableHead class="font-bold text-center whitespace-nowrap">NET 스코어</TableHead>
                 <TableHead class="font-bold text-center hidden md:table-cell">결과 그룹</TableHead>
