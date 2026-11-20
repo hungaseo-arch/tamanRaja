@@ -711,11 +711,15 @@ async function loadCourseRatings(): Promise<void> {
   transition: transform 0.15s;
 }
 .policy-body {
-  /* 왼쪽은 섹션 번호 원의 가로 중심(헤더 여백 0.875rem + 원 반지름 0.75rem)에서
-     모든 내용이 시작되도록 맞춘다. */
-  padding: 0.875rem 0.875rem 0.875rem 1.625rem;
+  padding: 0.875rem;
   font-size: 0.875rem;
   line-height: 1.6;
+}
+/* 글(문단·목록)만 섹션 번호 원의 가로 중심(너비 1.5rem 의 절반 0.75rem)에서 시작한다.
+   표·수식·카드 같은 박스는 원래 위치를 지킨다. */
+.policy-body > p,
+.policy-body > ul {
+  margin-left: 0.75rem;
 }
 .policy-lead {
   margin: 0 0 0.75rem;
