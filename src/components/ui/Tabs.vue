@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { provide, ref, watch } from 'vue';
+import { provide, ref, useId, watch } from 'vue';
 import { cn } from '@/lib/utils';
 import { TABS_KEY } from './tabs-context';
 
@@ -29,7 +29,9 @@ function setValue(v: string): void {
   emit('update:modelValue', v);
 }
 
-provide(TABS_KEY, { value: internal, setValue });
+const baseId = `tabs-${useId()}`;
+
+provide(TABS_KEY, { value: internal, setValue, baseId });
 </script>
 
 <template>

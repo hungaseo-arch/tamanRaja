@@ -478,7 +478,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
               type="date"
               v-model="localManualDate"
               aria-label="모임 날짜"
-              class="h-11 sm:h-8 rounded-md border border-input bg-background px-2 text-base sm:text-xs font-mono focus:outline-none focus:ring-1 focus:ring-ring w-full sm:w-auto sm:flex-initial"
+              class="h-11 sm:h-8 rounded-md border border-input bg-background px-2 text-base sm:text-xs font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 w-full sm:w-auto sm:flex-initial"
             />
             <!-- 골프장은 목록에서 고르는 것이 기본이다. datalist 는 제안일 뿐이라
                  오타가 그대로 저장돼 같은 골프장이 두 개로 갈라졌다. 새 골프장은
@@ -498,7 +498,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
               v-model="newCourseName"
               aria-label="새 골프장명"
               placeholder="새 골프장명"
-              class="h-11 sm:h-8 rounded-md border border-input bg-background px-2 text-base sm:text-xs focus:outline-none focus:ring-1 focus:ring-ring flex-1 min-w-0 sm:flex-initial sm:w-28"
+              class="h-11 sm:h-8 rounded-md border border-input bg-background px-2 text-base sm:text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 flex-1 min-w-0 sm:flex-initial sm:w-28"
             />
           </template>
           <!-- 저장 중 재클릭은 meeting_results 를 지웠다 다시 넣는 과정을
@@ -707,10 +707,10 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                       placeholder="-"
                       :aria-label="`${row.member_name} 스코어`"
                       :aria-invalid="isScoreInvalid(row.member_id) || undefined"
-                      :class="cn('h-11 sm:h-7 w-16 text-center border rounded px-1 py-0 text-base sm:text-sm bg-background focus:outline-none focus:ring-1',
+                      :class="cn('h-11 sm:h-7 w-16 text-center border rounded px-1 py-0 text-base sm:text-sm bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
                         isScoreInvalid(row.member_id)
-                          ? 'border-destructive text-destructive focus:ring-destructive'
-                          : 'border-input focus:ring-ring')"
+                          ? 'border-destructive text-destructive focus-visible:ring-destructive'
+                          : 'border-input focus-visible:ring-ring')"
                       @input="(e) => { localScores[row.member_id] = (e.target as HTMLInputElement).value; }"
                     />
                   </template>
@@ -749,7 +749,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                     <select
                       :value="localGroups[row.member_id] ?? ''"
                       :aria-label="`${row.member_name} 결과 조`"
-                      class="h-11 sm:h-7 w-20 text-center border border-input rounded px-1 py-0 text-base sm:text-xs bg-background focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer"
+                      class="h-11 sm:h-7 w-20 text-center border border-input rounded px-1 py-0 text-base sm:text-xs bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 appearance-none cursor-pointer"
                       @change="(e) => { localGroups[row.member_id] = (e.target as HTMLSelectElement).value; }"
                     >
                       <option value="">-</option>
@@ -770,7 +770,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                     <select
                       :value="localRanks[row.member_id] ?? ''"
                       :aria-label="`${row.member_name} 시상`"
-                      class="h-11 sm:h-7 w-24 text-center border border-input rounded px-1 py-0 text-base sm:text-xs bg-background focus:outline-none focus:ring-1 focus:ring-ring appearance-none cursor-pointer"
+                      class="h-11 sm:h-7 w-24 text-center border border-input rounded px-1 py-0 text-base sm:text-xs bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 appearance-none cursor-pointer"
                       @change="(e) => { localRanks[row.member_id] = (e.target as HTMLSelectElement).value; }"
                     >
                       <option value="">-</option>
@@ -920,7 +920,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             v-model="unlockInput"
             rows="3"
             maxlength="200"
-            class="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+            class="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
             placeholder="예: 홍길동 스코어 오기 정정"
             :aria-invalid="!!unlockError"
             :aria-describedby="unlockError ? 'unlock-error' : undefined"

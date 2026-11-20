@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject } from 'vue';
 import { cn } from '@/lib/utils';
+import { nextRovingIndex } from './roving';
 import { TABS_KEY } from './tabs-context';
 
 interface Props {
@@ -23,12 +24,29 @@ function activate(): void {
   if (props.disabled) return;
   ctx.setValue(props.value);
 }
+
+// 방향키로 같은 탭 목록의 다른 탭으로 옮기고 바로 활성화한다. 목록은 DOM 에서
+// 찾는다 — 비활성 탭은 건너뛴다.
+function onKeydown(e: KeyboardEvent): void {
+  const self = e.currentTarget as HTMLElement;
+  const list = self.closest('[role="tablist"]');
+  if (!list) return;
+  const tabs = Array.from(list.querySelectorAll<HTMLButtonElement>('[role="tab"]:not(:disabled)'));
+  const next = nextRovingIndex(e.key, tabs.indexOf(self as HTMLButtonElement), tabs.length, 'horizontal', true);
+  if (next === null) return;
+  e.preventDefault();
+  tabs[next].focus();
+  tabs[next].click();
+}
 </script>
 
 <template>
   <button
     type="button"
     role="tab"
+    :id="`${ctx.baseId}-tab-${props.value}`"
+    :aria-controls="`${ctx.baseId}-panel-${props.value}`"
+    :tabindex="isActive ? 0 : -1"
     :aria-selected="isActive"
     :disabled="disabled"
     :class="cn(
@@ -37,6 +55,7 @@ function activate(): void {
       props.class
     )"
     @click="activate"
+    @keydown="onKeydown"
   >
     <slot />
   </button>
