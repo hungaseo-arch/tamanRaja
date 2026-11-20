@@ -1,14 +1,37 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { setPageTitle } from '@/lib/title';
 import { supabase } from '@/lib/supabase';
+import { describeError } from '@/lib/errors';
 import PolicySection from '@/components/PolicySection.vue';
 import HandicapResultsTable from '@/components/HandicapResultsTable.vue';
 
 onMounted(() => {
   setPageTitle('27년 핸디캡 (안)');
   void loadCourseRatings();
+  window.addEventListener('beforeprint', openAllDetails);
+  window.addEventListener('afterprint', restoreDetails);
 });
+onBeforeUnmount(() => {
+  window.removeEventListener('beforeprint', openAllDetails);
+  window.removeEventListener('afterprint', restoreDetails);
+});
+
+// 인쇄용 근거 문서이므로 닫힌 <details> 를 인쇄 직전에 펼치고 인쇄 후 원래대로 접는다.
+// CSS display 덮어쓰기만으로는 최근 Chromium 에서 닫힌 내용이 종이에 빠질 수 있다.
+const openedForPrint: HTMLDetailsElement[] = [];
+function openAllDetails(): void {
+  document.querySelectorAll<HTMLDetailsElement>('.policy-page details:not([open])').forEach((d) => {
+    d.open = true;
+    openedForPrint.push(d);
+  });
+}
+function restoreDetails(): void {
+  while (openedForPrint.length) {
+    const d = openedForPrint.pop();
+    if (d) d.open = false;
+  }
+}
 
 // 산식 8단계. 수식은 지시서 원문 그대로다 (재계산·재표기하지 않는다).
 const FORMULA_STEPS = [
@@ -156,6 +179,8 @@ const WHS_ROWS = [
   { name: '손동현', index: 23.2, std2026: 24, std2027: 24 },
   { name: '신승민', index: 26.2, std2026: 24, std2027: 25 },
 ];
+// 휴면 회원 명단 (WHS 평균 절대차 안내문용). 활동회원 표와 별개의 정적 근거값이다.
+const DORMANT_NAMES = ['허우석', '남경훈', '이성남'];
 /** Handicap Index − 기준핸디 (소수 첫째 자리). */
 function whsDiff(index: number, std: number): number {
   return Math.round((index - std) * 10) / 10;
@@ -209,7 +234,7 @@ async function loadCourseRatings(): Promise<void> {
     .order('name');
   courseRatingsLoading.value = false;
   if (error) {
-    courseRatingsError.value = error.message;
+    courseRatingsError.value = describeError(error, '구장 정보를 불러오지 못했음');
     return;
   }
   courseRatings.value = (data ?? []).map((c) => ({
@@ -225,9 +250,11 @@ async function loadCourseRatings(): Promise<void> {
       <header class="space-y-2">
         <h1 class="text-lg font-bold">27년 핸디캡 (안)</h1>
         <p class="text-sm leading-relaxed">
-          2027년 기준핸디 산정 방식과 회원별 산출 근거 공개 자료. 내용은 <strong>확정 전 안(案)</strong>이며
-          회원 확정 전 변경 가능
+          2027년 기준핸디 산정 방식과 회원별 산출 근거 공개 자료
         </p>
+        <p class="policy-draft" role="note">
+          <span class="policy-draft-tag">확정 전 안(案)</span>
+          회원 확정 전 변경 가능 · 적용은 2027년 1월 모임부터        </p>
       </header>
 
       <PolicySection id="sec-results" no="1" title="회원별 산정결과 (안)" default-open>
@@ -236,9 +263,9 @@ async function loadCourseRatings(): Promise<void> {
 
       <PolicySection id="sec-formula" no="2" title="산정 산식" default-open>
         <p class="policy-lead">기준핸디 산출 8단계. 순서대로 대입하면 본인 결과 직접 확인 가능</p>
-        <ol class="space-y-2 list-none p-0 m-0">
-          <li v-for="step in FORMULA_STEPS" :key="step.no" class="policy-card">
-            <p class="policy-card-title"><span class="policy-step-no" aria-hidden="true">{{ step.no }}</span>{{ step.name }}</p>
+        <ol class="space-y-2 list-none p-0 m-0" role="list">
+          <li v-for="(step, i) in FORMULA_STEPS" :key="step.no" class="policy-card">
+            <p class="policy-card-title"><span class="policy-step-no" aria-hidden="true">{{ step.no }}</span><span class="sr-only">{{ i + 1 }}단계 : </span>{{ step.name }}</p>
             <pre class="policy-formula">{{ step.formula }}</pre>
             <p class="policy-note">{{ step.note }}</p>
           </li>
@@ -367,10 +394,14 @@ async function loadCourseRatings(): Promise<void> {
 
       <PolicySection id="sec-attend" no="5" title="참석률 반영률">
         <p class="policy-note mt-0">
-          <strong>참석률 분모</strong> : 2026년 중 해당 회원이 모임 명부에 등재된 횟수임. 휴면 개시 이후 모임과
-          명부 미등재 모임은 분모에서 제외함. 13명은 분모 11이며, 이성남 3(2026-04 휴면) · 박재현
-          10(2026-06-06 모임 명부 미등재)임.
+          <strong>참석률 분모</strong> : 2026년 중 해당 회원이 모임 명부에 등재된 횟수. 휴면 개시 이후 모임과
+          명부 미등재 모임은 분모에서 제외
         </p>
+        <ul class="policy-list">
+          <li>기본 : 13명은 분모 11</li>
+          <li>예외 : 이성남 분모 3 (2026-04 휴면)</li>
+          <li>예외 : 박재현 분모 10 (2026-06-06 모임 명부 미등재)</li>
+        </ul>
         <p class="policy-lead mt-3">
           <strong>변동폭의 반영률</strong> 방식 적용. 참석이 적으면 표본 부족으로 평균값을 그대로
           신뢰하기 어려움
@@ -427,7 +458,7 @@ async function loadCourseRatings(): Promise<void> {
           </table>
         </div>
         <p class="policy-note mt-2">
-          한도 초과분은 2028년 산정에 이월. 2027년 한도 적용자 5명
+          한도 초과분은 2028년 산정에 이월. 2027년 한도 적용자 {{ CAPPED_MEMBERS.length }}명
         </p>
         <ul class="policy-list">
           <li v-for="m in CAPPED_MEMBERS" :key="m.name">
@@ -608,7 +639,7 @@ async function loadCourseRatings(): Promise<void> {
           </table>
         </div>
         <p class="policy-note mt-2">
-          산출 : 최근 20라운드 Score Differential 중 최저 8개 평균. 평균 절대차 : 2026 기준 {{ meanAbsDiff('std2026') }}타, 2027 기준(안) {{ meanAbsDiff('std2027') }}타. {{ meanAbsDiff('std2026') }}타는 위 표의 활동회원 14명 기준이며, 휴면 3명(허우석 · 남경훈 · 이성남)을 포함하면 1.1타가 됨. 화면에는 표에 실린 14명으로 계산한 값을 표시함
+          산출 : 최근 20라운드 Score Differential 중 최저 8개 평균. 평균 절대차 : 2026 기준 {{ meanAbsDiff('std2026') }}타, 2027 기준(안) {{ meanAbsDiff('std2027') }}타. {{ meanAbsDiff('std2026') }}타는 위 표의 활동회원 {{ WHS_ROWS.length }}명 기준이며, 휴면 {{ DORMANT_NAMES.length }}명({{ DORMANT_NAMES.join(' · ') }})을 포함하면 1.1타가 됨. 화면에는 표에 실린 {{ WHS_ROWS.length }}명으로 계산한 값을 표시함
         </p>
       </PolicySection>
 
@@ -957,6 +988,22 @@ async function loadCourseRatings(): Promise<void> {
   content: '';
   position: absolute;
   inset: -0.75rem -0.25rem;
+}
+
+/* 상단 상태 표시: 확정 전 안임을 위계 높은 태그로 먼저 보여 준다. */
+.policy-draft {
+  margin: 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.policy-draft-tag {
+  display: inline-block;
+  margin-right: 0.375rem;
+  padding: 0.0625rem 0.5rem;
+  border: 1px solid var(--pp-text);
+  border-radius: 0.25rem;
+  font-weight: 700;
+  color: var(--pp-text);
 }
 
 /* 인쇄: 접힌 섹션도 모두 펼치고 접기 버튼의 화살표는 숨긴다. */
