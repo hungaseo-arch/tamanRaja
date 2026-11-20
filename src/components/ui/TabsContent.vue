@@ -20,6 +20,8 @@ const isActive = computed(() => ctx.value.value === props.value);
   <div
     v-show="isActive"
     role="tabpanel"
+    :id="`${ctx.baseId}-panel-${props.value}`"
+    :aria-labelledby="`${ctx.baseId}-tab-${props.value}`"
     :class="cn(
       'mt-2 ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
       props.class

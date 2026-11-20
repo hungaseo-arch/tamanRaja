@@ -48,6 +48,12 @@ const navItems = computed<NavItem[]>(() => {
   return items;
 });
 
+// 해시 라우터라 href="#main-content" 를 그대로 두면 라우트가 바뀐다.
+// 기본 동작을 막고 본문으로 포커스만 옮긴다.
+function focusMain(): void {
+  document.getElementById('main-content')?.focus();
+}
+
 function isActive(path: string): boolean {
   return route.path === path;
 }
@@ -60,6 +66,11 @@ function isActive(path: string): boolean {
        scroll=false) 여기 main 에 열 제목을 붙인다. 그래야 표 위의 카드까지
        함께 밀려 올라가면서도 열 제목은 화면 맨 위에 남는다. -->
   <div class="h-dvh flex flex-col bg-background">
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      @click.prevent="focusMain"
+    >본문 바로가기</a>
     <header class="shrink-0 relative z-20 bg-card border-b border-border shadow-sm">
       <div class="w-full px-3 sm:px-4 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))]">
         <div class="flex items-center h-14 sm:h-16 gap-x-1.5 sm:gap-x-2">
@@ -127,7 +138,7 @@ function isActive(path: string): boolean {
          높이를 정하지 않고 내용만큼 길어지고, 넘치는 만큼 여기서 스크롤된다.
          가로 폭도 여기서 자르지 않는다 — 각 화면이 container … max-w-5xl 로
          스스로 정한다. 여기에 max-w 를 두면 그 선언이 조용히 무시된다. -->
-    <main class="flex-1 min-h-0 overflow-y-auto w-full">
+    <main id="main-content" tabindex="-1" class="focus:outline-none flex-1 min-h-0 overflow-y-auto w-full">
       <slot />
     </main>
     <footer class="shrink-0 text-center text-xs text-muted-foreground py-4 border-t border-border">
