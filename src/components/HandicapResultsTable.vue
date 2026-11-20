@@ -385,7 +385,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                     class="policy-flag pp-dormant"
                   >휴면</span>
                   <span v-if="r.capped" class="policy-flag">한도</span>
-                  <span v-if="r.low_sample" class="policy-flag">표본부족</span>
+                  <span v-if="r.low_sample" class="policy-flag" title="표본 부족">부족</span>
                 </th>
                 <td class="num pp-hide-sm">{{ r.std_hc_2025 ?? '—' }}</td>
                 <td class="num pp-hide-sm">{{ r.prev_std_hc ?? '—' }}</td>
