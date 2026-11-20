@@ -685,6 +685,8 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   justify-content: space-between;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
+  /* 글(범례)은 섹션 번호 원의 가로 중심(0.75rem)에서 시작한다. 표는 원래 위치. */
+  margin-left: 0.75rem;
 }
 .pp-head-row .pp-legend {
   flex: 1 1 16rem;
