@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/composables/useAuth';
+import { useToast } from '@/composables/useToast';
+import { describeError } from '@/lib/errors';
 import RowDetailDialog from '@/components/ui/RowDetailDialog.vue';
 import DetailItem from '@/components/ui/DetailItem.vue';
 
@@ -35,7 +38,13 @@ interface Row {
   status: string;
   /** 휴면 개시 연월 (없으면 null). 휴면 뱃지에 쓴다. */
   dormant_from?: string | null;
+  /** 인간미 보정 (정수 -2~+2, 미입력 null). handicap_humanity 에서 가져온다. */
+  humanity?: number | null;
 }
+
+// 인간미 보정 범위. 서버(handicap_humanity CHECK · save_handicap_humanity)도 같은 범위로 다시 검증한다.
+const HUMANITY_MIN = -2;
+const HUMANITY_MAX = 2;
 
 const YEAR = 2027;
 const COMPARE_YEAR = 2025;
@@ -55,11 +64,16 @@ async function load(): Promise<void> {
     .from('v_handicap_annual')
     .select('*')
     .in('year', [COMPARE_YEAR, YEAR]);
+  // 인간미는 별도 테이블이다. 아직 마이그레이션 전이거나 읽기에 실패해도 산정결과 표는 그대로 보여 준다.
+  const hum = await supabase.from('handicap_humanity').select('member_id, adj').eq('year', YEAR);
   loading.value = false;
   if (err) {
     error.value = err.message;
     return;
   }
+  const humMap = new Map<number, number>(
+    (hum.error ? [] : (hum.data ?? [])).map((h) => [h.member_id as number, Number(h.adj)]),
+  );
   // numeric 열이 문자열로 올 수 있어 숫자로 맞춘다 (null 은 그대로 둔다).
   const all = data ?? [];
   const std2025 = new Map<number, number>(
@@ -71,13 +85,16 @@ async function load(): Promise<void> {
       const out: Record<string, unknown> = { ...r };
       for (const k of NUMERIC_KEYS) out[k] = r[k] === null || r[k] === undefined ? null : Number(r[k]);
       out.std_hc_2025 = std2025.get(r.member_id as number) ?? null;
+      out.humanity = humMap.get(r.member_id as number) ?? null;
       return out as unknown as Row;
     });
 }
 onMounted(load);
 
 // ── 정렬 ─────────────────────────────────────────────────────────────────────
-type SortKey = 'member_name' | 'std_hc_2025' | 'prev_std_hc' | 'std_hc' | 'final_delta' | 'w_avg' | 'attend_rate';
+type SortKey =
+  | 'member_name' | 'std_hc_2025' | 'prev_std_hc' | 'std_hc' | 'humanity' | 'proposal'
+  | 'final_delta' | 'w_avg' | 'attend_rate';
 const sortKey = ref<SortKey>('std_hc');
 const sortAsc = ref(true);
 
@@ -89,12 +106,24 @@ function setSort(key: SortKey): void {
   }
 }
 
+// 2027 제안 = 2027 기준 + 인간미 (미입력은 0). 수정 중에는 입력 중인 값으로 바로 더한다.
+function humanityOf(r: Row): number | null {
+  if (editing.value) {
+    const d = draft.value[r.member_id];
+    if (d !== undefined) return parseHumanity(d);
+  }
+  return r.humanity ?? null;
+}
+function proposalOf(r: Row): number {
+  return r.std_hc + (humanityOf(r) ?? 0);
+}
+
 const sorted = computed(() => {
   const k = sortKey.value;
   const dir = sortAsc.value ? 1 : -1;
   return [...rows.value].sort((a, b) => {
-    const av = a[k];
-    const bv = b[k];
+    const av = k === 'proposal' ? proposalOf(a) : k === 'humanity' ? humanityOf(a) : a[k];
+    const bv = k === 'proposal' ? proposalOf(b) : k === 'humanity' ? humanityOf(b) : b[k];
     let c: number;
     if (typeof av === 'string' || typeof bv === 'string') c = String(av).localeCompare(String(bv), 'ko');
     else c = (av ?? 0) - (bv ?? 0);
@@ -151,6 +180,11 @@ function fmtAwardCounts(r: Row): string {
   return `${fmt(r.w_win, 2)} / ${fmt(r.w_med, 2)} / ${fmt(r.w_host, 2)}`;
 }
 // 시상보정은 소수 둘째 자리까지 쓰는 열이라 별도 포맷터를 둔다.
+function fmtSignedInt(v: number): string {
+  if (v > 0) return `+${v}`;
+  if (v < 0) return `${MINUS}${Math.abs(v)}`;
+  return '0';
+}
 function fmtSigned2(v: number | null): string {
   if (v === null) return '—';
   const t = Math.abs(v).toFixed(2);
@@ -178,11 +212,70 @@ const totalLabel = computed(() => {
   return totalStd.value > totalPrev.value ? '증가' : '감소';
 });
 
+// ── 인간미 입력 · 저장 (관리자만) ────────────────────────────────────────────
+const { isAdmin } = useAuth();
+const { toast } = useToast();
+const editing = ref(false);
+const saving = ref(false);
+/** 입력 중인 문자열. 빈 문자열은 '지움'이다. */
+const draft = ref<Record<number, string>>({});
+
+/** 입력 문자열 → 값. 비어 있으면 null, 범위·정수가 아니면 NaN. */
+function parseHumanity(raw: string): number | null {
+  const t = raw.trim().replace(MINUS, '-');
+  if (t === '') return null;
+  const n = Number(t);
+  if (!Number.isInteger(n) || n < HUMANITY_MIN || n > HUMANITY_MAX) return NaN;
+  return n;
+}
+function isInvalid(r: Row): boolean {
+  const d = draft.value[r.member_id];
+  return d !== undefined && Number.isNaN(parseHumanity(d));
+}
+const hasInvalid = computed(() => rows.value.some(isInvalid));
+const changed = computed(() =>
+  rows.value.filter((r) => {
+    const d = draft.value[r.member_id];
+    return d !== undefined && !Number.isNaN(parseHumanity(d)) && parseHumanity(d) !== (r.humanity ?? null);
+  }),
+);
+
+function startEdit(): void {
+  draft.value = Object.fromEntries(rows.value.map((r) => [r.member_id, r.humanity == null ? '' : String(r.humanity)]));
+  editing.value = true;
+}
+function cancelEdit(): void {
+  editing.value = false;
+  draft.value = {};
+}
+async function saveEdit(): Promise<void> {
+  if (hasInvalid.value || changed.value.length === 0 || saving.value) return;
+  saving.value = true;
+  try {
+    const items = changed.value.map((r) => ({ member_id: r.member_id, adj: parseHumanity(draft.value[r.member_id] ?? '') }));
+    const { data, error: err } = await supabase.rpc('save_handicap_humanity', { p_year: YEAR, p_items: items });
+    if (err) throw err;
+    const res = data as { ok: boolean; message?: string; saved?: number };
+    if (!res.ok) throw new Error(res.message ?? '저장 실패');
+    // 서버가 받은 값을 다시 읽어 화면과 DB 가 어긋나지 않게 한다.
+    await load();
+    editing.value = false;
+    draft.value = {};
+    toast({ title: '인간미 저장 완료', description: `${res.saved ?? items.length}건 반영` });
+  } catch (e) {
+    toast({ title: '저장 실패', description: describeError(e, ''), variant: 'destructive' });
+  } finally {
+    saving.value = false;
+  }
+}
+
 const COLS: { key: SortKey; label: string; cls: string }[] = [
   { key: 'member_name', label: '성명', cls: '' },
   { key: 'std_hc_2025', label: '2025 기준(연말)', cls: 'num pp-hide-sm' },
   { key: 'prev_std_hc', label: '2026 기준', cls: 'num pp-hide-sm' },
   { key: 'std_hc', label: '2027 기준', cls: 'num pp-col-std' },
+  { key: 'humanity', label: '인간미', cls: 'num pp-col-hum' },
+  { key: 'proposal', label: '2027 제안', cls: 'num pp-col-std' },
   { key: 'final_delta', label: '증감', cls: 'num' },
   { key: 'w_avg', label: '가중평균 오버파', cls: 'num pp-hide-sm' },
   { key: 'attend_rate', label: '2026 참석률', cls: 'num pp-hide-sm' },
@@ -202,6 +295,18 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
       <p class="policy-note mt-0 mb-2">
         성명 선택 시 산정 근거(구간별 평균·가중 라운드·시상보정·산출핸디 등) 창 표시. 열 제목 선택 시 정렬 변경
       </p>
+      <div v-if="isAdmin" class="pp-edit-bar">
+        <template v-if="!editing">
+          <button type="button" class="pp-btn" @click="startEdit">인간미 수정</button>
+        </template>
+        <template v-else>
+          <button type="button" class="pp-btn pp-btn-primary" :disabled="saving || hasInvalid || changed.length === 0" @click="saveEdit">
+            {{ saving ? '저장 중' : `저장${changed.length ? ` (${changed.length}건)` : ''}` }}
+          </button>
+          <button type="button" class="pp-btn" :disabled="saving" @click="cancelEdit">취소</button>
+          <span v-if="hasInvalid" class="pp-edit-msg pp-up" role="alert">인간미는 −2 ~ +2 사이 정수만 입력 가능</span>
+        </template>
+      </div>
       <div class="policy-table-wrap">
         <table class="policy-table pp-results">
           <thead>
@@ -241,6 +346,23 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                 <td class="num pp-hide-sm">{{ r.std_hc_2025 ?? '—' }}</td>
                 <td class="num pp-hide-sm">{{ r.prev_std_hc ?? '—' }}</td>
                 <td class="num pp-std">{{ r.std_hc }}</td>
+                <td class="num pp-hum" :class="deltaClass(humanityOf(r) || null)">
+                  <input
+                    v-if="editing"
+                    v-model="draft[r.member_id]"
+                    type="number"
+                    class="pp-hum-input"
+                    :class="{ 'pp-hum-invalid': isInvalid(r) }"
+                    :min="HUMANITY_MIN"
+                    :max="HUMANITY_MAX"
+                    step="1"
+                    :aria-label="`${r.member_name} 인간미 (${HUMANITY_MIN} ~ +${HUMANITY_MAX})`"
+                    :aria-invalid="isInvalid(r)"
+                    @keydown.enter.prevent="saveEdit"
+                  />
+                  <template v-else>{{ r.humanity == null ? '—' : fmtSignedInt(r.humanity) }}</template>
+                </td>
+                <td class="num pp-std">{{ Number.isNaN(humanityOf(r)) ? '—' : proposalOf(r) }}</td>
                 <td class="num" :class="deltaClass(r.final_delta)">
                   {{ fmtSigned2(r.final_delta) }}
                   <span class="pp-delta-label">{{ deltaLabel(r.final_delta) }}</span>
@@ -252,12 +374,12 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
           </tbody>
           <tfoot>
             <tr>
-              <!-- 좁은 화면은 보이는 열이 3개뿐이다. colspan 을 7 로 두면 숨은 열 4개가 폭을 나눠 가져가
+              <!-- 좁은 화면은 보이는 열이 5개뿐이다. colspan 을 9 로 두면 숨은 열 4개가 폭을 나눠 가져가
                    증감 열이 쪼그라들므로, 폭에 맞는 칸을 따로 둔다. -->
-              <td colspan="3" class="pp-foot-sm">
+              <td colspan="5" class="pp-foot-sm">
                 <strong>핸디 총합 {{ totalPrev }} → {{ totalStd }} ({{ totalLabel }})</strong>
               </td>
-              <td colspan="7" class="pp-hide-sm">
+              <td colspan="9" class="pp-hide-sm">
                 <strong>핸디 총합 {{ totalPrev }} → {{ totalStd }} ({{ totalLabel }})</strong>
               </td>
             </tr>
@@ -271,6 +393,8 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
         <DetailItem label="2025 기준(연말)">{{ selected.std_hc_2025 ?? '—' }}</DetailItem>
         <DetailItem label="2026 기준">{{ selected.prev_std_hc ?? '—' }}</DetailItem>
         <DetailItem label="2027 기준(안)"><span class="pp-std">{{ selected.std_hc }}</span></DetailItem>
+        <DetailItem label="인간미">{{ selected.humanity == null ? '—' : fmtSignedInt(selected.humanity) }}</DetailItem>
+        <DetailItem label="2027 제안(안)"><span class="pp-std">{{ proposalOf(selected) }}</span></DetailItem>
         <DetailItem label="증감">
           <span :class="deltaClass(selected.final_delta)">
             {{ fmtSigned2(selected.final_delta) }} {{ deltaLabel(selected.final_delta) }}
@@ -350,11 +474,65 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   text-align: left;
 }
 .pp-results thead th.pp-col-std {
-  width: 90px;
+  width: 58px;
+}
+.pp-results thead th.pp-col-hum {
+  width: 72px;
 }
 .pp-sort {
   flex-wrap: wrap;
   justify-content: center;
+}
+.pp-edit-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.pp-edit-msg {
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.pp-btn {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--pp-border, #d1d5db);
+  border-radius: 0.375rem;
+  background: transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pp-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.pp-btn-primary {
+  background: #15803d;
+  border-color: #15803d;
+  color: #fff;
+}
+.pp-btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+.pp-hum-input {
+  width: 3.5rem;
+  padding: 0.15rem 0.25rem;
+  border: 1px solid var(--pp-border, #d1d5db);
+  border-radius: 0.25rem;
+  background: #fff;
+  font: inherit;
+  text-align: center;
+}
+.pp-hum-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 1px;
+}
+.pp-hum-invalid {
+  border-color: #dc2626;
+  background: #fef2f2;
 }
 .pp-dormant {
   cursor: help;
@@ -366,7 +544,8 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   .pp-results tbody th {
     width: 19%;
   }
-  .pp-results thead th.pp-col-std {
+  .pp-results thead th.pp-col-std,
+  .pp-results thead th.pp-col-hum {
     width: auto;
   }
 }
