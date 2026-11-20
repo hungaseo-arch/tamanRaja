@@ -63,12 +63,12 @@ const NUMERIC_KEYS = [
 async function load(): Promise<void> {
   loading.value = true;
   error.value = null;
-  const { data, error: err } = await supabase
-    .from('v_handicap_annual')
-    .select('*')
-    .in('year', [COMPARE_YEAR, YEAR]);
+  // 두 조회는 서로 의존하지 않으므로 병렬로 보낸다.
   // 인간미는 별도 테이블이다. 아직 마이그레이션 전이거나 읽기에 실패해도 산정결과 표는 그대로 보여 준다.
-  const hum = await supabase.from('handicap_humanity').select('member_id, adj').eq('year', YEAR);
+  const [{ data, error: err }, hum] = await Promise.all([
+    supabase.from('v_handicap_annual').select('*').in('year', [COMPARE_YEAR, YEAR]),
+    supabase.from('handicap_humanity').select('member_id, adj').eq('year', YEAR),
+  ]);
   loading.value = false;
   if (err) {
     error.value = err.message;
@@ -352,10 +352,6 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                   <span
                     v-if="r.dormant_from"
                     class="policy-flag pp-dormant"
-                    tabindex="0"
-                    role="note"
-                    :title="DORMANT_TIP"
-                    :aria-label="`휴면. ${DORMANT_TIP}`"
                   >휴면</span>
                   <span v-if="r.capped" class="policy-flag">한도</span>
                   <span v-if="r.low_sample" class="policy-flag">표본부족</span>
@@ -490,6 +486,9 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
         <DetailItem label="한도 적용 후 증감">
           <span :class="deltaClass(selected.final_delta)">{{ fmtSigned2(selected.final_delta) }}</span>
         </DetailItem>
+        <DetailItem v-if="selected.dormant_from" label="휴면">
+          <span class="pp-note-text">{{ DORMANT_TIP }}</span>
+        </DetailItem>
         <DetailItem v-if="selected.capped" label="한도 적용">
           <span class="pp-up">적용 전 {{ fmtSigned2(selected.raw_delta) }} → 적용 후 {{ fmtSigned2(selected.final_delta) }}</span>
         </DetailItem>
@@ -593,7 +592,6 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   border-color: var(--primary);
 }
 .pp-dormant {
-  cursor: help;
   border-color: var(--muted-foreground);
   color: var(--muted-foreground);
 }
