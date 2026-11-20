@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 import { Download } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { useRecordExport } from '@/composables/useRecordExport';
@@ -30,7 +30,7 @@ import TableHead from '@/components/ui/TableHead.vue';
 import TableCell from '@/components/ui/TableCell.vue';
 
 const router = useRouter();
-const { isLoggedIn, currentMember } = useAuth();
+const { isLoggedIn, isAdmin, currentMember } = useAuth();
 
 if (!isLoggedIn.value) {
   router.replace(ROUTE_PATHS.HOME);
@@ -241,13 +241,13 @@ function handleExport(): void {
         <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4">
           <Card>
             <CardContent class="flex flex-col items-center justify-center h-full py-3 px-2 sm:px-4">
-              <p class="text-xs sm:text-sm text-muted-foreground mb-1">참석 횟수</p>
+              <p class="text-sm text-muted-foreground mb-1">참석 횟수</p>
               <p class="text-xl font-bold">{{ derived.attendedCount }}회</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent class="flex flex-col items-center justify-center h-full py-3 px-2 sm:px-4">
-              <p class="text-xs sm:text-sm text-muted-foreground mb-1">평균 Net</p>
+              <p class="text-sm text-muted-foreground mb-1">평균 Net</p>
               <p class="text-xl font-bold font-mono">
                 <template v-if="derived.avgNet !== null">
                   <span :class="derived.avgNet >= 0 ? 'text-net-plus' : 'text-net-minus'">
@@ -260,23 +260,30 @@ function handleExport(): void {
           </Card>
           <Card>
             <CardContent class="flex flex-col items-center justify-center h-full py-3 px-2 sm:px-4">
-              <p class="text-xs sm:text-sm text-muted-foreground mb-1">Winner</p>
+              <p class="text-sm text-muted-foreground mb-1">Winner</p>
               <p :class="cn('text-xl font-bold', RANK_STYLE.Winner.text)">{{ derived.winnerCount }}회</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent class="flex flex-col items-center justify-center h-full py-3 px-2 sm:px-4">
-              <p class="text-xs sm:text-sm text-muted-foreground mb-1">Medalist</p>
+              <p class="text-sm text-muted-foreground mb-1">Medalist</p>
               <p :class="cn('text-xl font-bold', RANK_STYLE.Medalist.text)">{{ derived.medalistCount }}회</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent class="flex flex-col items-center justify-center h-full py-3 px-2 sm:px-4">
-              <p class="text-xs sm:text-sm text-muted-foreground mb-1">Host</p>
+              <p class="text-sm text-muted-foreground mb-1">Host</p>
               <p :class="cn('text-xl font-bold', RANK_STYLE.Host.text)">{{ derived.hostCount }}회</p>
             </CardContent>
           </Card>
         </div>
+
+        <!-- 시상 카드 설명. 용어만 있으면 무엇을 센 횟수인지 알 수 없다. -->
+        <p class="text-sm text-muted-foreground leading-relaxed">
+          Winner·Medalist·Host 는 월례회 시상 횟수. 시상 기준과 핸디 반영은
+          <RouterLink :to="ROUTE_PATHS.HANDICAP_POLICY" class="text-primary underline underline-offset-4">27년 핸디캡 (안)</RouterLink>
+          참고
+        </p>
 
         <!-- 연도별 기준핸디 추이 (선택한 연도와 무관하게 전체 연도) -->
         <MemberHandicapTrend :member-id="currentMember.id" />
@@ -298,7 +305,7 @@ function handleExport(): void {
                    함께 밀려 올라가고, 열 제목만 화면 맨 위에 남는다. -->
               <Table
                 :scroll="compact"
-                class="text-xs sm:text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
+                class="text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
                 caption="월별 참석·핸디·스코어 기록"
               >
                 <TableHeader>
@@ -307,7 +314,7 @@ function handleExport(): void {
                     <TableHead class="font-bold text-foreground whitespace-nowrap sticky left-0 z-30 bg-card">
                       <Badge variant="default">{{ historyYear }}년</Badge>
                     </TableHead>
-                    <TableHead class="font-bold text-foreground whitespace-nowrap">골프장</TableHead>
+                    <TableHead class="font-bold text-foreground whitespace-nowrap hidden sm:table-cell">골프장</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">기준 핸디</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">당월 핸디</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">차월 핸디</TableHead>
@@ -336,7 +343,7 @@ function handleExport(): void {
                       <template v-else>{{ formatMonth(row.year_month) }}</template>
                     </TableCell>
                     <TableCell
-                      class="whitespace-nowrap"
+                      class="whitespace-nowrap hidden sm:table-cell"
                       :class="row.course_name ? '' : 'text-muted-foreground text-sm'"
                     >{{ formatCourse(row) }}</TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell">{{ formatValue(row.std_hc) }}</TableCell>
@@ -374,7 +381,7 @@ function handleExport(): void {
                   <!-- 평균 행 -->
                   <TableRow class="border-t-2 border-border bg-muted/40 font-semibold">
                     <TableCell class="text-sm text-muted-foreground whitespace-nowrap pl-7">평균</TableCell>
-                    <TableCell />
+                    <TableCell class="hidden sm:table-cell" />
                     <TableCell class="hidden sm:table-cell" />
                     <TableCell class="hidden sm:table-cell" />
                     <TableCell class="hidden sm:table-cell" />
@@ -394,7 +401,7 @@ function handleExport(): void {
                   </TableRow>
                 </TableBody>
               </Table>
-              <p v-if="setting('handicap_notice')" class="text-xs text-muted-foreground mt-2 px-4">
+              <p v-if="setting('handicap_notice')" class="text-sm text-muted-foreground mt-2 px-4">
                 {{ setting('handicap_notice') }}
               </p>
             </div>
@@ -418,7 +425,7 @@ function handleExport(): void {
             <DetailItem label="당월 핸디"><span class="font-mono">{{ formatValue(detailRow.app_hc) }}</span></DetailItem>
             <DetailItem label="차월 핸디">
               <span class="font-mono">{{ formatValue(detailRow.next_hc) }}</span>
-              <Badge v-if="detailRow.next_hc_mismatch" variant="outline" class="ml-1.5 border-warning-border text-warning font-normal">※ 저장값 불일치(관리자 확인 필요)</Badge>
+              <Badge v-if="isAdmin && detailRow.next_hc_mismatch" variant="outline" class="ml-1.5 border-warning-border text-warning font-normal">※ 저장값 불일치(관리자 확인 필요)</Badge>
             </DetailItem>
             <DetailItem label="스코어">
               <span v-if="detailRow.attended && detailRow.score !== null" class="font-mono">{{ detailRow.score }}</span>

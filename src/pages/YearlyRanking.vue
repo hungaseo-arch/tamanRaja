@@ -126,8 +126,6 @@ const rankBasis = ref<RankBasis>('avg_score');
 const rankBasisLabel = computed(() =>
   rankBasis.value === 'avg_score' ? '평균 스코어' : '평균 Net'
 );
-// '평균 스코어가' / '평균 Net이' — 받침에 따라 조사가 다르다
-const rankBasisParticle = computed(() => (rankBasis.value === 'avg_score' ? '가' : '이'));
 
 // 기준 지표를 카드 위쪽에 놓아 "무엇으로 매긴 순위인지"가 먼저 읽히게 한다.
 const metricOrder = computed<RankBasis[]>(() =>
@@ -361,37 +359,47 @@ function stickyTint(rank: number | null): string {
         </Button>
       </div>
 
-      <!-- 상위 4명 하이라이트 카드 -->
-      <div v-if="rankedQualified.length > 0" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <!-- 현재 랭킹 기준과 바꾸는 방법. 표 바로 위 제목 줄 근처에 두어 첫 화면에서
+           "무엇으로 매긴 순위인지"와 "열 제목을 누르면 바뀐다"가 함께 읽힌다. -->
+      <p class="text-sm text-muted-foreground leading-relaxed">
+        현재 기준
+        <strong class="text-foreground">{{ rankBasisLabel }}</strong>
+        (낮은 순) · 평균 Net·평균 스코어 열 제목 누르면 기준 변경
+      </p>
+
+      <!-- 상위 4명 하이라이트 카드. 모바일에서는 한 줄 4칸에 이름과 기준 지표만 둔다.
+           나머지(다른 지표·참석·시상)는 표와 줄 상세 창에 있고, sm 이상에서만 카드에 보인다. -->
+      <div v-if="rankedQualified.length > 0" class="grid grid-cols-4 gap-2 sm:gap-3">
         <Card
           v-for="(row, idx) in rankedQualified.slice(0, 4)"
           :key="row.member_id"
           :class="podiumCardClass(idx)"
         >
-          <CardContent class="px-3 pt-2 pb-3 sm:px-3 sm:pb-3 text-center space-y-0.5">
+          <CardContent class="px-1 pt-2 pb-2 sm:px-3 sm:pb-3 text-center space-y-0.5">
             <p class="text-xl">
               <span role="img" :aria-label="`${idx + 1}위`" :class="rankIconClass(idx + 1)">{{ rankLabel(idx + 1) }}</span>
             </p>
-            <p class="text-shadow-md font-bold">{{ row.member_name }}</p>
+            <p class="font-bold text-sm sm:text-base truncate">{{ row.member_name }}</p>
             <!-- 두 지표를 모두 보이되 순위 기준인 쪽을 위에 두고 진하게 쓴다.
-                 카드에 한 지표만 있으면 "이 숫자가 낮은데 왜 아래 등수냐"가 된다. -->
+                 카드에 한 지표만 있으면 "이 숫자가 낮은데 왜 아래 등수냐"가 된다.
+                 모바일에서는 기준 지표 하나만 값으로 보인다(기준은 위 안내 줄에 있음). -->
             <p
-              v-for="key in metricOrder"
+              v-for="(key, keyIdx) in metricOrder"
               :key="key"
               class="text-sm"
-              :class="key === rankBasis ? 'text-foreground' : 'text-muted-foreground'"
+              :class="[key === rankBasis ? 'text-foreground' : 'text-muted-foreground', keyIdx > 0 ? 'hidden sm:block' : '']"
             >
               <template v-if="key === 'avg_score'">
-                평균 스코어
-                <span class="font-mono font-semibold ml-1 text-avg-score">
+                <span class="hidden sm:inline">평균 스코어</span>
+                <span class="font-mono font-semibold sm:ml-1 text-avg-score">
                   <template v-if="row.avg_score !== null">{{ row.avg_score.toFixed(1) }}</template>
                   <span v-else class="text-muted-foreground">-</span>
                 </span>
               </template>
               <template v-else>
-                평균 Net
+                <span class="hidden sm:inline">평균 Net</span>
                 <span
-                  class="font-mono font-semibold ml-1"
+                  class="font-mono font-semibold sm:ml-1"
                   :class="row.avg_net_score >= 0
                     ? 'text-net-plus'
                     : 'text-net-minus'"
@@ -400,8 +408,8 @@ function stickyTint(rank: number | null): string {
                 </span>
               </template>
             </p>
-            <p class="text-sm text-muted-foreground">{{ row.attended_count }}회 참석</p>
-            <div class="flex justify-center gap-1 flex-wrap pt-1.5">
+            <p class="hidden sm:block text-sm text-muted-foreground">{{ row.attended_count }}회 참석</p>
+            <div class="hidden sm:flex justify-center gap-1 flex-wrap pt-1.5">
               <RankBadge v-if="row.winner_count" rank="Winner" :count="row.winner_count" class="text-xs" />
               <RankBadge v-if="row.medalist_count" rank="Medalist" :count="row.medalist_count" class="text-xs" />
               <RankBadge v-if="row.host_count" rank="Host" :count="row.host_count" class="text-xs" />
@@ -435,7 +443,7 @@ function stickyTint(rank: number | null): string {
                  밀려 올라가고, 열 제목만 화면 맨 위에 남는다. -->
             <Table
               :scroll="false"
-              class="text-xs sm:text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
+              class="text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
               :caption="`${selectedYear}년 연간 랭킹 — ${rankBasisLabel} 낮은 순, 치른 ${yearMeetingCount}경기 중 50% 이상(${minRoundsNum}회) 참석자 대상`">
               <TableHeader>
                 <TableRow>
@@ -449,7 +457,7 @@ function stickyTint(rank: number | null): string {
                   </TableHead>
                   <TableHead class="font-bold text-foreground whitespace-nowrap sticky left-14 z-30 bg-card" scope="col">회원</TableHead>
                   <TableHead
-                    class="font-bold text-center whitespace-nowrap p-0"
+                    class="font-bold text-center whitespace-nowrap hidden sm:table-cell p-0"
                     scope="col"
                     :aria-sort="sortAriaSort('attended_count')"
                   >
@@ -457,7 +465,7 @@ function stickyTint(rank: number | null): string {
                          쓸 수 있고 Tab 으로는 닿지도 않는다. (P2-1) -->
                     <button
                       type="button"
-                      class="w-full h-full px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
+                      class="w-full h-full min-h-11 sm:min-h-0 px-1.5 sm:px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
                       :aria-label="`참석 기준으로 정렬`"
                       @click="setSort('attended_count')"
                     >
@@ -479,7 +487,7 @@ function stickyTint(rank: number | null): string {
                          쓸 수 있고 Tab 으로는 닿지도 않는다. (P2-1) -->
                     <button
                       type="button"
-                      class="w-full h-full px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
+                      class="w-full h-full min-h-11 sm:min-h-0 px-1.5 sm:px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
                       :aria-label="`기준 핸디 기준으로 정렬`"
                       @click="setSort('std_hc')"
                     >
@@ -501,7 +509,7 @@ function stickyTint(rank: number | null): string {
                          쓸 수 있고 Tab 으로는 닿지도 않는다. (P2-1) -->
                     <button
                       type="button"
-                      class="w-full h-full px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
+                      class="w-full h-full min-h-11 sm:min-h-0 px-1.5 sm:px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
                       :aria-label="`평균 Net 기준으로 정렬`"
                       @click="setSort('avg_net_score')"
                     >
@@ -523,7 +531,7 @@ function stickyTint(rank: number | null): string {
                          쓸 수 있고 Tab 으로는 닿지도 않는다. (P2-1) -->
                     <button
                       type="button"
-                      class="w-full h-full px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
+                      class="w-full h-full min-h-11 sm:min-h-0 px-1.5 sm:px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
                       :aria-label="`평균 스코어 기준으로 정렬`"
                       @click="setSort('avg_score')"
                     >
@@ -545,7 +553,7 @@ function stickyTint(rank: number | null): string {
                 <template v-for="entry in tableRows" :key="entry.row?.member_id ?? '__divider'">
                   <!-- 기준 미달 구역 시작 -->
                   <TableRow v-if="entry.divider" class="bg-muted/50 hover:bg-muted/50">
-                    <TableCell :colspan="9" class="text-xs text-muted-foreground py-1.5">
+                    <TableCell :colspan="9" class="text-sm text-muted-foreground py-1.5">
                       아래는 50% 미만 참석으로 순위에서 제외된 회원
                     </TableCell>
                   </TableRow>
@@ -572,7 +580,7 @@ function stickyTint(rank: number | null): string {
                     <TableCell :class="cn('font-medium whitespace-nowrap left-14', STICKY_BASE, stickyTint(entry.rank))">
                       <RowDetailButton :label="entry.row.member_name" :enabled="compact" @click="openDetail(entry)">{{ entry.row.member_name }}</RowDetailButton>
                     </TableCell>
-                    <TableCell class="text-center whitespace-nowrap">{{ entry.row.attended_count }}회</TableCell>
+                    <TableCell class="text-center whitespace-nowrap hidden sm:table-cell">{{ entry.row.attended_count }}회</TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell">{{ stdHcMap.get(entry.row.member_id) ?? '-' }}</TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap">
                       <span
@@ -608,7 +616,7 @@ function stickyTint(rank: number | null): string {
                 </template>
               </TableBody>
             </Table>
-            <p v-if="setting('handicap_notice')" class="text-xs text-muted-foreground mt-2 px-4">
+            <p v-if="setting('handicap_notice')" class="text-sm text-muted-foreground mt-2 px-4">
               {{ setting('handicap_notice') }}
             </p>
           </div>
@@ -625,7 +633,7 @@ function stickyTint(rank: number | null): string {
         <template v-if="detailEntry?.row">
           <DetailItem label="순위">
             <span v-if="detailEntry.rank !== null">{{ detailEntry.rank }}위</span>
-            <span v-else class="text-muted-foreground text-xs">50% 미만 참석 — 순위 제외</span>
+            <span v-else class="text-muted-foreground text-sm">50% 미만 참석 — 순위 제외</span>
           </DetailItem>
           <DetailItem label="참석 횟수">{{ detailEntry.row.attended_count }}회</DetailItem>
           <DetailItem label="기준 핸디">
@@ -659,17 +667,12 @@ function stickyTint(rank: number | null): string {
         </template>
       </RowDetailDialog>
 
-      <!-- 랭킹 기준을 화면에 명시한다 (P1-3 완료 조건).
-           표 위에 두면 첫 화면의 상당 부분을 설명이 차지해 정작 봐야 할 표가
-           서너 줄만 남는다. 한 번 읽으면 되는 안내라 표 아래로 내렸다. -->
-      <p class="text-xs text-muted-foreground leading-relaxed">
-        <strong class="text-foreground">랭킹 기준</strong> —
-        <strong class="text-foreground">{{ rankBasisLabel }}</strong>{{ rankBasisParticle }} 낮은 순 ·
+      <!-- 순위 부여 조건. 기준 지표와 바꾸는 방법은 표 위 안내 줄로 올렸고,
+           여기에는 한 번 읽으면 되는 조건만 남긴다. -->
+      <p class="text-sm text-muted-foreground leading-relaxed">
         {{ selectedYear }}년 치른 {{ yearMeetingCount }}경기 중
         <strong class="text-foreground">50% 이상({{ minRoundsNum }}회)</strong> 참석한
-        회원에게만 순위 부여 · 표의 <strong class="text-foreground">평균 Net</strong> ·
-        <strong class="text-foreground">평균 스코어</strong> 열 제목을 누르면 그 지표가 순위 기준 ·
-        참석·기준 핸디 정렬은 순위에 영향 없음
+        회원에게만 순위 부여 · 참석·기준 핸디 정렬은 순위에 영향 없음
       </p>
     </div>
   </div>
