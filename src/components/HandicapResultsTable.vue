@@ -142,10 +142,6 @@ function ariaSort(key: SortKey): 'ascending' | 'descending' | 'none' {
   return sortAsc.value ? 'ascending' : 'descending';
 }
 
-// 참석률 분모 설명. 작업지시서 3-5절 "참석률 분모(필수 문구)" 와 같은 문장이다.
-const ATTEND_DENOM_TEXT =
-  '2026년 중 해당 회원이 모임 명부에 등재된 횟수임. 휴면 개시 이후 모임과 명부 미등재 모임은 분모에서 제외함. ' +
-  '13명은 분모 11이며, 이성남 3(2026-04 휴면) · 박재현 10(2026-06-06 모임 명부 미등재)임.';
 const DORMANT_TIP = '휴면 중. 복귀 전까지 적용되지 않는 참고값임 (9번 섹션 안내 참조)';
 
 // ── 상세 창 ──────────────────────────────────────────────────────────────────
@@ -513,7 +509,6 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
         <DetailItem label="가중평균 오버파">{{ fmt(selected.w_avg) }}</DetailItem>
         <DetailItem label="2026 참석률">
           {{ fmt(selected.attend_rate) }}%
-          <span class="pp-caption">{{ ATTEND_DENOM_TEXT }}</span>
         </DetailItem>
         <DetailItem label="A 구간 평균">{{ fmt(selected.avg_a) }}</DetailItem>
         <DetailItem label="B 구간 평균">{{ fmt(selected.avg_b) }}</DetailItem>
@@ -757,13 +752,6 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   .pp-foot-sm {
     display: none;
   }
-}
-.pp-caption {
-  display: block;
-  margin-top: 0.125rem;
-  font-size: 0.75rem;
-  font-weight: 400;
-  color: var(--muted-foreground);
 }
 .pp-note-text {
   display: block;
