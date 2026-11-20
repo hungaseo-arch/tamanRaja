@@ -19,7 +19,10 @@ const route = useRoute();
 
 // line1/line2 는 sm~xl 구간에서 두 줄로 접기 위한 것. 좁은 폭(<sm)에서는
 // 상단 nav 자체를 쓰지 않고 하단 탭 바로 내려가므로 label 만 쓴다.
-// tabLabel 은 하단 탭 바 전용 짧은 이름 (항목이 5개 이상이면 긴 이름이 잘린다).
+// tabLabel 은 하단 탭 바 전용 짧은 이름. 탭 라벨은 14px 라 375px 폭의 5칸
+// (칸당 75px, 좌우 여백 4px 를 빼면 글자 폭 71px)에서 한 줄에 들어가야 한다.
+// 14px 한글은 글자당 약 14px 이므로 공백 포함 5자(약 60~66px)까지가 한계다.
+// '27년 핸디(안)' 은 약 85px 라 두 줄로 꺾여 탭 높이(56px)를 넘으므로 줄였다.
 interface NavItem { path: string; label: string; tabLabel?: string; line1: string; line2: string; icon: Component }
 
 const navItems = computed<NavItem[]>(() => {
@@ -34,7 +37,7 @@ const navItems = computed<NavItem[]>(() => {
     items.push({
       path: ROUTE_PATHS.HANDICAP_POLICY,
       label: '27년 핸디캡 (안)',
-      tabLabel: '27년 핸디(안)',
+      tabLabel: '핸디(안)',
       line1: '27년',
       line2: '핸디캡 (안)',
       icon: Scale,
@@ -118,25 +121,26 @@ function isActive(path: string): boolean {
 
           <!-- 로그인/회원정보 -->
           <div class="flex items-center gap-1 sm:gap-2 shrink-0">
-            <!-- 좁은 폭에서는 글자가 숨겨져 아이콘만 남으므로 이름을 aria-label 로
-                 따로 준다. 그림만 있는 버튼은 화면 낭독기에서 "버튼"으로만 읽힌다. -->
             <!-- 계정과 관련된 일(PIN 변경·로그아웃)은 이 버튼 하나로 모은다.
                  아이콘이 둘이면 이름이 숨는 좁은 폭에서 어느 쪽이 무엇인지
                  그림만 보고 가려내야 했다. -->
+            <!-- 좁은 폭에서도 글자를 숨기지 않는다. 로그인 전에는 '로그인',
+                 로그인 후에는 이름을 보이고, 이름이 길면 말줄임(max-w-24=96px)으로
+                 자른다. 375px 에서 로고(약 130px)와 합쳐도 헤더 폭 351px 안이다. -->
             <Button
               v-if="isLoggedIn && currentMember"
               variant="outline"
               size="sm"
-              class="gap-2"
+              class="gap-2 max-w-40"
               :aria-label="`${currentMember.name} 님 계정`"
               @click="onLoginClick"
             >
-              <User class="w-4 h-4 text-primary" aria-hidden="true" />
-              <span class="hidden sm:inline font-medium">{{ currentMember.name }}</span>
+              <User class="w-4 h-4 shrink-0 text-primary" aria-hidden="true" />
+              <span class="max-w-24 truncate font-medium sm:max-w-32">{{ currentMember.name }}</span>
             </Button>
-            <Button v-else variant="default" size="sm" class="gap-1.5" aria-label="로그인" @click="onLoginClick">
+            <Button v-else variant="default" size="sm" class="gap-1.5" @click="onLoginClick">
               <User class="w-4 h-4" aria-hidden="true" />
-              <span class="hidden sm:inline">로그인</span>
+              로그인
             </Button>
           </div>
 
@@ -167,19 +171,20 @@ function isActive(path: string): boolean {
           :key="item.path"
           :to="item.path"
           :class="cn(
-            'flex-1 min-w-0 flex flex-col items-center justify-start pt-1.5 gap-0.5 px-0.5 text-center text-xs leading-tight font-medium transition-colors',
+            'flex-1 min-w-0 flex flex-col items-center justify-start pt-1.5 gap-0.5 px-0.5 text-center text-sm whitespace-nowrap leading-tight font-medium transition-colors',
             isActive(item.path) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
           )"
           :aria-current="isActive(item.path) ? 'page' : undefined"
+          :aria-label="item.tabLabel ? item.label : undefined"
         >
           <component :is="item.icon" class="w-5 h-5 shrink-0" aria-hidden="true" />
-          {{ item.tabLabel ?? item.label }}
+          <span class="max-w-full truncate">{{ item.tabLabel ?? item.label }}</span>
         </RouterLink>
         <button
           v-if="moreItems.length"
           type="button"
           :class="cn(
-            'flex-1 min-w-0 flex flex-col items-center justify-start pt-1.5 gap-0.5 px-0.5 text-center text-xs leading-tight font-medium transition-colors',
+            'flex-1 min-w-0 flex flex-col items-center justify-start pt-1.5 gap-0.5 px-0.5 text-center text-sm whitespace-nowrap leading-tight font-medium transition-colors',
             moreActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
           )"
           aria-haspopup="dialog"
