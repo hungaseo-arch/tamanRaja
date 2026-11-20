@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue';
-import { CalendarCheck, CircleHelp, Download } from 'lucide-vue-next';
+import { CalendarCheck, ChevronLeft, ChevronRight, CircleHelp, Download } from 'lucide-vue-next';
 import type { MonthlyRow, ResultRank, ResultGroup } from '@/lib';
 import { formatDate, formatMeetingHeading, formatYearMonth } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -51,6 +51,9 @@ interface Props {
   canUnlock?: boolean;
   selectedMonth: string;
   monthOptions: SelectOption[];
+  // 고를 수 있는 바로 이전·다음 달. 없으면 null 이고 이동 버튼은 비활성화된다.
+  prevMonth?: string | null;
+  nextMonth?: string | null;
   selectedYear: string;
   yearOptions: SelectOption[];
   manualDate: string;
@@ -552,7 +555,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
     <div class="space-y-2 pt-1">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
         <!-- 연월 (제목) — 이 화면의 h1 이다. 사이트 이름은 헤더의 일반 텍스트다. -->
-        <CardTitle as="h1" class="px-0 min-w-0 truncate text-lg font-bold text-foreground">
+        <CardTitle as="h1" class="px-0 min-w-0 break-words text-lg font-bold text-foreground">
           {{ headingDate }}
           <span v-if="headingCourse" class="text-sm font-medium text-muted-foreground">— {{ headingCourse }}</span>
         </CardTitle>
@@ -569,11 +572,11 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             <span class="font-medium text-muted-foreground whitespace-nowrap">참석인원</span>
             <span class="font-bold">{{ stats.attendedCount }}명</span>
           </div>
-          <div class="hidden sm:flex items-center gap-1.5 min-w-0">
+          <div :class="cn('items-center gap-1.5 min-w-0', isEditing ? 'hidden sm:flex' : 'flex')">
             <RankBadge rank="Winner" class="shrink-0" />
             <span class="font-semibold truncate">{{ stats.winnerName }}</span>
           </div>
-          <div class="hidden sm:flex items-center gap-1.5 min-w-0">
+          <div :class="cn('items-center gap-1.5 min-w-0', isEditing ? 'hidden sm:flex' : 'flex')">
             <RankBadge rank="Medalist" class="shrink-0" />
             <span class="font-semibold truncate">{{ stats.medalistName }}</span>
           </div>
@@ -652,6 +655,17 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             class="w-28 sm:w-22 shrink-0"
           />
         </template>
+        <Button
+          variant="outline"
+          size="xs"
+          class="w-11 px-0 shrink-0 sm:w-8"
+          :disabled="!props.prevMonth"
+          aria-label="이전 달"
+          title="이전 달"
+          @click="props.prevMonth && emit('update:selectedMonth', props.prevMonth)"
+        >
+          <ChevronLeft class="w-4 h-4" aria-hidden="true" />
+        </Button>
         <label for="monthly-month" class="sr-only">조회할 월</label>
         <Select
           id="monthly-month"
@@ -662,6 +676,17 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           size="xs"
           class="w-24 sm:w-18 shrink-0"
         />
+        <Button
+          variant="outline"
+          size="xs"
+          class="w-11 px-0 shrink-0 sm:w-8"
+          :disabled="!props.nextMonth"
+          aria-label="다음 달"
+          title="다음 달"
+          @click="props.nextMonth && emit('update:selectedMonth', props.nextMonth)"
+        >
+          <ChevronRight class="w-4 h-4" aria-hidden="true" />
+        </Button>
 
         <!-- 엑셀(CSV) 다운로드 — 해당 연도 전체 기록.
              좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->
