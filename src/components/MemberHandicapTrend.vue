@@ -20,7 +20,11 @@ const rows = ref<YearRow[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
 
+// 회원이 연달아 바뀌면 먼저 보낸 요청의 늦은 응답이 나중 결과를 덮지 않게 한다.
+let loadSeq = 0;
+
 async function load(): Promise<void> {
+  const seq = ++loadSeq;
   loading.value = true;
   error.value = null;
   const id = Number(props.memberId);
@@ -35,9 +39,11 @@ async function load(): Promise<void> {
     .select('year, std_hc, prev_std_hc, status')
     .eq('member_id', id)
     .order('year', { ascending: true });
+  if (seq !== loadSeq) return;
   loading.value = false;
   if (err) {
-    error.value = err.message;
+    // 서버 원문(영문)은 그대로 보이지 않고 한국어 안내로 바꾼다.
+    error.value = '연도별 기준핸디 추이 불러오기 실패. 잠시 후 다시 시도';
     rows.value = [];
     return;
   }

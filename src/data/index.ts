@@ -516,7 +516,8 @@ export async function loadYearlySummary(year: string, reload = false): Promise<v
     YEARLY_RANKING[year] = ((data ?? []) as Record<string, unknown>[]).map((r) => ({
       member_id: String(r.member_id),
       member_name: r.member_name as string,
-      avg_net_score: Number(r.avg_net_score),
+      // 값이 없으면 Number(null)=0 이 되어 "+0.00"으로 보인다. NaN 으로 두면 화면이 '-' 로 그린다.
+      avg_net_score: r.avg_net_score === null || r.avg_net_score === undefined ? Number.NaN : Number(r.avg_net_score),
       avg_score: r.avg_score === null ? null : Number(r.avg_score),
       attended_count: Number(r.attended_count),
       winner_count: Number(r.winner_count),
