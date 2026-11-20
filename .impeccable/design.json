@@ -1,0 +1,162 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-20T13:41:59.302768+00:00",
+  "title": "Design System: 따만라자 골프모임",
+  "extensions": {
+    "colorMeta": {
+      "primary": {
+        "role": "primary",
+        "displayName": "잔디 초록",
+        "canonical": "oklch(0.52 0.15 145)"
+      },
+      "background": {
+        "role": "neutral",
+        "displayName": "옅은 잔디 종이",
+        "canonical": "oklch(0.99 0.005 145)"
+      },
+      "net-plus": {
+        "role": "semantic",
+        "displayName": "Net 플러스 파랑",
+        "canonical": "oklch(0.546 0.245 262.881)"
+      },
+      "net-minus": {
+        "role": "semantic",
+        "displayName": "Net 마이너스 주황",
+        "canonical": "oklch(0.553 0.195 38.402)"
+      },
+      "delta-up": {
+        "role": "semantic",
+        "displayName": "핸디 인상 빨강",
+        "canonical": "oklch(0.55 0.22 25)"
+      },
+      "std-accent": {
+        "role": "semantic",
+        "displayName": "2027 기준핸디 보라",
+        "canonical": "oklch(0.491 0.27 292.581)"
+      }
+    },
+    "typographyMeta": {
+      "body": {
+        "displayName": "Body",
+        "purpose": "메뉴와 본문, 14px."
+      },
+      "numeric": {
+        "displayName": "Numeric",
+        "purpose": "점수·핸디·순위 숫자 칸, font-mono."
+      }
+    },
+    "shadows": [
+      {
+        "name": "card",
+        "value": "0 1px 2px 0 rgb(0 0 0 / 0.05)",
+        "purpose": "카드에만 쓰는 shadow-sm."
+      }
+    ],
+    "motion": [
+      {
+        "name": "transition-colors",
+        "value": "150ms",
+        "purpose": "버튼·배지 상태 색 전환."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "기본 동작 버튼.",
+      "html": "<button class=\"ds-btn\">저장</button>",
+      "css": ".ds-btn{display:inline-flex;align-items:center;justify-content:center;height:40px;padding:8px 16px;border:0;border-radius:6px;background:oklch(0.52 0.15 145);color:oklch(0.98 0.005 145);font:500 14px 'Noto Sans KR',system-ui,sans-serif;transition:background .15s}.ds-btn:hover{background:oklch(0.52 0.15 145 / .9)}.ds-btn:focus-visible{outline:2px solid oklch(0.52 0.15 145);outline-offset:2px}"
+    },
+    {
+      "name": "Toolbar Outline Button",
+      "kind": "button",
+      "refersTo": "button-toolbar",
+      "description": "툴바의 보조 버튼(size xs).",
+      "html": "<button class=\"ds-btn-xs\">수정</button>",
+      "css": ".ds-btn-xs{height:32px;padding:0 8px;border:1px solid oklch(0.88 0.015 145);border-radius:6px;background:oklch(0.99 0.005 145);color:oklch(0.15 0.01 145);font:500 12px 'Noto Sans KR',system-ui,sans-serif}.ds-btn-xs:hover{background:oklch(0.88 0.03 145)}.ds-btn-xs:focus-visible{outline:2px solid oklch(0.52 0.15 145);outline-offset:2px}"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "테두리 + shadow-sm 카드.",
+      "html": "<div class=\"ds-card\">나의 기록</div>",
+      "css": ".ds-card{padding:16px;border:1px solid oklch(0.88 0.015 145);border-radius:8px;background:oklch(0.98 0.008 145);color:oklch(0.18 0.01 145);box-shadow:0 1px 2px 0 rgb(0 0 0/.05);font:400 14px 'Noto Sans KR',system-ui,sans-serif}"
+    },
+    {
+      "name": "Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "기본 입력창.",
+      "html": "<input class=\"ds-input\" placeholder=\"이름\">",
+      "css": ".ds-input{height:40px;width:100%;padding:8px 12px;border:1px solid oklch(0.88 0.015 145);border-radius:6px;background:oklch(0.99 0.005 145);font:400 14px 'Noto Sans KR',system-ui,sans-serif}.ds-input:focus-visible{outline:2px solid oklch(0.52 0.15 145);outline-offset:2px}"
+    },
+    {
+      "name": "Badge",
+      "kind": "chip",
+      "refersTo": "badge",
+      "description": "기본 배지.",
+      "html": "<span class=\"ds-badge\">Host</span>",
+      "css": ".ds-badge{display:inline-flex;padding:2px 10px;border-radius:6px;background:oklch(0.52 0.15 145);color:oklch(0.98 0.005 145);font:600 12px 'Noto Sans KR',system-ui,sans-serif}"
+    }
+  ],
+  "narrative": {
+    "northStar": "잔디 위의 스코어카드",
+    "overview": "골프장 잔디의 초록과 종이 스코어카드의 정돈된 숫자 표를 모델로 한 단일 라이트 테마. 차분하고 가독성 우선. 깊이는 테두리와 면 색으로 표현.",
+    "keyCharacteristics": [
+      "초록(hue 145) 단일 브랜드 계열",
+      "밝은 화면 하나만 사용",
+      "본문 Noto Sans KR, 숫자 JetBrains Mono",
+      "평평하고 테두리 중심",
+      "표가 중심 컴포넌트"
+    ],
+    "rules": [
+      {
+        "name": "The 열 색 약속 Rule",
+        "body": "기준핸디는 주황, 당월·차월 핸디와 Net은 파랑, 원점수는 무채색.",
+        "section": "colors"
+      },
+      {
+        "name": "The 토큰 단일 출처 Rule",
+        "body": "의미색은 :root 토큰에서만 정함.",
+        "section": "colors"
+      },
+      {
+        "name": "The 시상 배지 한 곳 Rule",
+        "body": "Winner·Medalist·Host 색은 rank.ts에서만 정함.",
+        "section": "colors"
+      },
+      {
+        "name": "The 숫자는 고정폭 Rule",
+        "body": "숫자 칸에는 항상 font-mono를 적용.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "면은 평평하게 두고 깊이는 테두리와 면 색으로 표현.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do 숫자와 순위를 먼저 읽히게 하고, 숫자 칸에 font-mono를 쓴다.",
+      "Do 의미색은 토큰으로만 쓰고 부호·라벨을 함께 둔다.",
+      "Do 터치 영역 44px 이상, 본문 14px 이상, 대비 AA 4.5 이상을 목표로 한다.",
+      "Do 모달은 :root 토큰을 쓴다."
+    ],
+    "donts": [
+      "Don't 화려한 그라데이션, 네온, 게임 같은 연출, 과한 그림자를 쓰지 않는다.",
+      "Don't 다크 팔레트를 켜는 코드 없이 다크 변수를 추가하지 않는다.",
+      "Don't ASCENDO 사내 BI(파랑 #0062C6)를 이 앱에 적용하지 않는다.",
+      "Don't 표 안에서 세로 스크롤을 만들지 않는다.",
+      "Don't Layout의 main에 max-w를 두지 않는다."
+    ]
+  }
+}
