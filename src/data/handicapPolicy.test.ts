@@ -8,10 +8,32 @@
 // 를 확인한다. 산정값을 바꿀 때는 픽스처와 마이그레이션을 함께 고치고 이 테스트를 돌린다.
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createSSRApp } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import Page from '@/pages/HandicapPolicy.vue';
+
+// 이 테스트는 화면 문구만 본다. 실제 클라이언트는 .env(VITE_SUPABASE_*) 없이는 만들어지지 않으므로
+// (.env 없는 새 클론·CI 에서 실패) 가짜로 대체한다.
+vi.mock('@/lib/supabase', () => ({ supabase: {} }));
+
+// 페이지가 결과표(useAuth → session.ts)를 통해 localStorage/sessionStorage 를 모듈 로드 시점에 읽는다.
+// Node 테스트 환경의 localStorage 는 getItem 이 없는 껍데기라, import 보다 먼저(vi.hoisted) 메모리 구현으로 대체한다.
+vi.hoisted(() => {
+  const memory = (): Storage => {
+    const m = new Map<string, string>();
+    return {
+      get length() { return m.size; },
+      clear: () => m.clear(),
+      getItem: (k) => m.get(k) ?? null,
+      key: (i) => [...m.keys()][i] ?? null,
+      removeItem: (k) => void m.delete(k),
+      setItem: (k, v) => void m.set(k, String(v)),
+    };
+  };
+  globalThis.localStorage = memory();
+  globalThis.sessionStorage = memory();
+});
 
 const ROOT = resolve(__dirname, '../..');
 const read = (p: string): string => readFileSync(resolve(ROOT, p), 'utf8');
