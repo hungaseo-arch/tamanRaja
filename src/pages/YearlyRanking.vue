@@ -374,7 +374,7 @@ function stickyTint(rank: number | null): string {
             :options="yearOptions"
             placeholder=""
             size="xs"
-            class="w-24 shrink-0 [&>select]:h-11 sm:[&>select]:h-7"
+            class="w-24 shrink-0"
           />
         </template>
         <span v-else-if="selectedYear" class="text-sm font-semibold text-foreground shrink-0">
@@ -384,7 +384,7 @@ function stickyTint(rank: number | null): string {
         <Button
           variant="outline"
           size="xs"
-          class="shrink-0 gap-1 h-11 min-w-11 sm:h-7 sm:min-w-0"
+          class="shrink-0 gap-1"
           :title="`${selectedYear}년 연간 랭킹 CSV 다운로드(엑셀용)`"
           :aria-label="`${selectedYear}년 연간 랭킹 CSV 다운로드(엑셀용)`"
           @click="handleExport"
