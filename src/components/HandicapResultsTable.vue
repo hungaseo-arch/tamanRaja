@@ -352,7 +352,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
           <span v-if="hasInvalid" class="pp-edit-msg pp-up" role="alert">인간미는 −2 ~ +2 사이 정수만 입력 가능</span>
         </template>
       </div>
-      <div class="policy-table-wrap">
+      <div class="policy-table-wrap pp-results-wrap">
         <table class="policy-table pp-results">
           <thead>
             <tr>
@@ -640,14 +640,32 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   border-color: var(--muted-foreground);
   color: var(--muted-foreground);
 }
+/* 640px 이상은 9열이 보인다. 고정 배분이면 좁은 열에서 글자가 옆 열을 덮으므로
+   열 폭을 내용에 맞추고, 래퍼 폭을 넘으면 가로로 스크롤한다. */
 @media (min-width: 640px) {
+  .pp-results {
+    table-layout: auto;
+  }
   .pp-results thead th:first-child,
   .pp-results tbody th {
-    width: 19%;
+    width: auto;
+    white-space: nowrap;
   }
   .pp-results thead th.pp-col-std,
   .pp-results thead th.pp-col-hum {
     width: auto;
+  }
+  .pp-results thead th {
+    word-break: keep-all;
+  }
+  .pp-results td {
+    white-space: nowrap;
+  }
+  .policy-table-wrap.pp-results-wrap {
+    overflow-x: auto;
+  }
+  .pp-delta-label {
+    margin-left: 0.5rem;
   }
 }
 .pp-results tbody th {
