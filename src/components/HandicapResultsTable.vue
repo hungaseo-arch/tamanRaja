@@ -350,8 +350,8 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
       @retry="load"
     >
       <!-- 관리자 버튼은 표 오른쪽 끝에 맞춘다. -->
-      <div v-if="isAdmin" class="pp-head-row">
-        <div class="pp-edit-bar">
+      <div class="pp-head-row">
+        <div v-if="isAdmin" class="pp-edit-bar">
           <template v-if="!editing">
             <Button variant="outline" size="xs" class="h-8 px-2 text-xs" @click="startEdit()">인간미 수정</Button>
           </template>
@@ -619,6 +619,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   /* 2027 기준핸디 강조색 (보라) */
   color: var(--std-accent);
   font-weight: 700;
+  font-size: 0.875rem;
 }
 .pp-delta-label {
   display: inline;
