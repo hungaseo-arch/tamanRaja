@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue';
-import { CalendarCheck, CircleHelp, Download } from 'lucide-vue-next';
+import { CalendarCheck, ChevronDown, CircleHelp, Download } from 'lucide-vue-next';
 import type { MonthlyRow, ResultRank, ResultGroup } from '@/lib';
 import { formatDate, formatMeetingHeading, formatYearMonth } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -101,6 +101,9 @@ const localGroups = reactive<Record<string, string>>({});
 const localRanks = reactive<Record<string, string>>({});
 const localNextHc = reactive<Record<string, number>>({});
 const localAttendance = reactive<Record<string, boolean | null>>({});
+// 관리자가 조·시상 칸을 직접 고친 회원. 점수를 더 입력해도 자동 계산이 이 칸을 덮지 않는다.
+const manualGroups = reactive<Record<string, boolean>>({});
+const manualRanks = reactive<Record<string, boolean>>({});
 
 const { getAttendance } = useAttendance();
 
@@ -116,6 +119,7 @@ function clearLocal(): void {
     Object.keys(map).forEach((k) => delete map[k]),
   );
   Object.keys(localAttendance).forEach((k) => delete localAttendance[k]);
+  [manualGroups, manualRanks].forEach((map) => Object.keys(map).forEach((k) => delete map[k]));
 }
 
 // ── 저장하지 않은 입력 감지 ───────────────────────────────────────────────────
@@ -209,14 +213,45 @@ function computeAutoFields(): void {
       delete localGroups[row.member_id];
       delete localNextHc[row.member_id];
       delete localRanks[row.member_id];
+      delete manualGroups[row.member_id];
+      delete manualRanks[row.member_id];
     }
   }
 
+  // 손으로 고른 시상(Winner·Medalist·Host 는 한 명씩)은 자동 계산이 다른 회원에게 같은 시상을
+  // 또 주지 못하게 값을 비워 둔다.
+  const heldRanks = new Set(
+    Object.keys(manualRanks).map((id) => localRanks[id]).filter((v): v is string => !!v),
+  );
+
   for (const [memberId, r] of Object.entries(computeResults(scored))) {
-    localGroups[memberId] = r.result_group;
+    // 수동 칸은 건드리지 않는다. 차월 핸디는 계산값이라 항상 갱신한다.
+    if (!manualGroups[memberId]) localGroups[memberId] = r.result_group;
     localNextHc[memberId] = r.next_hc;
-    localRanks[memberId] = r.result_rank;
+    if (!manualRanks[memberId]) {
+      if (heldRanks.has(r.result_rank)) delete localRanks[memberId];
+      else localRanks[memberId] = r.result_rank;
+    }
   }
+}
+
+function setManualGroup(memberId: string, value: string): void {
+  localGroups[memberId] = value;
+  manualGroups[memberId] = true;
+}
+
+function setManualRank(memberId: string, value: string): void {
+  localRanks[memberId] = value;
+  manualRanks[memberId] = true;
+}
+
+const manualCount = computed(() => Object.keys(manualGroups).length + Object.keys(manualRanks).length);
+
+// 수동 지정을 모두 풀고 자동 계산값으로 되돌린다.
+function resetManual(): void {
+  [manualGroups, manualRanks].forEach((map) => Object.keys(map).forEach((k) => delete map[k]));
+  [localGroups, localRanks].forEach((map) => Object.keys(map).forEach((k) => delete map[k]));
+  computeAutoFields();
 }
 
 // ── 스코어 입력 검증 ──────────────────────────────────────────────────────────
@@ -268,7 +303,7 @@ function handleSave(): void {
   if (props.saveState === 'saving' || missingHcNames.value.length > 0) return;
   if (invalidScoreNames.value.length > 0) {
     validationError.value =
-      `스코어는 ${SCORE_MIN}~${SCORE_MAX} 사이 정수만 가능 — ${invalidScoreNames.value.join(', ')}`;
+      `스코어(오버파)는 ${SCORE_MIN}에서 ${SCORE_MAX} 사이 정수로 입력해 주세요. 확인할 회원: ${invalidScoreNames.value.join(', ')}`;
     return;
   }
   validationError.value = null;
@@ -291,13 +326,20 @@ function saveSummaryLines(): string[] {
     const id = Object.keys(localRanks).find((k) => localRanks[k] === rank);
     return props.monthlyData.find((row) => row.member_id === id)?.member_name ?? '미정';
   };
+  const countGroup = (g: string): number => Object.values(localGroups).filter((v) => v === g).length;
   const lines = [
     heading.value,
     `${attended}명 참석`,
     `Winner ${nameOf('Winner')}`,
     `Medalist ${nameOf('Medalist')}`,
     `Host ${nameOf('Host')}`,
+    `1등조 ${countGroup('1등조')}명 · 2등조 ${countGroup('2등조')}명`,
+    `차월 핸디 ${Object.keys(localNextHc).length}명 산정`,
   ];
+  const manualNames = props.monthlyData
+    .filter((row) => manualGroups[row.member_id] || manualRanks[row.member_id])
+    .map((row) => row.member_name);
+  if (manualNames.length) lines.push(`직접 지정한 조·시상: ${manualNames.join(', ')}`);
   if (unlockReason.value) lines.push(`수정 사유 ${unlockReason.value}`);
   return lines;
 }
@@ -339,7 +381,7 @@ function openUnlock(): void {
 function confirmUnlock(): void {
   const reason = unlockInput.value.trim();
   if (!reason) {
-    unlockError.value = '수정 사유 필요';
+    unlockError.value = '수정 사유를 입력해 주세요.';
     return;
   }
   unlockReason.value = reason;
@@ -366,9 +408,10 @@ function requestCancel(): void {
   }
   askConfirm({
     title: '수정 취소',
-    lines: ['저장하지 않은 입력이 사라짐'],
+    lines: ['저장하지 않은 입력이 있습니다. 취소하면 입력한 내용이 사라집니다.'],
     okLabel: '입력 폐기',
     cancelLabel: '계속 수정',
+    destructive: true,
     onOk: cancelEdit,
   });
 }
@@ -380,11 +423,14 @@ const confirmDlg = reactive({
   lines: [] as string[],
   okLabel: '',
   cancelLabel: '',
+  destructive: false,
   onOk: null as (() => void) | null,
 });
 
-function askConfirm(opts: { title: string; lines: string[]; okLabel: string; cancelLabel: string; onOk: () => void }): void {
-  Object.assign(confirmDlg, opts, { open: true });
+function askConfirm(opts: {
+  title: string; lines: string[]; okLabel: string; cancelLabel: string; onOk: () => void; destructive?: boolean;
+}): void {
+  Object.assign(confirmDlg, { destructive: false }, opts, { open: true });
 }
 
 function acceptConfirm(): void {
@@ -705,7 +751,23 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         class="text-sm text-destructive"
         role="status"
       >
-        당월 핸디 없는 회원 있음 — {{ missingHcNames.join(', ') }} · 직전 달 결과 저장 후 저장 가능
+        당월 핸디가 없는 회원이 있습니다({{ missingHcNames.join(', ') }}). 직전 달 결과를 먼저 저장해야 이번 달을 저장할 수 있습니다.
+      </p>
+      <p
+        v-if="isEditing && invalidScoreNames.length > 0 && !validationError"
+        id="monthly-score-hint"
+        class="text-sm text-destructive"
+        role="status"
+      >
+        스코어(오버파)는 {{ SCORE_MIN }}에서 {{ SCORE_MAX }} 사이 정수만 저장됩니다. 총타수가 아니라 오버파를 입력해 주세요: {{ invalidScoreNames.join(', ') }}
+      </p>
+      <p v-if="isEditing && manualCount > 0" class="text-sm text-muted-foreground">
+        직접 고른 조·시상은 점수를 더 입력해도 바뀌지 않습니다.
+        <button
+          type="button"
+          class="ml-1 inline-flex min-h-11 items-center rounded-sm px-1 font-medium text-primary underline underline-offset-4 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:min-h-0"
+          @click="resetManual"
+        >자동 계산으로 되돌리기</button>
       </p>
     </div>
 
@@ -723,7 +785,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           <AsyncState
             :empty="props.monthlyData.length === 0"
             :empty-title="`${heading} 기록 없음`"
-            empty-hint="다른 달 선택, 또는 경기 결과 저장 후 표 표시"
+            empty-hint="다른 달을 선택하거나, 경기 결과를 저장하면 표가 나타납니다."
           >
           <!-- 평소에는 스크롤을 페이지가 한다. 그래야 위쪽 표제 줄이 함께
                밀려 올라가고, 열 제목만 화면 맨 위에 남는다.
@@ -741,11 +803,13 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 <TableHead class="font-bold text-foreground whitespace-nowrap sticky left-0 z-30 bg-card">회원</TableHead>
                 <TableHead v-if="isFutureMonth" class="font-bold text-center whitespace-nowrap">참석</TableHead>
                 <TableHead class="font-bold text-center hidden sm:table-cell">기준 핸디</TableHead>
-                <!-- 모바일 14px 에서 열이 가로로 넘치므로 당월 핸디는 읽기 모드의 좁은 폭에서 숨기고
-                     상세 창에 둔다. 편집 모드는 표가 스스로 스크롤하므로 그대로 둔다. -->
-                <TableHead :class="cn('font-bold text-center whitespace-nowrap', !isEditing && 'hidden sm:table-cell')">당월 핸디</TableHead>
+                <!-- 모바일 14px 에서 열이 가로로 넘치므로 당월 핸디는 좁은 폭에서 숨긴다.
+                     읽기 모드는 상세 창에, 편집 모드는 이름 아래 보조 줄(당월 → 차월)에 둔다. -->
+                <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">당월 핸디</TableHead>
                 <TableHead class="font-bold text-center hidden sm:table-cell">차월 핸디</TableHead>
-                <TableHead class="font-bold text-center whitespace-nowrap">스코어</TableHead>
+                <TableHead class="font-bold text-center whitespace-nowrap">
+                  스코어<span v-if="isEditing" class="block text-[11px] font-normal text-muted-foreground">오버파</span>
+                </TableHead>
                 <TableHead class="font-bold text-center whitespace-nowrap">NET 스코어</TableHead>
                 <TableHead class="font-bold text-center hidden md:table-cell">결과 그룹</TableHead>
                 <TableHead class="font-bold text-center whitespace-nowrap">결과</TableHead>
@@ -784,6 +848,18 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                   >{{ row.member_name }}<CalendarCheck class="h-4 w-4 shrink-0 text-primary" aria-hidden="true" /></button>
                   <RowDetailButton v-else-if="!isEditing" :label="row.member_name" :enabled="compact" :class="compact ? '-my-2 sm:my-0' : undefined" @click="openDetail(row)">{{ row.member_name }}</RowDetailButton>
                   <template v-else>{{ row.member_name }}</template>
+                  <!-- 편집 모드의 좁은 폭: 숨은 핸디·조 열을 대신해 저장될 값을 이름 아래에 보인다.
+                       점수를 넣으면 자동 계산값이 바로 바뀌므로 저장 전에 확인할 수 있다. -->
+                  <span
+                    v-if="isEditing"
+                    class="md:hidden block text-sm font-normal font-mono leading-tight text-muted-foreground mt-0.5"
+                  >
+                    <span
+                      class="sm:hidden"
+                      :aria-label="`당월 핸디 ${row.app_hc ?? '없음'}, 차월 핸디 ${localNextHc[row.member_id] ?? '미정'}`"
+                    >당월 {{ row.app_hc ?? '-' }} → 차월 {{ localNextHc[row.member_id] ?? '-' }}</span>
+                    <span v-if="localGroups[row.member_id]" class="ml-1.5 sm:ml-0 font-sans">{{ localGroups[row.member_id] }}</span>
+                  </span>
                 </TableCell>
 
                 <!-- 참석여부 (미래월만) -->
@@ -800,7 +876,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 </TableCell>
 
                 <TableCell class="text-center font-mono hidden sm:table-cell">{{ row.std_hc }}</TableCell>
-                <TableCell :class="cn('text-center font-mono', !isEditing && 'hidden sm:table-cell')">
+                <TableCell class="text-center font-mono hidden sm:table-cell">
                   <template v-if="row.app_hc !== null">{{ row.app_hc }}</template>
                   <span v-else class="text-muted-foreground" title="직전 달 차월 핸디 미정">-</span>
                 </TableCell>
@@ -826,6 +902,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                       placeholder="-"
                       :aria-label="`${row.member_name} 스코어`"
                       :aria-invalid="isScoreInvalid(row.member_id) || undefined"
+                      :aria-describedby="isScoreInvalid(row.member_id) ? 'monthly-score-hint' : undefined"
                       :class="cn('h-11 sm:h-7 w-16 text-center border rounded px-1 py-0 text-sm bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
                         isScoreInvalid(row.member_id)
                           ? 'border-destructive text-destructive focus-visible:ring-destructive'
@@ -865,16 +942,19 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 <!-- 결과 Group -->
                 <TableCell :class="cn('text-center hidden md:table-cell', isEditing && 'py-1')">
                   <template v-if="isEditing">
-                    <select
-                      :value="localGroups[row.member_id] ?? ''"
-                      :aria-label="`${row.member_name} 결과 조`"
-                      class="h-11 sm:h-7 w-20 text-center border border-input rounded px-1 py-0 text-sm bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 appearance-none cursor-pointer"
-                      @change="(e) => { localGroups[row.member_id] = (e.target as HTMLSelectElement).value; }"
-                    >
-                      <option value="">-</option>
-                      <option value="1등조">1등조</option>
-                      <option value="2등조">2등조</option>
-                    </select>
+                    <span class="relative inline-block">
+                      <select
+                        :value="localGroups[row.member_id] ?? ''"
+                        :aria-label="`${row.member_name} 결과 조${manualGroups[row.member_id] ? ' (직접 지정)' : ''}`"
+                        class="h-11 sm:h-7 w-20 text-center border border-input rounded pl-1 pr-5 py-0 text-sm bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 appearance-none cursor-pointer"
+                        @change="(e) => setManualGroup(row.member_id, (e.target as HTMLSelectElement).value)"
+                      >
+                        <option value="">-</option>
+                        <option value="1등조">1등조</option>
+                        <option value="2등조">2등조</option>
+                      </select>
+                      <ChevronDown class="pointer-events-none absolute right-1 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                    </span>
                   </template>
                   <template v-else-if="row.result_group">
                     <Badge v-if="row.result_group === '1등조'" class="bg-group-first text-white border-0">1등조</Badge>
@@ -886,17 +966,20 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 <!-- 결과 -->
                 <TableCell :class="cn('text-center', isEditing && 'py-1')">
                   <template v-if="isEditing">
-                    <select
-                      :value="localRanks[row.member_id] ?? ''"
-                      :aria-label="`${row.member_name} 시상`"
-                      class="h-11 sm:h-7 w-24 text-center border border-input rounded px-1 py-0 text-sm bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 appearance-none cursor-pointer"
-                      @change="(e) => { localRanks[row.member_id] = (e.target as HTMLSelectElement).value; }"
-                    >
-                      <option value="">-</option>
-                      <option value="Winner">Winner</option>
-                      <option value="Medalist">Medalist</option>
-                      <option value="Host">Host</option>
-                    </select>
+                    <span class="relative inline-block">
+                      <select
+                        :value="localRanks[row.member_id] ?? ''"
+                        :aria-label="`${row.member_name} 시상${manualRanks[row.member_id] ? ' (직접 지정)' : ''}`"
+                        class="h-11 sm:h-7 w-24 text-center border border-input rounded pl-1 pr-5 py-0 text-sm bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 appearance-none cursor-pointer"
+                        @change="(e) => setManualRank(row.member_id, (e.target as HTMLSelectElement).value)"
+                      >
+                        <option value="">-</option>
+                        <option value="Winner">Winner</option>
+                        <option value="Medalist">Medalist</option>
+                        <option value="Host">Host</option>
+                      </select>
+                      <ChevronDown class="pointer-events-none absolute right-1 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+                    </span>
                   </template>
                   <template v-else-if="isRankName(row.result_rank)">
                     <RankBadge :rank="row.result_rank" />
@@ -920,6 +1003,37 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
       </CardContent>
     </Card>
 
+    <!-- 편집 모드 하단 고정 저장 줄. 긴 표를 입력하는 동안에도 저장·취소가 엄지 닿는 곳에
+         남는다. main 이 스크롤을 맡으므로 sticky bottom-0 이 하단 탭 바로 위에 붙는다.
+         위쪽 툴바의 저장·취소는 그대로 둔다. -->
+    <div
+      v-if="canManage && isEditing"
+      class="sticky bottom-0 z-20 -mx-1 flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 shadow-[0_-2px_8px_oklch(0_0_0/0.08)]"
+    >
+      <p
+        class="m-0 min-w-0 flex-1 text-sm"
+        :class="invalidScoreNames.length || missingHcNames.length ? 'text-destructive' : 'text-muted-foreground'"
+      >
+        <template v-if="missingHcNames.length">당월 핸디 없는 회원이 있어 저장할 수 없습니다.</template>
+        <template v-else-if="invalidScoreNames.length">스코어 범위를 확인해 주세요.</template>
+        <template v-else-if="isDirty">저장하지 않은 입력이 있습니다.</template>
+        <template v-else>입력한 내용이 없습니다.</template>
+      </p>
+      <Button
+        size="xs"
+        variant="outline"
+        class="shrink-0 min-h-11 sm:min-h-0"
+        :disabled="props.saveState === 'saving'"
+        @click="requestCancel"
+      >취소</Button>
+      <Button
+        size="xs"
+        class="shrink-0 min-h-11 sm:min-h-0"
+        :disabled="props.saveState === 'saving' || missingHcNames.length > 0"
+        @click="handleSave"
+      >{{ props.saveState === 'saving' ? '저장 중...' : '저장' }}</Button>
+    </div>
+
     <!-- 회원 한 명의 그달 기록 전부 -->
     <RowDetailDialog
       v-model:open="detailOpen"
@@ -935,26 +1049,32 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         </DetailItem>
         <DetailItem label="당월 핸디">
           <span v-if="detailRow.app_hc !== null" class="font-mono">{{ detailRow.app_hc }}</span>
+          <span v-else class="text-muted-foreground">미정 (직전 달 결과 저장 후)</span>
         </DetailItem>
         <DetailItem label="차월 핸디">
           <span v-if="detailRow.attended && detailRow.score !== null && detailRow.next_hc !== null" class="font-mono">{{ detailRow.next_hc }}</span>
+          <span v-else class="text-muted-foreground">-</span>
           <Badge v-if="isAdmin && detailRow.next_hc_mismatch" variant="outline" class="ml-1.5 border-warning-border text-warning font-normal">※ 저장값 불일치(관리자 확인 필요)</Badge>
         </DetailItem>
         <DetailItem label="스코어">
           <span v-if="detailRow.attended && detailRow.score !== null" class="font-mono">{{ detailRow.score }}</span>
+          <span v-else class="text-muted-foreground">-</span>
         </DetailItem>
         <DetailItem label="NET 스코어">
           <span
             v-if="detailRow.attended && detailRow.net_score !== null"
             :class="cn('font-mono', detailRow.net_score >= 0 ? 'text-net-plus font-semibold' : 'text-net-minus')"
           >{{ detailRow.net_score >= 0 ? '+' : '' }}{{ detailRow.net_score }}</span>
+          <span v-else class="text-muted-foreground">-</span>
         </DetailItem>
         <DetailItem label="결과 그룹">
           <Badge v-if="detailRow.result_group === '1등조'" class="bg-group-first text-white border-0">1등조</Badge>
           <Badge v-else-if="detailRow.result_group" variant="secondary">2등조</Badge>
+          <span v-else class="text-muted-foreground">-</span>
         </DetailItem>
         <DetailItem label="결과">
           <RankBadge v-if="isRankName(detailRow.result_rank)" :rank="detailRow.result_rank" />
+          <span v-else class="text-muted-foreground">-</span>
         </DetailItem>
         <!-- 연간 순위는 그달까지의 누적이다. 아직 치지 않은 달에 붙이면
              그달 성적처럼 읽힌다. -->
@@ -971,7 +1091,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
          (src/data/index.ts, DB recompute_next_hc) 과 어긋나면 이쪽을 고친다. -->
     <Dialog v-model:open="showHcHelp" label="핸디 규칙" content-class="sm:max-w-lg">
       <DialogTitle>핸디 규칙</DialogTitle>
-      <div class="space-y-4 text-[13px] leading-relaxed">
+      <div class="space-y-4 text-sm leading-relaxed">
         <section class="space-y-1.5">
           <h3 class="text-sm font-semibold m-0">용어</h3>
           <dl class="grid grid-cols-[4.5rem_1fr] gap-x-3 gap-y-1.5 m-0 text-muted-foreground">
@@ -989,7 +1109,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         <section class="space-y-1.5">
           <h3 class="text-sm font-semibold m-0">차월 핸디 정하기</h3>
           <div class="overflow-x-auto rounded-md border">
-            <table class="w-full border-collapse text-[13px]">
+            <table class="w-full border-collapse text-sm">
               <thead>
                 <tr class="bg-muted/50 border-b">
                   <th class="px-2 py-1.5 text-left font-semibold">직전 라운드</th>
@@ -1020,7 +1140,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           <ul class="list-disc pl-5 space-y-1 m-0 text-muted-foreground">
             <li>홀수 핸디도 그대로 인정</li>
             <li>계속 1등조라 핸디가 내려가 있어도 <b class="text-foreground">단 한 번</b> 2등조에 들면 기준 핸디로 복귀. 2등조도 반대로 동일</li>
-            <li><b class="text-foreground">기준 핸디로 복귀하면 모든 것을 초기화</b>. 당월 핸디가 기준 핸디와 같은 달(매년 1월, 기준 핸디를 새로 정한 달, 조 변경으로 복귀한 다음 달)은 직전 라운드와 견주지 않고 그 달 결과만으로 ±1</li>
+            <li><b class="text-foreground">기준 핸디로 복귀하면 모든 것을 초기화</b></li>
+            <li>당월 핸디가 기준 핸디와 같은 달(매년 1월, 기준 핸디를 새로 정한 달, 조 변경으로 복귀한 다음 달)은 직전 라운드와 견주지 않고 그 달 결과만으로 ±1</li>
             <li>"직전 라운드" = 마지막으로 조에 편성된 달. 불참한 달은 건너뛰고 비교</li>
             <li>불참한 달은 당월 핸디를 그대로 다음 달로 이월</li>
           </ul>
@@ -1037,7 +1158,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         </ul>
         <DialogFooter>
           <Button type="button" variant="outline" @click="confirmDlg.open = false">{{ confirmDlg.cancelLabel }}</Button>
-          <Button type="button" :variant="confirmDlg.okLabel === '입력 폐기' ? 'destructive' : 'default'" @click="acceptConfirm">{{ confirmDlg.okLabel }}</Button>
+          <Button type="button" :variant="confirmDlg.destructive ? 'destructive' : 'default'" @click="acceptConfirm">{{ confirmDlg.okLabel }}</Button>
         </DialogFooter>
       </div>
     </Dialog>
@@ -1046,9 +1167,9 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
     <Dialog v-model:open="unlockOpen" label="잠금 해제 후 수정" content-class="sm:max-w-sm">
       <form class="space-y-3" @submit.prevent="confirmUnlock">
         <DialogTitle class="mb-0">잠금 해제 후 수정</DialogTitle>
-        <p class="text-sm">확정된 기록 · 수정 사유 입력 필요</p>
+        <p class="text-sm">확정된 기록입니다. 고치려면 수정 사유를 입력해 주세요.</p>
         <p class="text-sm text-muted-foreground">
-          사유는 저장 시 모임 메모에 <span class="whitespace-nowrap">[날짜 수정: 사유]</span> 로 누적
+          저장하면 사유가 모임 메모에 <span class="whitespace-nowrap">[날짜 수정: 사유]</span> 형태로 쌓입니다.
         </p>
         <div class="space-y-1">
           <label for="unlock-reason" class="text-sm font-medium">수정 사유</label>

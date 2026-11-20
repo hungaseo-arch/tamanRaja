@@ -10,7 +10,7 @@ describe('월간 기록 표 가드', () => {
   it('취소 버튼은 편집 모드면 항상 보이고 변경분이 있으면 폐기 확인을 거친다', () => {
     expect(table).not.toMatch(/v-if="isEditing && unlockReason !== null"/);
     expect(table).toMatch(/@click="requestCancel"/);
-    expect(table).toContain('저장하지 않은 입력이 사라짐');
+    expect(table).toContain('저장하지 않은 입력이 있습니다. 취소하면 입력한 내용이 사라집니다.');
   });
 
   it('저장은 요약 확인을 거쳐 doSave 에서 내보낸다', () => {

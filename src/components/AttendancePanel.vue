@@ -3,7 +3,7 @@ import { computed, nextTick, ref } from 'vue';
 import { Check, CircleCheck, CircleHelp, CircleX } from 'lucide-vue-next';
 import { nextRovingIndex } from '@/components/ui/roving';
 import type { SessionMember } from '@/lib/session';
-import { formatValue } from '@/lib/format';
+import { formatValue, formatYearMonth } from '@/lib/format';
 import { resolveHandicap } from '@/data';
 import Button from '@/components/ui/Button.vue';
 import DialogFooter from '@/components/ui/DialogFooter.vue';
@@ -20,7 +20,11 @@ interface Props {
   member: SessionMember;
   /** 참석 확인 대상 year_month (getAttendanceMonth) */
   yearMonth: string;
-  currentAttended: boolean | null;
+  /**
+   * 저장된 참석 값. true 참석 · false 불참 · null 미정(미정이라고 답함).
+   * undefined 는 아직 답하지 않은 상태(미응답)라 아무 것도 선택하지 않은 채로 연다.
+   */
+  currentAttended?: boolean | null;
   /** 바깥이 서버에 보내는 중. 저장이 끝난 뒤 창을 닫는 것도 바깥이 한다. */
   saving?: boolean;
 }
@@ -34,10 +38,13 @@ const emit = defineEmits<{
 
 // 창이 닫히면 Dialog 가 내용을 통째로 지우므로(v-if), 이 패널은 열릴 때마다
 // 새로 만들어진다. 현재 값은 여기서 한 번만 받아 두면 된다.
-const attended = ref<boolean | null>(props.currentAttended);
+const attended = ref<boolean | null | undefined>(props.currentAttended);
+// 미응답(undefined)이면 고르기 전에는 저장할 값이 없다. 고르지 않고 저장하면
+// 미응답이 조용히 '미정' 으로 바뀌므로 저장을 막는다.
+const hasChoice = computed(() => attended.value !== undefined);
 
-// 참석/미정/불참 라디오. 미정(null)도 하나의 값이라 항상 하나가 선택돼 있고,
-// 선택된 버튼만 tabindex 0 이다.
+// 참석/미정/불참 라디오. 미정(null)도 하나의 값이다. 미응답이면 선택된 버튼이 없으므로
+// 첫 버튼이 tabindex 0 을 받아 키보드로 들어올 수 있다.
 const options: { value: boolean | null; label: string; icon: typeof Check }[] = [
   { value: true, label: '참석', icon: CircleCheck },
   { value: null, label: '미정', icon: CircleHelp },
@@ -47,7 +54,7 @@ const radioRefs = ref<HTMLButtonElement[]>([]);
 
 function onRadioKeydown(e: KeyboardEvent): void {
   const current = options.findIndex((o) => o.value === attended.value);
-  const next = nextRovingIndex(e.key, current, options.length);
+  const next = nextRovingIndex(e.key, current < 0 ? 0 : current, options.length);
   if (next === null) return;
   e.preventDefault();
   attended.value = options[next].value;
@@ -62,6 +69,8 @@ const prevYM = computed(() => {
   return `${py}-${String(pm).padStart(2, '0')}`;
 });
 
+const monthLabel = computed(() => formatYearMonth(props.yearMonth));
+
 // 표와 같은 규칙을 쓴다 — 직전 달 스코어가 아직 안 들어왔으면 차월 핸디는
 // 정해지지 않은 것이라 '-' 로 나온다.
 const handicap = computed(() => resolveHandicap(props.member.id, prevYM.value));
@@ -70,37 +79,19 @@ const handicap = computed(() => resolveHandicap(props.member.id, prevYM.value));
 // 서버가 거절해도 성공한 것처럼 보인다.
 function handleSubmit(e: Event): void {
   e.preventDefault();
-  if (props.saving) return;
+  if (props.saving || attended.value === undefined) return;
   emit('save', attended.value);
 }
 </script>
 
 <template>
   <form class="space-y-4" @submit="handleSubmit">
-    <!-- 핸디캡 정보 -->
-    <div v-if="handicap" class="rounded-lg border border-border bg-muted/40 p-4">
-      <div class="grid grid-cols-2 gap-4">
-        <div class="text-center">
-          <div class="text-muted-foreground text-sm mb-1">기준 핸디</div>
-          <div class="font-mono font-bold text-2xl">{{ formatValue(handicap.std_hc) }}</div>
-        </div>
-        <div class="text-center">
-          <div class="text-muted-foreground text-sm mb-1">차월 핸디</div>
-          <div class="font-mono font-bold text-2xl text-primary">{{ formatValue(handicap.next_hc) }}</div>
-        </div>
-      </div>
-    </div>
-    <div v-else class="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground text-center">
-      <p class="m-0">핸디캡 정보 없음</p>
-      <p class="m-0 mt-1">직전 달 핸디캡이 등록되면 표시</p>
-    </div>
-
     <!-- 참석 / 미정 / 불참 선택 -->
-    <p class="text-base font-medium text-center">{{ yearMonth }} 참석 여부 선택</p>
+    <p class="text-lg font-bold text-center m-0">{{ monthLabel }} 모임에 참석하시나요?</p>
     <div
       class="grid grid-cols-3 gap-2"
       role="radiogroup"
-      :aria-label="`${yearMonth} 참석 여부`"
+      :aria-label="`${monthLabel} 참석 여부`"
       @keydown="onRadioKeydown"
     >
       <button
@@ -110,7 +101,7 @@ function handleSubmit(e: Event): void {
         type="button"
         role="radio"
         :aria-checked="attended === opt.value"
-        :tabindex="attended === opt.value ? 0 : -1"
+        :tabindex="attended === opt.value || (!hasChoice && i === 0) ? 0 : -1"
         class="relative flex min-h-16 flex-col items-center justify-center gap-1 rounded-lg border p-3 text-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
         :class="[
           attended === opt.value
@@ -134,11 +125,31 @@ function handleSubmit(e: Event): void {
       </button>
     </div>
 
+    <!-- 핸디캡 정보 -->
+    <div v-if="handicap" class="rounded-lg border border-border bg-muted/40 p-3">
+      <div class="grid grid-cols-2 gap-4">
+        <div class="text-center">
+          <div class="text-muted-foreground text-sm mb-1">기준 핸디</div>
+          <div class="font-mono font-bold text-xl">{{ formatValue(handicap.std_hc) }}</div>
+        </div>
+        <div class="text-center">
+          <div class="text-muted-foreground text-sm mb-1">이번 모임 적용 핸디</div>
+          <div class="font-mono font-bold text-xl text-primary">{{ formatValue(handicap.next_hc) }}</div>
+        </div>
+      </div>
+    </div>
+    <div v-else class="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground text-center">
+      <p class="m-0">핸디캡 정보 없음</p>
+      <p class="m-0 mt-1">직전 달 핸디캡이 등록되면 표시</p>
+    </div>
+
+    <p v-if="!hasChoice" class="m-0 text-sm text-muted-foreground text-center">아직 답하지 않으셨습니다. 하나를 선택해 주세요.</p>
+
     <DialogFooter>
       <Button type="button" variant="outline" :disabled="saving" @click="emit('cancel')">취소</Button>
-      <!-- 저장 중에는 눌러도 반응이 없어야 한다. 참석 확인을 두 번 보내면
+      <!-- 저장 중에는 눌러도 반응이 없어야 한다. 결과 알림은 바깥 토스트가 맡는다. 참석 확인을 두 번 보내면
            두 번째 요청이 첫 번째를 덮어써 순서가 뒤집힐 수 있다. -->
-      <Button type="submit" :disabled="saving" aria-live="polite">
+      <Button type="submit" :disabled="saving || !hasChoice">
         {{ saving ? '저장 중...' : '저장' }}
       </Button>
     </DialogFooter>

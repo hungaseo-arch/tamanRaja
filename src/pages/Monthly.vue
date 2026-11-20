@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getMonthlyData, getAvailableMonths, getAttendanceMonth, canAnswerAttendance, firstSaturday, GOLF_COURSES, MEETINGS, MEETING_RESULTS, MEMBERS, loadData } from '@/data';
+import { getMonthlyData, getAvailableMonths, getAttendanceMonth, canAnswerAttendance, firstSaturday, GOLF_COURSES, MEETINGS, MEETING_RESULTS, loadData } from '@/data';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/composables/useToast';
 import { supabase } from '@/lib/supabase';
@@ -144,11 +144,6 @@ const monthOptions = computed(() =>
   })
 );
 
-// 이전·다음 달 이동. 고를 수 있는 달 전체(해를 넘어서도) 중 바로 이웃한 달이고,
-// 이동은 표의 update:selectedMonth → monthModel → requestMonth 를 지나 변경분 확인을 거친다.
-const sortedSelectable = computed(() =>
-  [...new Set([...existingMonths.value, ...SELECTABLE])].sort(),
-);
 
 // 직접 입력 (Supabase 미팅 없는 달, 또는 저장된 미래월 편집용)
 const manualDate = ref('');
@@ -198,9 +193,9 @@ const isManager = computed(() => {
   if (!currentMember.value) return false;
   if (isAdmin.value) return true;
   // 전월 Host 확인 (선택된 미래월 기준 전월 → 새 미래월 추가 시 자동 갱신)
-  const prevMonthNum = parseInt(selectedMonth.value.slice(5)) - 1;
+  const prevMonthNum = parseInt(selectedMonth.value.slice(5), 10) - 1;
   const prevYM = prevMonthNum === 0
-    ? `${parseInt(selectedMonth.value.slice(0, 4)) - 1}-12`
+    ? `${parseInt(selectedMonth.value.slice(0, 4), 10) - 1}-12`
     : `${selectedMonth.value.slice(0, 4)}-${String(prevMonthNum).padStart(2, '0')}`;
   const prevMeeting = MEETINGS.find((m) => m.year_month === prevYM);
   if (!prevMeeting) return false;
@@ -208,8 +203,8 @@ const isManager = computed(() => {
     (r) => r.meeting_id === prevMeeting.id && r.result_rank === 'Host'
   );
   if (!hostResult) return false;
-  const hostMember = MEMBERS.find((m) => m.id === hostResult.member_id);
-  return hostMember?.name === currentMember.value.name;
+  // 동명이인이 있을 수 있으므로 이름이 아니라 id 로 비교한다.
+  return String(hostResult.member_id) === String(currentMember.value.id);
 });
 
 const effectiveMeetingDate = computed(
@@ -269,7 +264,7 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
     const hostMemberId = Object.entries(payload.ranks).find(([, v]) => v === 'Host')?.[0] ?? null;
 
     const rows = monthlyData.value.map((row) => ({
-      member_id: parseInt(row.member_id),
+      member_id: parseInt(row.member_id, 10),
       attended: payload.attendance[row.member_id] ?? false,
       score: payload.scores[row.member_id] ?? '',
       result_group: payload.groups[row.member_id] || null,
@@ -279,9 +274,9 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
     const { data, error } = await supabase.rpc('save_meeting_results', {
       p_year_month: selectedMonth.value,
       p_meeting_date: manualDate.value || null,
-      p_course_id: existingCourse ? parseInt(existingCourse.id) : null,
+      p_course_id: existingCourse ? parseInt(existingCourse.id, 10) : null,
       p_new_course_name: existingCourse ? null : courseName || null,
-      p_host_member_id: hostMemberId ? parseInt(hostMemberId) : null,
+      p_host_member_id: hostMemberId ? parseInt(hostMemberId, 10) : null,
       p_rows: rows,
     });
     if (error) throw error;
@@ -351,7 +346,7 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
       <Dialog :open="leaveOpen" label="달 이동 확인" content-class="sm:max-w-sm" @update:open="(v: boolean) => { if (!v && pendingMonth) stayOnMonth(); }">
         <div class="space-y-3">
           <DialogTitle class="mb-0">달 이동 확인</DialogTitle>
-          <p class="text-sm">저장하지 않은 입력이 사라짐</p>
+          <p class="text-sm">저장하지 않은 입력이 있습니다. 다른 달로 이동하면 입력한 내용이 사라집니다.</p>
           <p v-if="pendingMonth" class="text-sm text-muted-foreground">{{ selectedMonth }} → {{ pendingMonth }}</p>
           <DialogFooter>
             <Button type="button" variant="outline" @click="stayOnMonth">이 달에 머물기</Button>
