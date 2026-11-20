@@ -21,6 +21,7 @@ import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
 import Badge from '@/components/ui/Badge.vue';
 import RankBadge from '@/components/ui/RankBadge.vue';
+import MemberHandicapTrend from '@/components/MemberHandicapTrend.vue';
 import Table from '@/components/ui/Table.vue';
 import TableHeader from '@/components/ui/TableHeader.vue';
 import TableBody from '@/components/ui/TableBody.vue';
@@ -276,6 +277,9 @@ function handleExport(): void {
             </CardContent>
           </Card>
         </div>
+
+        <!-- 연도별 기준핸디 추이 (선택한 연도와 무관하게 전체 연도) -->
+        <MemberHandicapTrend :member-id="currentMember.id" />
 
         <!-- 월별 히스토리 테이블 -->
         <!-- 넓은 화면: 카드가 표의 최소 폭(w-min)을 따라가고, 남으면 min-w-full 로
