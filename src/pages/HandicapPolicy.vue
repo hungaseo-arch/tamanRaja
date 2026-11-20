@@ -7,7 +7,7 @@ import PolicySection, { openPolicySection } from '@/components/PolicySection.vue
 import HandicapResultsTable from '@/components/HandicapResultsTable.vue';
 
 onMounted(() => {
-  setPageTitle('27년 핸디캡 (안)');
+  setPageTitle('27년 기준핸디 (안)');
   void loadCourseRatings();
   window.addEventListener('beforeprint', openAllDetails);
   window.addEventListener('afterprint', restoreDetails);
@@ -38,8 +38,8 @@ const FORMULA_STEPS = [
   {
     no: '①',
     name: '보정 오버파',
-    formula: '실오버파 − 해당 구장 난이도 가중적용치',
-    note: '실오버파 : 총타수 − 해당 구장 Par. Par 71 구장은 +1 보정',
+    formula: '스코어(오버파) − 해당 골프장 난이도 가중적용치',
+    note: '스코어(오버파) : 총타수 − 해당 골프장 Par. Par 71 골프장은 +1 보정',
   },
   {
     no: '②',
@@ -99,9 +99,9 @@ const WEIGHT_BANDS = [
 
 // 시상 가중치 (3-4절)
 const AWARDS = [
-  { name: 'Winner', weight: '−0.50', meaning: '핸디 대비 호성적 → 핸디 축소' },
+  { name: 'Winner', weight: '−0.50', meaning: '핸디 대비 호성적 → 핸디 인하' },
   { name: 'Medalist', weight: '−0.25', meaning: 'Gross 최저타 → 실력 입증' },
-  { name: 'Host', weight: '+0.50', meaning: '최하위 → 핸디 확대' },
+  { name: 'Host', weight: '+0.50', meaning: '최하위 → 핸디 인상' },
 ];
 
 // 박영진 시상 예시 (시상 8건, 원점수 −1.125). 표 값은 지시서가 정본이다.
@@ -238,7 +238,7 @@ async function loadCourseRatings(): Promise<void> {
     .order('name');
   courseRatingsLoading.value = false;
   if (error) {
-    courseRatingsError.value = describeError(error, '구장 정보를 불러오지 못했음');
+    courseRatingsError.value = describeError(error, '골프장 정보를 불러오지 못했음');
     return;
   }
   courseRatings.value = (data ?? []).map((c) => ({
@@ -252,10 +252,10 @@ async function loadCourseRatings(): Promise<void> {
   <div class="policy-page">
     <div class="container mx-auto px-4 max-w-5xl py-2 space-y-3">
       <header class="space-y-2">
-        <h1 class="text-lg font-bold">27년 핸디캡 (안)</h1>
+        <h1 class="text-lg font-bold">27년 기준핸디 (안)</h1>
       </header>
 
-      <PolicySection id="sec-results" no="1" title="회원별 산정결과 (안)" default-open>
+      <PolicySection id="sec-results" no="1" title="회원별 산정결과" default-open>
         <HandicapResultsTable />
       </PolicySection>
 
@@ -276,7 +276,7 @@ async function loadCourseRatings(): Promise<void> {
       </PolicySection>
 
       <PolicySection id="sec-weights" no="3" title="구간 가중">
-        <p class="policy-lead">최근 라운드일수록 가중 상향, 오래된 라운드일수록 가중 하향</p>
+        <p class="policy-lead">최근 라운드일수록 가중을 높이고, 오래된 라운드일수록 가중을 낮춤</p>
         <div class="policy-table-wrap">
           <table class="policy-table pp-fixed pp-center-all">
             <colgroup><col style="width:10%" /><col style="width:28%" /><col style="width:22%" /><col style="width:40%" /></colgroup>
@@ -508,21 +508,21 @@ async function loadCourseRatings(): Promise<void> {
 
       <PolicySection id="sec-course" no="7" title="코스 난이도 지수">
         <p class="policy-lead">
-          동일 회원·동일 핸디 조건에서 특정 구장 Net이 높으면 난이도 높은 구장으로 판단.
+          동일 회원·동일 핸디 조건에서 특정 골프장 Net이 높으면 난이도 높은 골프장으로 판단.
           WHS의 PCC와 동일 원리
         </p>
-        <pre class="policy-formula">난이도지수 = 해당 구장 평균 Net − 전체 평균 Net
-가중적용치 = 난이도지수 × (모임 수 ÷ 4, 최대 1.0)   ※ 표본 적은 구장은 영향 축소</pre>
+        <pre class="policy-formula">난이도지수 = 해당 골프장 평균 Net − 전체 평균 Net
+가중적용치 = 난이도지수 × (모임 수 ÷ 4, 최대 1.0)   ※ 표본 적은 골프장은 영향 축소</pre>
         <p class="policy-note">산출 창 : 2025-07 ~ 2026-11</p>
         <div class="policy-table-wrap mt-2">
           <table class="policy-table pp-fixed pp-center-all pp-course">
             <thead>
               <tr>
-                <th scope="col" class="pc-name">구장</th>
+                <th scope="col" class="pc-name">골프장</th>
                 <th scope="col" class="num pw-hide pc-par">Par</th>
                 <th scope="col" class="num pc-mtg">모임</th>
                 <th scope="col" class="num pc-rnd">라운드</th>
-                <th scope="col" class="num pw-hide pc-over">실오버파</th>
+                <th scope="col" class="num pw-hide pc-over">스코어<wbr />(오버파)</th>
                 <th scope="col" class="num pw-hide pc-net">평균 Net</th>
                 <th scope="col" class="num pc-idx">난이도<wbr />지수</th>
                 <th scope="col" class="num pc-app">가중<wbr />적용치</th>
@@ -550,7 +550,7 @@ async function loadCourseRatings(): Promise<void> {
         </p>
 
         <details class="policy-details mt-3">
-          <summary>참고: 구장별 Course Rating · Slope</summary>
+          <summary>참고: 골프장별 Course Rating · Slope</summary>
           <p class="policy-note">
             2027년 산정 미사용. 2028년 WHS 전환 대비 수집값
           </p>
@@ -563,7 +563,7 @@ async function loadCourseRatings(): Promise<void> {
             <table class="policy-table pp-fixed pp-center-all pp-rating">
               <thead>
                 <tr>
-                  <th scope="col" class="pr-name">구장</th>
+                  <th scope="col" class="pr-name">골프장</th>
                   <th scope="col" class="num pr-tee">Tee</th>
                   <th scope="col" class="num pr-par">Par</th>
                   <th scope="col" class="num pr-cr">CR</th>
@@ -602,7 +602,7 @@ async function loadCourseRatings(): Promise<void> {
                 <th scope="col">성명</th>
                 <th scope="col" class="num">Handicap Index</th>
                 <th scope="col" class="num">2026 기준</th>
-                <th scope="col" class="num">2027 기준(안)</th>
+                <th scope="col" class="num">2027 기준</th>
                 <th scope="col" class="num pw-hide">차이 (2026)</th>
                 <th scope="col" class="num pw-hide">차이 (2027안)</th>
               </tr>
@@ -642,7 +642,7 @@ async function loadCourseRatings(): Promise<void> {
           </table>
         </div>
         <p class="policy-note mt-2">
-          산출 : 최근 20라운드 Score Differential 중 최저 8개 평균. 평균 절대차 : 2026 기준 {{ meanAbsDiff('std2026') }}타, 2027 기준(안) {{ meanAbsDiff('std2027') }}타. {{ meanAbsDiff('std2026') }}타는 위 표의 활동회원 {{ WHS_ROWS.length }}명 기준이며, 휴면 {{ DORMANT_NAMES.length }}명({{ DORMANT_NAMES.join(' · ') }})을 포함하면 1.1타가 됨. 화면에는 표에 실린 {{ WHS_ROWS.length }}명으로 계산한 값을 표시함
+          산출 : 최근 20라운드 Score Differential 중 최저 8개 평균. 평균 절대차 : 2026 기준 {{ meanAbsDiff('std2026') }}타, 2027 기준 {{ meanAbsDiff('std2027') }}타. {{ meanAbsDiff('std2026') }}타는 위 표의 활동회원 {{ WHS_ROWS.length }}명 기준이며, 휴면 {{ DORMANT_NAMES.length }}명({{ DORMANT_NAMES.join(' · ') }})을 포함하면 1.1타가 됨. 화면에는 표에 실린 {{ WHS_ROWS.length }}명으로 계산한 값을 표시함
         </p>
       </PolicySection>
 
@@ -650,7 +650,7 @@ async function loadCourseRatings(): Promise<void> {
         <ul class="policy-list policy-list-first">
           <li>2027년 1월 모임부터 적용</li>
           <li>
-            조별 금회적용 핸디 ±1 규칙 현행 유지 (1등조 −1 / 2등조 +1). 본 기준은 연 1회 기준핸디 산정에만 적용
+            조별 당월 핸디 ±1 규칙 현행 유지 (1등조 −1 / 2등조 +1). 본 기준은 연 1회 기준핸디 산정에만 적용
           </li>
           <li>손동현 · 신승민 : 2027년 상반기 성적 기준 7월 중간 재산정 검토</li>
           <li>이성남 : 휴면 중. 복귀 후 3회 참석 시 재산정 (<button type="button" class="policy-ref" @click="openPolicySection('sec-dormant-note')">아래 안내문</button> 참조)</li>

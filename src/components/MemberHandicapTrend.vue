@@ -126,7 +126,7 @@ const chart = computed(() => {
   return { pts, line: pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') };
 });
 const ariaLabel = computed(
-  () => '연도별 기준핸디 추이: ' + view.value.map((r) => `${r.year}년${r.half ? ' ' + r.half : ''} ${r.std_hc}${r.draft ? '(확정 전)' : ''}`).join(', '),
+  () => '연도별 기준핸디 추이: ' + view.value.map((r) => `${r.year}년${r.half ? ' ' + r.half : ''} ${r.std_hc}${r.draft ? '(안)' : ''}`).join(', '),
 );
 </script>
 

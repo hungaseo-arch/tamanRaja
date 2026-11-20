@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 // 모달 상세는 인쇄되지 않으므로, 같은 근거를 담은 인쇄 전용 표가 빠지지 않았는지 정적으로 점검한다.
 const vue = readFileSync('src/components/HandicapResultsTable.vue', 'utf-8');
 
-describe('핸디캡 산정결과 인쇄 상세', () => {
+describe('기준핸디 산정결과 인쇄 상세', () => {
   it('인쇄 전용 표가 화면에서는 숨겨지고 인쇄에서만 보인다', () => {
     expect(vue).toMatch(/\.pp-print-only\s*\{\s*display:\s*none;/);
     expect(vue).toMatch(/@media print\s*\{\s*\.pp-print-only\s*\{\s*display:\s*block;/);

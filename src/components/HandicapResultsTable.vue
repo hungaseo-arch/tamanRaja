@@ -191,7 +191,7 @@ function fmtSigned3(v: number | null | undefined): string {
 }
 // 인쇄용 비고: 상태 표시(휴면·한도·표본 부족)와 비고 문구를 ' · ' 로 잇는다.
 function printNote(r: Row): string {
-  return [r.dormant_from ? '휴면' : '', r.capped ? '한도' : '', r.low_sample ? '표본 부족' : '', r.note ?? '']
+  return [r.dormant_from ? '휴면' : '', r.capped ? '한도 적용' : '', r.low_sample ? '표본 부족' : '', r.note ?? '']
     .filter(Boolean)
     .join(' · ');
 }
@@ -359,9 +359,9 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
       <!-- 범례는 왼쪽, 관리자 버튼은 같은 줄 오른쪽 끝. 왼쪽에 빈 칸을 남기지 않는다. -->
       <div class="pp-head-row">
         <ul class="pp-legend">
-          <li><strong>27년 제안</strong> = 27년 기준 + 인간미. 인간미는 운영진이 −2 ~ +2 정수로 가감하는 보정값 (<span class="pp-hum-legend">청록 글자</span>)</li>
+          <li><strong>27년 제안</strong> = 27년 기준 + 인간미. 인간미는 관리자가 −2 ~ +2 정수로 가감하는 보정값 (<span class="pp-hum-legend">청록 글자</span>)</li>
           <li><span class="pp-up">빨강 인상</span> = 타수를 더 받는 쪽(유리), <span class="pp-down">파랑 인하</span> = 타수를 덜 받는 쪽</li>
-          <li><strong>한도</strong> 증감 한도 적용 · <strong>부족</strong> 표본 부족(가중 라운드 3.00 미만) · <strong>휴면</strong> 복귀 전 참고값</li>
+          <li><strong>한도 적용</strong> 증감 한도에 걸림 · <strong>표본 부족</strong> 가중 라운드 3.00 미만 · <strong>휴면</strong> 복귀 전 참고값</li>
         </ul>
         <div v-if="isAdmin" class="pp-edit-bar">
           <template v-if="!editing">
@@ -369,7 +369,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
           </template>
           <template v-else>
             <Button size="xs" class="h-8 px-2 text-xs" :disabled="saving || hasInvalid || changed.length === 0" @click="requestSave">
-              {{ saving ? '저장 중' : `저장${changed.length ? ` (${changed.length}건)` : ''}` }}
+              {{ saving ? '저장 중…' : `저장${changed.length ? ` (${changed.length}건)` : ''}` }}
             </Button>
             <Button variant="outline" size="xs" class="h-8 px-2 text-xs" :disabled="saving" @click="cancelEdit">취소</Button>
             <span v-if="hasInvalid" class="pp-edit-msg pp-up" role="alert">인간미는 −2 ~ +2 사이 정수만 입력 가능</span>
@@ -405,8 +405,8 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                     class="policy-flag pp-flag-dormant"
                   >휴면</span>
                   <!-- 휴면 회원은 휴면만 표시한다. 한도·부족은 휴면에 포함되므로 따로 보이지 않는다. -->
-                  <span v-if="r.capped && !r.dormant_from" class="policy-flag pp-flag-cap">한도</span>
-                  <span v-if="r.low_sample && !r.dormant_from" class="policy-flag pp-flag-low" title="표본 부족">부족</span>
+                  <span v-if="r.capped && !r.dormant_from" class="policy-flag pp-flag-cap">한도 적용</span>
+                  <span v-if="r.low_sample && !r.dormant_from" class="policy-flag pp-flag-low" title="표본 부족">표본 부족</span>
                 </th>
                 <td class="num pp-hide-sm">{{ r.std_hc_2025 ?? '—' }}</td>
                 <td class="num pp-hide-sm">{{ r.prev_std_hc ?? '—' }}</td>
@@ -471,7 +471,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 
       <!-- 인쇄 전용: 성명을 눌러야 보이는 모달 상세는 종이에 나오지 않으므로, 같은 근거를 표 한 장으로 따로 낸다. 화면에서는 숨김. -->
       <div class="pp-print-only" aria-hidden="true">
-        <p class="policy-note">산정 근거 (회원별 상세)</p>
+        <p class="policy-note">산정 근거 (회원별 상세) · W = Winner, M = Medalist, H = Host</p>
         <table class="policy-table pp-detail-print">
           <thead>
             <tr>
@@ -485,8 +485,8 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
               <th scope="col">시상보정</th>
               <th scope="col">산출핸디</th>
               <th scope="col">반영률</th>
-              <th scope="col">한도 전 증감</th>
-              <th scope="col">한도 후 증감</th>
+              <th scope="col">한도 적용 전 증감</th>
+              <th scope="col">한도 적용 후 증감</th>
               <th scope="col">비고</th>
             </tr>
           </thead>
@@ -532,9 +532,9 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
       <template v-if="selected">
         <DetailItem label="25년 기준">{{ selected.std_hc_2025 ?? '—' }}</DetailItem>
         <DetailItem label="26년 기준">{{ selected.prev_std_hc ?? '—' }}</DetailItem>
-        <DetailItem label="27년 기준(안)"><span class="pp-std">{{ selected.std_hc }}</span></DetailItem>
+        <DetailItem label="27년 기준"><span class="pp-std">{{ selected.std_hc }}</span></DetailItem>
         <DetailItem label="인간미">{{ selected.humanity == null ? '—' : fmtSignedInt(selected.humanity) }}</DetailItem>
-        <DetailItem label="27년 제안(안)"><span class="pp-std">{{ proposalOf(selected) }}</span></DetailItem>
+        <DetailItem label="27년 제안"><span class="pp-std">{{ proposalOf(selected) }}</span></DetailItem>
         <DetailItem label="증감">
           <span :class="deltaClass(selected.final_delta)">
             {{ fmtSigned2(selected.final_delta) }} {{ deltaLabel(selected.final_delta) }}
@@ -548,7 +548,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
         <DetailItem label="B 구간 평균">{{ fmt(selected.avg_b) }}</DetailItem>
         <DetailItem label="C 구간 평균">{{ fmt(selected.avg_c) }}</DetailItem>
         <DetailItem label="가중 라운드">{{ fmt(selected.w_sum, 2) }}</DetailItem>
-        <DetailItem label="가중 시상횟수 (W / M / H)">{{ fmtAwardCounts(selected) }}</DetailItem>
+        <DetailItem label="가중 시상횟수 (Winner / Medalist / Host)">{{ fmtAwardCounts(selected) }}</DetailItem>
         <DetailItem label="시상 원점수">
           <span :class="deltaClass(selected.award_raw ?? null)">{{ fmtSigned3(selected.award_raw) }}</span>
         </DetailItem>
