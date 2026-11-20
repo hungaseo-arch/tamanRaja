@@ -249,9 +249,6 @@ async function loadCourseRatings(): Promise<void> {
     <div class="container mx-auto px-4 max-w-5xl py-2 space-y-3">
       <header class="space-y-2">
         <h1 class="text-lg font-bold">27년 핸디캡 (안)</h1>
-        <p class="text-sm leading-relaxed">
-          2027년 기준핸디 산정 방식과 회원별 산출 근거 공개 자료
-        </p>
         <p class="policy-draft" role="note">
           <span class="policy-draft-tag">확정 전 안(案)</span>
           회원 확정 전 변경 가능 · 적용은 2027년 1월 모임부터        </p>
