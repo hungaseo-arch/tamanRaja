@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { Download } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { useRecordExport } from '@/composables/useRecordExport';
