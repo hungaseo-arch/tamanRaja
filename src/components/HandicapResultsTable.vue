@@ -397,7 +397,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                     v-model="draft[r.member_id]"
                     type="number"
                     :id="`hum-${r.member_id}`"
-                    :class="cn('mx-auto h-11 sm:h-8 w-12 sm:w-14 px-1 text-center', isInvalid(r) && 'border-destructive bg-destructive/10')"
+                    :class="cn('mx-auto h-9 sm:h-8 w-11 sm:w-14 px-1 text-center', isInvalid(r) && 'border-destructive bg-destructive/10')"
                     :min="HUMANITY_MIN"
                     :max="HUMANITY_MAX"
                     step="1"
@@ -581,6 +581,18 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   vertical-align: bottom;
   line-height: 1.3;
 }
+/* 본문 행은 모든 칸을 세로 가운데로 맞춘다. 입력 상자가 있어도 성명·숫자가 같은 줄에 놓인다. */
+.pp-results tbody th,
+.pp-results tbody td {
+  vertical-align: middle;
+}
+/* 성명 칸의 배지는 작게 줄이고 줄바꿈 때 여백을 최소로 둔다. */
+.pp-results .policy-flag {
+  margin: 0.125rem 0.25rem 0.125rem 0;
+  padding: 0 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
 .pp-results thead th:first-child,
 .pp-results tbody th {
   width: 80px;
@@ -636,9 +648,9 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 2.75rem;
-  min-height: 2.75rem;
-  padding: 0.15rem 0.35rem;
+  min-width: 2.25rem;
+  min-height: 2rem;
+  padding: 0.1rem 0.3rem;
   border: 1px dashed var(--pp-border, var(--border));
   border-radius: 0.25rem;
   background: transparent;
