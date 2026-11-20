@@ -129,8 +129,8 @@ useEventListener(window, 'resize', () => close(false));
         tabindex="-1"
         :disabled="item.disabled"
         :class="cn(
-          'flex w-full flex-col items-start rounded-sm px-2 py-2 text-left text-sm',
-          'focus:outline-none focus-visible:bg-accent hover:bg-accent disabled:pointer-events-none disabled:opacity-50',
+          'flex min-h-11 w-full flex-col items-start justify-center rounded-sm px-2 py-2 text-left text-sm sm:min-h-0',
+          'focus:outline-none focus-visible:bg-accent focus-visible:ring-2 focus-visible:ring-ring hover:bg-accent disabled:pointer-events-none disabled:opacity-50',
           item.destructive && 'text-destructive'
         )"
         @click="select(item)"

@@ -63,11 +63,12 @@ const attendanceMemberData = computed(() => {
   return getMonthlyData(attendanceYM.value).find((d) => d.member_id === currentMember.value!.id) ?? null;
 });
 
-const attendanceAttended = computed((): boolean | null => {
-  if (!currentMember.value) return null;
+// 응답 기록이 없으면 undefined 를 그대로 넘긴다 (참석 패널이 '미응답' 으로 구분해 보여 준다).
+const attendanceAttended = computed((): boolean | null | undefined => {
+  if (!currentMember.value) return undefined;
   const saved = getAttendance(attendanceYM.value)[currentMember.value.id];
   if (saved !== undefined) return saved;
-  return attendanceMemberData.value?.attended ?? null;
+  return attendanceMemberData.value?.attended;
 });
 
 const ATTENDANCE_LABEL: Record<string, string> = { true: '참석', false: '불참', null: '미정' };

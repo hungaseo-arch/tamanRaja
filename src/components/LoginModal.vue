@@ -30,7 +30,7 @@ interface Props {
   open: boolean;
   /** 참석 확인 대상 달. 계산은 App 이 한다 (getAttendanceMonth). */
   attendanceYearMonth: string;
-  attendanceAttended: boolean | null;
+  attendanceAttended: boolean | null | undefined;
   /** App 이 서버에 참석 여부를 보내는 중 */
   savingAttendance?: boolean;
 }

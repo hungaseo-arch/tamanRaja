@@ -75,7 +75,7 @@ const emit = defineEmits<{ retry: [] }>();
     :class="['flex flex-col items-center justify-center gap-1.5 py-10 px-4 text-center', props.containerClass]"
   >
     <p class="text-muted-foreground">{{ props.emptyTitle ?? '표시할 기록 없음' }}</p>
-    <p v-if="props.emptyHint" class="text-sm text-muted-foreground/80">{{ props.emptyHint }}</p>
+    <p v-if="props.emptyHint" class="text-sm text-muted-foreground">{{ props.emptyHint }}</p>
     <slot name="empty-action" />
   </div>
 
