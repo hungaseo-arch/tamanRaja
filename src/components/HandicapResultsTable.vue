@@ -337,20 +337,23 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
       empty-hint="2027 산정결과가 등록되면 표시 · 관리자에게 문의"
       @retry="load"
     >
-      <p class="policy-note mt-0 mb-2">
-        성명 선택 시 산정 근거(구간별 평균·가중 라운드·시상보정·산출핸디 등) 창 표시. 열 제목 선택 시 정렬 변경
-      </p>
-      <div v-if="isAdmin" class="pp-edit-bar">
-        <template v-if="!editing">
-          <Button variant="outline" size="xs" @click="startEdit()">인간미 수정</Button>
-        </template>
-        <template v-else>
-          <Button size="xs" :disabled="saving || hasInvalid || changed.length === 0" @click="requestSave">
-            {{ saving ? '저장 중' : `저장${changed.length ? ` (${changed.length}건)` : ''}` }}
-          </Button>
-          <Button variant="outline" size="xs" :disabled="saving" @click="cancelEdit">취소</Button>
-          <span v-if="hasInvalid" class="pp-edit-msg pp-up" role="alert">인간미는 −2 ~ +2 사이 정수만 입력 가능</span>
-        </template>
+      <!-- 안내 문장과 관리자 버튼을 한 줄에 둔다. 버튼은 표 오른쪽 끝에 맞춘다. -->
+      <div class="pp-head-row">
+        <p class="policy-note pp-head-note">
+          성명 선택 시 산정 근거(구간별 평균·가중 라운드·시상보정·산출핸디 등) 창 표시. 열 제목 선택 시 정렬 변경
+        </p>
+        <div v-if="isAdmin" class="pp-edit-bar">
+          <template v-if="!editing">
+            <Button variant="outline" size="xs" @click="startEdit()">인간미 수정</Button>
+          </template>
+          <template v-else>
+            <Button size="xs" :disabled="saving || hasInvalid || changed.length === 0" @click="requestSave">
+              {{ saving ? '저장 중' : `저장${changed.length ? ` (${changed.length}건)` : ''}` }}
+            </Button>
+            <Button variant="outline" size="xs" :disabled="saving" @click="cancelEdit">취소</Button>
+            <span v-if="hasInvalid" class="pp-edit-msg pp-up" role="alert">인간미는 −2 ~ +2 사이 정수만 입력 가능</span>
+          </template>
+        </div>
       </div>
       <div class="policy-table-wrap pp-results-wrap">
         <table class="policy-table pp-results">
@@ -606,12 +609,24 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   flex-wrap: wrap;
   justify-content: center;
 }
+.pp-head-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.pp-head-note {
+  flex: 1 1 16rem;
+  margin: 0;
+}
 .pp-edit-bar {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  margin-left: auto;
 }
 .pp-edit-msg {
   font-size: 0.75rem;

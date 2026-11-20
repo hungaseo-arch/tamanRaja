@@ -183,6 +183,13 @@
   &::-webkit-scrollbar { display: none; }
 }
 
+/* 본문 단락 들여쓰기 (전역 서식). 첫 줄만 1em 들여쓴다. 표·버튼·배지에는 쓰지 않는다. */
+.body-indent,
+.policy-lead,
+.policy-note {
+  text-indent: 1em;
+}
+
 /* FAB: 모바일 safe area 대응 */
 .fab-position {
   bottom: max(1rem, calc(0.5rem + env(safe-area-inset-bottom, 0px)));
