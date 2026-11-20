@@ -27,6 +27,16 @@
     <meta name="description" content="따만라자 골프모임 대시보드" />
     <meta name="author" content="따만라자" />
 
+    <!-- 글꼴. CSS @import 로 가져오면 CSS 를 받은 뒤에야 글꼴 CSS 요청이 시작돼
+         순서대로 줄을 선다. 여기서 미리 연결하고 바로 요청한다. display=swap 이라
+         글꼴이 늦어도 글자는 먼저 보인다. CSP 는 위에서 이미 허용했다. -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    />
+
     <!-- 아래 자리표시자는 vite 가 base('/tamanRaja/')로 치환한다. 경로를 직접
          적으면 나중에 배포 경로가 바뀔 때 아이콘만 조용히 404 가 된다. -->
     <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
