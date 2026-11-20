@@ -32,9 +32,15 @@ import TableCell from '@/components/ui/TableCell.vue';
 const router = useRouter();
 const { isLoggedIn, isAdmin, currentMember } = useAuth();
 
-if (!isLoggedIn.value) {
-  router.replace(ROUTE_PATHS.HOME);
-}
+// 유휴 자동 로그아웃으로 세션이 끊겨도 빈 화면에 남지 않도록, 시작할 때 한 번이
+// 아니라 로그인 상태가 바뀔 때마다 홈으로 돌려보낸다.
+watch(
+  isLoggedIn,
+  (ok) => {
+    if (!ok) router.replace(ROUTE_PATHS.HOME);
+  },
+  { immediate: true }
+);
 
 interface HistoryRow {
   year_month: string;
@@ -84,7 +90,7 @@ watch(
 
 // ── 줄 상세 (디스클로저) ─────────────────────────────────────────────────────
 // 좁은 화면에서는 기준·당월·차월 핸디 열이 숨는다. 월을 누르면 그달 기록을
-// 숨은 것까지 모아 보여 준다. 경기가 없던 달은 보여 줄 것이 없어 열지 않는다.
+// 숨은 것까지 모아 보여 준다. 경기도 핸디도 없던 달은 보여 줄 것이 없어 열지 않는다.
 // sm 부터는 열이 전부 보여 창을 열어도 표와 같은 내용이라 아예 열지 않는다.
 const compact = useCompactTable('sm');
 const detailRow = ref<HistoryRow | null>(null);
@@ -138,6 +144,12 @@ const history = computed<HistoryRow[]>(() => {
     });
 });
 
+// 상세 창을 열 수 있는 달: 경기가 있었거나 핸디 값이 하나라도 있는 달.
+// 모바일은 핸디 열이 숨으므로, 경기 없이 핸디만 확정된 달도 창으로 볼 수 있어야 한다.
+function hasDetail(row: HistoryRow): boolean {
+  return row.course_name !== null || row.std_hc !== null || row.app_hc !== null || row.next_hc !== null;
+}
+
 // 빈 줄로 채운 12개월은 항상 있으므로, 행 수로는 기록 유무를 알 수 없다.
 const hasRecord = computed(() =>
   history.value.some((r) => r.course_name !== null || r.std_hc !== null)
@@ -157,13 +169,14 @@ const derived = computed(() => {
     if (r.net_score !== null) { netSum   += r.net_score; netCount++;   }
   }
 
-  const fmt = (sum: number, n: number) => n > 0 ? (sum / n).toFixed(1) : '-';
+  const fmt = (sum: number, n: number, digits = 1) => n > 0 ? (sum / n).toFixed(digits) : '-';
 
   return {
     attendedCount, winnerCount, medalistCount, hostCount,
     avgNet:   netCount   > 0 ? netSum   / netCount   : null,
     scoreAvg: fmt(scoreSum, scoreCount),
-    netAvg:   fmt(netSum,   netCount),
+    // 평균 Net 은 연간 랭킹과 같은 소수 둘째 자리로 맞춘다.
+    netAvg:   fmt(netSum,   netCount, 2),
   };
 });
 
@@ -206,7 +219,7 @@ function handleExport(): void {
   <div class="w-full bg-background">
     <div class="container mx-auto px-4 py-2 max-w-5xl space-y-3">
       <template v-if="currentMember">
-        <div class="flex items-center gap-2 pt-1">
+        <div class="flex flex-wrap items-center gap-2 pt-1">
           <h1 class="text-lg font-bold text-foreground mr-auto">
             나의 기록 <span class="text-muted-foreground font-medium text-sm">— {{ currentMember.name }} 님</span>
           </h1>
@@ -220,14 +233,14 @@ function handleExport(): void {
               :options="yearOptions"
               placeholder=""
               size="xs"
-              class="w-24 shrink-0"
+              class="w-24 shrink-0 [&>select]:h-11 sm:[&>select]:h-7"
             />
           </template>
           <!-- 좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->
           <Button
             variant="outline"
             size="xs"
-            class="shrink-0 gap-1"
+            class="shrink-0 gap-1 h-11 min-w-11 sm:h-7 sm:min-w-0"
             :title="`나의 ${historyYear}년 기록 CSV 다운로드(엑셀용)`"
             :aria-label="`나의 ${historyYear}년 기록 CSV 다운로드(엑셀용)`"
             @click="handleExport"
@@ -251,7 +264,7 @@ function handleExport(): void {
               <p class="text-xl font-bold font-mono">
                 <template v-if="derived.avgNet !== null">
                   <span :class="derived.avgNet >= 0 ? 'text-net-plus' : 'text-net-minus'">
-                    {{ derived.avgNet >= 0 ? '+' : '' }}{{ derived.avgNet.toFixed(1) }}
+                    {{ derived.avgNet >= 0 ? '+' : '' }}{{ derived.avgNet.toFixed(2) }}
                   </span>
                 </template>
                 <span v-else class="text-muted-foreground text-base">-</span>
@@ -328,7 +341,7 @@ function handleExport(): void {
                       class="font-medium whitespace-nowrap pl-7 sticky left-0 z-10 bg-card isolate before:absolute before:inset-0 before:-z-10 before:transition-colors group-hover:before:bg-muted/50"
                     >
                       <RowDetailButton
-                        v-if="row.course_name"
+                        v-if="hasDetail(row)"
                         :label="formatMonth(row.year_month)"
                         :enabled="compact"
                         @click="openDetail(row)"
@@ -440,6 +453,10 @@ function handleExport(): void {
         </RowDetailDialog>
 
       </template>
+      <!-- 세션이 끊기면 홈으로 돌아가는 사이 잠깐 보인다. -->
+      <p v-else class="py-10 text-center text-sm text-muted-foreground">
+        로그인이 필요함. 로그인 화면으로 이동 중
+      </p>
     </div>
   </div>
 </template>

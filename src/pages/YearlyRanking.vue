@@ -134,13 +134,27 @@ const metricOrder = computed<RankBasis[]>(() =>
     : ['avg_score', 'avg_net_score']
 );
 
+// 서버가 평균 Net 을 못 내려 주면 NaN 이 들어온다(data/index.ts). 0 으로 보이지
+// 않도록 여기서 "값 없음"으로 되돌린다.
+function finiteOrNull(v: number | null): number | null {
+  return v !== null && Number.isFinite(v) ? v : null;
+}
+
 function metric(row: YearlySummary, key: RankBasis): number | null {
-  return key === 'avg_score' ? row.avg_score : row.avg_net_score;
+  return finiteOrNull(key === 'avg_score' ? row.avg_score : row.avg_net_score);
+}
+
+function formatNet(v: number): string {
+  return Number.isFinite(v) ? `${v >= 0 ? '+' : ''}${v.toFixed(2)}` : '-';
+}
+function netColorClass(v: number): string {
+  if (!Number.isFinite(v)) return 'text-muted-foreground';
+  return v >= 0 ? 'text-net-plus' : 'text-net-minus';
 }
 
 // 순위는 표 정렬과 분리돼 있다. 참석·기준 핸디로 정렬해도 순위는 그대로고,
 // 평균 Net / 평균 스코어를 누를 때만 기준이 바뀐다.
-// 기준 지표가 같으면 나머지 지표로 가린다 — 둘 다 없으면 동순위.
+// 기준 지표가 같으면 나머지 지표로 가린다. 둘 다 같으면 동순위(공동 N위)다.
 function byRankingRule(a: YearlySummary, b: YearlySummary): number {
   const primary = rankBasis.value;
   const secondary: RankBasis = primary === 'avg_score' ? 'avg_net_score' : 'avg_score';
@@ -158,11 +172,32 @@ function byRankingRule(a: YearlySummary, b: YearlySummary): number {
 
 const rankedQualified = computed(() => [...qualified.value].sort(byRankingRule));
 
-const rankByMember = computed(() => {
-  const map = new Map<string, number>();
-  rankedQualified.value.forEach((r, i) => map.set(r.member_id, i + 1));
-  return map;
+// 동순위는 같은 등수를 받고 다음 등수는 건너뛴다(1, 1, 3). 정렬 안정성에 기대
+// 임의 순서로 한 명을 억울하게 밀어내지 않는다.
+const rankInfo = computed(() => {
+  const ranks = new Map<string, number>();
+  const tied = new Set<string>();
+  const sorted = rankedQualified.value;
+  sorted.forEach((r, i) => {
+    if (i > 0 && byRankingRule(sorted[i - 1], r) === 0) {
+      const prev = sorted[i - 1];
+      ranks.set(r.member_id, ranks.get(prev.member_id)!);
+      tied.add(r.member_id);
+      tied.add(prev.member_id);
+    } else {
+      ranks.set(r.member_id, i + 1);
+    }
+  });
+  return { ranks, tied };
 });
+const rankByMember = computed(() => rankInfo.value.ranks);
+
+function isTied(memberId: string): boolean {
+  return rankInfo.value.tied.has(memberId);
+}
+function rankAria(memberId: string, rank: number): string {
+  return `${isTied(memberId) ? '공동 ' : ''}${rank}위`;
+}
 
 // ── 정렬 ─────────────────────────────────────────────────────────────────────
 type SortKey = 'attended_count' | 'std_hc' | 'avg_net_score' | 'avg_score';
@@ -214,7 +249,7 @@ const stdHcMap = computed(() => {
 function sortValue(row: YearlySummary, key: SortKey): number | null {
   // 기준핸디는 summary가 아닌 stdHcMap에서 값을 가져온다
   if (key === 'std_hc') return stdHcMap.value.get(row.member_id) ?? null;
-  return row[key];
+  return finiteOrNull(row[key]);
 }
 
 function sortRows(rows: YearlySummary[]): YearlySummary[] {
@@ -339,7 +374,7 @@ function stickyTint(rank: number | null): string {
             :options="yearOptions"
             placeholder=""
             size="xs"
-            class="w-24 shrink-0"
+            class="w-24 shrink-0 [&>select]:h-11 sm:[&>select]:h-7"
           />
         </template>
         <span v-else-if="selectedYear" class="text-sm font-semibold text-foreground shrink-0">
@@ -349,7 +384,7 @@ function stickyTint(rank: number | null): string {
         <Button
           variant="outline"
           size="xs"
-          class="shrink-0 gap-1"
+          class="shrink-0 gap-1 h-11 min-w-11 sm:h-7 sm:min-w-0"
           :title="`${selectedYear}년 연간 랭킹 CSV 다운로드(엑셀용)`"
           :aria-label="`${selectedYear}년 연간 랭킹 CSV 다운로드(엑셀용)`"
           @click="handleExport"
@@ -360,7 +395,8 @@ function stickyTint(rank: number | null): string {
       </div>
 
       <!-- 상위 4명 하이라이트 카드. 모바일에서는 한 줄 4칸에 이름과 기준 지표만 둔다.
-           나머지(다른 지표·참석·시상)는 표와 줄 상세 창에 있고, sm 이상에서만 카드에 보인다. -->
+           나머지(다른 지표·참석·시상)는 표와 줄 상세 창에 있고, sm 이상에서만 카드에 보인다.
+           모바일에서도 숫자 위에 지표 이름(스코어·Net)을 짧게 붙인다. -->
       <div v-if="rankedQualified.length > 0" class="grid grid-cols-4 gap-2 sm:gap-3">
         <Card
           v-for="(row, idx) in rankedQualified.slice(0, 4)"
@@ -369,12 +405,12 @@ function stickyTint(rank: number | null): string {
         >
           <CardContent class="px-1 pt-2 pb-2 sm:px-3 sm:pb-3 text-center space-y-0.5">
             <p class="text-xl">
-              <span role="img" :aria-label="`${idx + 1}위`" :class="rankIconClass(idx + 1)">{{ rankLabel(idx + 1) }}</span>
+              <span role="img" :aria-label="rankAria(row.member_id, rankByMember.get(row.member_id) ?? idx + 1)" :class="rankIconClass(rankByMember.get(row.member_id) ?? idx + 1)">{{ rankLabel(rankByMember.get(row.member_id) ?? idx + 1) }}</span>
             </p>
             <p class="font-bold text-sm sm:text-base truncate">{{ row.member_name }}</p>
             <!-- 두 지표를 모두 보이되 순위 기준인 쪽을 위에 두고 진하게 쓴다.
                  카드에 한 지표만 있으면 "이 숫자가 낮은데 왜 아래 등수냐"가 된다.
-                 모바일에서는 기준 지표 하나만 값으로 보인다(기준은 위 안내 줄에 있음). -->
+                 모바일에서는 기준 지표 하나만 보이고, 이름은 숫자 윗줄에 둔다. -->
             <p
               v-for="(key, keyIdx) in metricOrder"
               :key="key"
@@ -382,21 +418,19 @@ function stickyTint(rank: number | null): string {
               :class="[key === rankBasis ? 'text-foreground' : 'text-muted-foreground', keyIdx > 0 ? 'hidden sm:block' : '']"
             >
               <template v-if="key === 'avg_score'">
-                <span class="hidden sm:inline">평균 스코어</span>
+                <span class="block text-xs sm:inline sm:text-sm"><span class="sm:hidden">스코어</span><span class="hidden sm:inline">평균 스코어</span></span>
                 <span class="font-mono font-semibold sm:ml-1 text-avg-score">
                   <template v-if="row.avg_score !== null">{{ row.avg_score.toFixed(1) }}</template>
                   <span v-else class="text-muted-foreground">-</span>
                 </span>
               </template>
               <template v-else>
-                <span class="hidden sm:inline">평균 Net</span>
+                <span class="block text-xs sm:inline sm:text-sm"><span class="sm:hidden">Net</span><span class="hidden sm:inline">평균 Net</span></span>
                 <span
                   class="font-mono font-semibold sm:ml-1"
-                  :class="row.avg_net_score >= 0
-                    ? 'text-net-plus'
-                    : 'text-net-minus'"
+                  :class="netColorClass(row.avg_net_score)"
                 >
-                  {{ row.avg_net_score >= 0 ? '+' : '' }}{{ row.avg_net_score.toFixed(2) }}
+                  {{ formatNet(row.avg_net_score) }}
                 </span>
               </template>
             </p>
@@ -454,7 +488,7 @@ function stickyTint(rank: number | null): string {
                     :aria-sort="sortAriaSort('attended_count')"
                   >
                     <!-- 정렬은 버튼이어야 한다. th 에 @click 만 달면 마우스로만
-                         쓸 수 있고 Tab 으로는 닿지도 않는다. (P2-1) -->
+                         쓸 수 있고 Tab 으로는 닿지도 않는다. 아래 세 열도 같다. -->
                     <button
                       type="button"
                       class="w-full h-full min-h-11 sm:min-h-0 px-1.5 sm:px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
@@ -475,8 +509,6 @@ function stickyTint(rank: number | null): string {
                     scope="col"
                     :aria-sort="sortAriaSort('std_hc')"
                   >
-                    <!-- 정렬은 버튼이어야 한다. th 에 @click 만 달면 마우스로만
-                         쓸 수 있고 Tab 으로는 닿지도 않는다. (P2-1) -->
                     <button
                       type="button"
                       class="w-full h-full min-h-11 sm:min-h-0 px-1.5 sm:px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
@@ -497,8 +529,6 @@ function stickyTint(rank: number | null): string {
                     scope="col"
                     :aria-sort="sortAriaSort('avg_net_score')"
                   >
-                    <!-- 정렬은 버튼이어야 한다. th 에 @click 만 달면 마우스로만
-                         쓸 수 있고 Tab 으로는 닿지도 않는다. (P2-1) -->
                     <button
                       type="button"
                       class="w-full h-full min-h-11 sm:min-h-0 px-1.5 sm:px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
@@ -519,8 +549,6 @@ function stickyTint(rank: number | null): string {
                     scope="col"
                     :aria-sort="sortAriaSort('avg_score')"
                   >
-                    <!-- 정렬은 버튼이어야 한다. th 에 @click 만 달면 마우스로만
-                         쓸 수 있고 Tab 으로는 닿지도 않는다. (P2-1) -->
                     <button
                       type="button"
                       class="w-full h-full min-h-11 sm:min-h-0 px-1.5 sm:px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
@@ -563,10 +591,10 @@ function stickyTint(rank: number | null): string {
                         <span
                           v-if="entry.rank !== null"
                           role="img"
-                          :aria-label="`${entry.rank}위`"
+                          :aria-label="rankAria(entry.row.member_id, entry.rank)"
                           :class="rankIconClass(entry.rank)"
                         >{{ rankLabel(entry.rank) }}</span>
-                        <span v-else aria-label="순위 없음">-</span>
+                        <template v-else><span aria-hidden="true">-</span><span class="sr-only">순위 없음</span></template>
                       </div>
                     </TableCell>
                     <TableCell :class="cn('font-medium whitespace-nowrap left-14', STICKY_BASE, stickyTint(entry.rank))">
@@ -575,14 +603,8 @@ function stickyTint(rank: number | null): string {
                     <TableCell class="text-center whitespace-nowrap hidden sm:table-cell">{{ entry.row.attended_count }}회</TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell">{{ stdHcMap.get(entry.row.member_id) ?? '-' }}</TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap">
-                      <span
-                        :class="entry.rank === null
-                          ? ''
-                          : entry.row.avg_net_score >= 0
-                            ? 'text-net-plus'
-                            : 'text-net-minus'"
-                      >
-                        {{ entry.row.avg_net_score >= 0 ? '+' : '' }}{{ entry.row.avg_net_score.toFixed(2) }}
+                      <span :class="entry.rank === null ? '' : netColorClass(entry.row.avg_net_score)">
+                        {{ formatNet(entry.row.avg_net_score) }}
                       </span>
                     </TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap">
@@ -624,7 +646,7 @@ function stickyTint(rank: number | null): string {
       >
         <template v-if="detailEntry?.row">
           <DetailItem label="순위">
-            <span v-if="detailEntry.rank !== null">{{ detailEntry.rank }}위</span>
+            <span v-if="detailEntry.rank !== null">{{ rankAria(detailEntry.row.member_id, detailEntry.rank) }}</span>
             <span v-else class="text-muted-foreground text-sm">50% 미만 참석 — 순위 제외</span>
           </DetailItem>
           <DetailItem label="참석 횟수">{{ detailEntry.row.attended_count }}회</DetailItem>
@@ -632,14 +654,15 @@ function stickyTint(rank: number | null): string {
             <span class="font-mono">{{ stdHcMap.get(detailEntry.row.member_id) ?? '-' }}</span>
           </DetailItem>
           <DetailItem label="평균 Net">
-            <span :class="cn('font-mono', detailEntry.row.avg_net_score >= 0 ? 'text-net-plus' : 'text-net-minus')">
-              {{ detailEntry.row.avg_net_score >= 0 ? '+' : '' }}{{ detailEntry.row.avg_net_score.toFixed(2) }}
+            <span :class="cn('font-mono', netColorClass(detailEntry.row.avg_net_score))">
+              {{ formatNet(detailEntry.row.avg_net_score) }}
             </span>
           </DetailItem>
           <DetailItem label="평균 스코어">
             <span v-if="detailEntry.row.avg_score !== null" class="font-mono text-avg-score font-semibold">
               {{ detailEntry.row.avg_score.toFixed(1) }}
             </span>
+            <span v-else class="text-muted-foreground">-</span>
           </DetailItem>
           <DetailItem label="Winner">
             <span :class="cn(detailEntry.row.winner_count ? RANK_STYLE.Winner.text : 'text-muted-foreground', 'font-bold')">
@@ -659,12 +682,11 @@ function stickyTint(rank: number | null): string {
         </template>
       </RowDetailDialog>
 
-      <!-- 순위 부여 조건. 기준 지표와 바꾸는 방법은 표 위 안내 줄로 올렸고,
-           여기에는 한 번 읽으면 되는 조건만 남긴다. -->
+      <!-- 순위 부여 조건. 한 번 읽으면 되는 조건만 둔다. -->
       <p class="text-sm text-muted-foreground leading-relaxed">
         {{ selectedYear }}년 치른 {{ yearMeetingCount }}경기 중
         <strong class="text-foreground">50% 이상({{ minRoundsNum }}회)</strong> 참석한
-        회원에게만 순위 부여 · 참석·기준 핸디 정렬은 순위에 영향 없음
+        회원에게만 순위 부여 · 참석·기준 핸디 정렬은 순위에 영향 없음 · 기준이 같으면 공동 순위
       </p>
     </div>
   </div>
