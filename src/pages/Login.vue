@@ -3,7 +3,7 @@ import { computed, nextTick, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { AlertCircle } from 'lucide-vue-next';
 import { describeLoginError, useAuth } from '@/composables/useAuth';
-import { MEMBERS, isDormantNow, loadMembers } from '@/data';
+import { MEMBERS, dataError, isDormantNow, loadMembers, membersLoading } from '@/data';
 import { ROUTE_PATHS } from '@/lib';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
@@ -31,7 +31,7 @@ const pinInput = ref<InstanceType<typeof Input> | null>(null);
 const errorField = ref<'member' | 'pin' | null>(null);
 const submitting = ref(false);
 // 기본은 켜짐 (4-3 안 A). 회원 대부분이 자기 휴대폰으로 들어와 매번 PIN 을
-// 치는 수고가 더 크다. 공용 기기에 남는 위험은 무활동 자동 로그아웃(회원 3시간·관리자 30분,
+// 치는 수고가 더 크다. 계정 창(LoginModal)의 기본값도 같다. 공용 기기에 남는 위험은 무활동 자동 로그아웃(회원 3시간·관리자 30분,
 // idleTimeoutMs(), 서버 app.idle_timeout_for())이 그대로 막는다 — 유지를 켜도
 // 그 한도는 똑같이 걸린다. 공용 기기라면 본인이 끄면 된다.
 const remember = ref(true);
@@ -43,6 +43,14 @@ const memberOptions = computed(() =>
     .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
     .map((m) => ({ value: m.id, label: m.name }))
 );
+
+// 회원 목록이 비어 있으면 Select 자리에 불러오는 중 / 실패 사유 + 다시 시도를 보여 준다.
+const membersUnavailable = computed(() => memberOptions.value.length === 0);
+
+function retryMembers(): void {
+  dataError.value = null;
+  loadMembers();
+}
 
 function onlyDigits(v: string): string {
   return v.replace(/\D/g, '').slice(0, 4);
@@ -90,7 +98,7 @@ async function handleLogin(e: Event): Promise<void> {
     <div class="w-full max-w-sm space-y-6">
       <div class="text-center space-y-2">
         <span class="text-5xl" aria-hidden="true">🏌️</span>
-        <h1 class="text-2xl font-bold text-foreground">따만라자 모임</h1>
+        <h1 class="text-2xl font-bold text-foreground">따만라자 골프모임</h1>
         <p class="text-sm text-muted-foreground">로그인 후 기록 확인</p>
       </div>
 
@@ -99,7 +107,20 @@ async function handleLogin(e: Event): Promise<void> {
           <form class="space-y-4" @submit="handleLogin">
             <div class="space-y-2">
               <Label for="member-select">회원 선택</Label>
+              <div
+              v-if="membersUnavailable"
+              id="member-select"
+              class="flex min-h-11 items-center justify-between gap-2 rounded-md border border-input px-3 text-sm"
+              role="status"
+              tabindex="-1"
+              >
+                <span :class="membersLoading ? 'text-muted-foreground' : 'text-destructive'">
+                  {{ membersLoading ? '회원 목록 불러오는 중...' : (dataError ?? '회원 목록 없음') }}
+                </span>
+                <Button v-if="!membersLoading" type="button" variant="outline" size="xs" @click="retryMembers">다시 시도</Button>
+              </div>
               <Select
+                v-else
                 id="member-select"
                 v-model="selectedMember"
                 :options="memberOptions"
@@ -108,6 +129,7 @@ async function handleLogin(e: Event): Promise<void> {
             </div>
             <div class="space-y-2">
               <Label for="pin-input">PIN 입력</Label>
+              <p class="text-sm text-muted-foreground">처음이면 관리자에게 받은 임시 PIN 입력</p>
               <Input
                 id="pin-input"
                 ref="pinInput"
@@ -135,7 +157,7 @@ async function handleLogin(e: Event): Promise<void> {
                 <AlertDescription>{{ loginError }}</AlertDescription>
               </Alert>
             </div>
-            <Button type="submit" class="w-full" :disabled="submitting">
+            <Button type="submit" class="w-full" :disabled="submitting || membersUnavailable">
               {{ submitting ? '확인 중...' : '로그인' }}
             </Button>
             <p class="text-sm text-muted-foreground text-center">

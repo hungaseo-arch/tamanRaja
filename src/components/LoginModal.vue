@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { AlertCircle, LogOut } from 'lucide-vue-next';
 import { describeLoginError, useAuth } from '@/composables/useAuth';
-import { MEMBERS, isDormantNow } from '@/data';
+import { MEMBERS, dataError, isDormantNow, loadMembers, membersLoading } from '@/data';
 import { ROUTE_PATHS } from '@/lib';
 import Dialog from '@/components/ui/Dialog.vue';
 import Button from '@/components/ui/Button.vue';
@@ -50,9 +50,10 @@ const loginError = ref<string>('');
 const pinInput = ref<InstanceType<typeof Input> | null>(null);
 const errorField = ref<'member' | 'pin' | null>(null);
 const loginLoading = ref<boolean>(false);
-// 기본은 꺼짐. 공용 기기에서 무심코 로그인한 사람이 로그인된 채 남지 않도록
-// 켜는 건 본인이 정하게 한다.
-const remember = ref<boolean>(false);
+// 기본은 켜짐. 로그인 화면(Login.vue)과 같은 값이다. 회원 대부분이 자기
+// 휴대폰으로 들어오고, 공용 기기의 위험은 무활동 자동 로그아웃이 막는다.
+// 공용 기기라면 본인이 끈다.
+const remember = ref<boolean>(true);
 
 // PIN 변경 폼은 PinChangeForm 이 들고 있다. 창을 닫을 때 key 를 바꿔 입력값을 비운다.
 const pinFormKey = ref(0);
@@ -76,7 +77,7 @@ function resetState(): void {
   loginError.value = '';
   errorField.value = null;
   loginLoading.value = false;
-  remember.value = false;
+  remember.value = true;
   pinFormKey.value++;
 }
 
@@ -88,6 +89,14 @@ watch(isOpen, (v) => {
   if (v) tab.value = 'attendance';
   else resetState();
 });
+
+// 회원 목록이 비어 있으면 Select 자리에 불러오는 중 / 실패 사유 + 다시 시도를 보여 준다.
+const membersUnavailable = computed(() => memberOptions.value.length === 0);
+
+function retryMembers(): void {
+  dataError.value = null;
+  loadMembers();
+}
 
 function onlyDigits(v: string): string {
   return v.replace(/\D/g, '').slice(0, 4);
@@ -182,7 +191,20 @@ async function handleLogout(): Promise<void> {
     <form v-else class="space-y-4" @submit="handleLogin">
       <div class="space-y-2">
         <Label for="member-select">회원 선택</Label>
+        <div
+        v-if="membersUnavailable"
+        id="member-select"
+        class="flex min-h-11 items-center justify-between gap-2 rounded-md border border-input px-3 text-sm"
+        role="status"
+        tabindex="-1"
+        >
+          <span :class="membersLoading ? 'text-muted-foreground' : 'text-destructive'">
+            {{ membersLoading ? '회원 목록 불러오는 중...' : (dataError ?? '회원 목록 없음') }}
+          </span>
+          <Button v-if="!membersLoading" type="button" variant="outline" size="xs" @click="retryMembers">다시 시도</Button>
+        </div>
         <Select
+          v-else
           id="member-select"
           v-model="selectedMember"
           :options="memberOptions"
@@ -192,6 +214,7 @@ async function handleLogout(): Promise<void> {
 
       <div class="space-y-2">
         <Label for="pin-input">PIN 입력</Label>
+        <p class="text-sm text-muted-foreground">처음이면 관리자에게 받은 임시 PIN 입력</p>
         <Input
           id="pin-input"
           ref="pinInput"
@@ -221,7 +244,7 @@ async function handleLogout(): Promise<void> {
         </Alert>
       </div>
 
-      <Button type="submit" class="w-full" :disabled="loginLoading">
+      <Button type="submit" class="w-full" :disabled="loginLoading || membersUnavailable">
         {{ loginLoading ? '확인 중...' : '로그인' }}
       </Button>
     </form>
