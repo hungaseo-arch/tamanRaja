@@ -175,6 +175,13 @@ function fmtSigned3(v: number | null | undefined): string {
   if (v < 0) return `${MINUS}${t}`;
   return t;
 }
+// 인쇄용 비고: 상태 표시(휴면·한도·표본 부족)와 비고 문구를 ' · ' 로 잇는다.
+function printNote(r: Row): string {
+  return [r.dormant_from ? '휴면' : '', r.capped ? '한도' : '', r.low_sample ? '표본 부족' : '', r.note ?? '']
+    .filter(Boolean)
+    .join(' · ');
+}
+
 function fmtAwardCounts(r: Row): string {
   if (r.w_win == null || r.w_med == null || r.w_host == null) return '—';
   return `${fmt(r.w_win, 2)} / ${fmt(r.w_med, 2)} / ${fmt(r.w_host, 2)}`;
@@ -385,6 +392,47 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
               </td>
             </tr>
           </tfoot>
+        </table>
+      </div>
+
+      <!-- 인쇄 전용: 성명을 눌러야 보이는 모달 상세는 종이에 나오지 않으므로, 같은 근거를 표 한 장으로 따로 낸다. 화면에서는 숨김. -->
+      <div class="pp-print-only" aria-hidden="true">
+        <p class="policy-note">산정 근거 (회원별 상세)</p>
+        <table class="policy-table pp-detail-print">
+          <thead>
+            <tr>
+              <th scope="col">성명</th>
+              <th scope="col">A 평균</th>
+              <th scope="col">B 평균</th>
+              <th scope="col">C 평균</th>
+              <th scope="col">가중 라운드</th>
+              <th scope="col">시상횟수 W/M/H</th>
+              <th scope="col">시상 원점수</th>
+              <th scope="col">시상보정</th>
+              <th scope="col">산출핸디</th>
+              <th scope="col">반영률</th>
+              <th scope="col">한도 전 증감</th>
+              <th scope="col">한도 후 증감</th>
+              <th scope="col">비고</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="r in sorted" :key="r.member_id">
+              <th scope="row">{{ r.member_name }}</th>
+              <td class="num">{{ fmt(r.avg_a) }}</td>
+              <td class="num">{{ fmt(r.avg_b) }}</td>
+              <td class="num">{{ fmt(r.avg_c) }}</td>
+              <td class="num">{{ fmt(r.w_sum, 2) }}</td>
+              <td class="num">{{ fmtAwardCounts(r) }}</td>
+              <td class="num">{{ fmtSigned3(r.award_raw) }}</td>
+              <td class="num">{{ fmtSigned2(r.award_adj) }}</td>
+              <td class="num">{{ fmt(r.calc_hc) }}</td>
+              <td class="num">{{ r.apply_rate === null ? '—' : (r.apply_rate * 100).toFixed(1) + '%' }}</td>
+              <td class="num">{{ fmtSigned2(r.raw_delta) }}</td>
+              <td class="num">{{ fmtSigned2(r.final_delta) }}</td>
+              <td class="pp-left">{{ printNote(r) }}</td>
+            </tr>
+          </tbody>
         </table>
       </div>
     </template>
@@ -617,5 +665,30 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   display: block;
   font-weight: 500;
   text-align: right;
+}
+
+/* 인쇄 전용 산정 근거 표: 화면에서는 숨기고 인쇄에서만 보인다. */
+.pp-print-only {
+  display: none;
+}
+@media print {
+  .pp-print-only {
+    display: block;
+    break-before: page;
+  }
+  .pp-detail-print {
+    font-size: 0.625rem;
+  }
+  .pp-detail-print th,
+  .pp-detail-print td {
+    padding: 0.15rem 0.2rem;
+    text-align: center;
+  }
+  .pp-detail-print td.pp-left {
+    text-align: left;
+  }
+  .pp-detail-print tr {
+    break-inside: avoid;
+  }
 }
 </style>
