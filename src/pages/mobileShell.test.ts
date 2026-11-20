@@ -23,7 +23,8 @@ describe('모바일 14px 기준', () => {
   });
 
   it('탭 전용 라벨은 14px 한 줄(칸당 약 71px, 한글 5~6자) 안에 든다', () => {
-    const labels = [...layout.matchAll(/tabLabel: '([^']+)'/g)].map((m) => m[1]);
+    // tabLabel 이 없으면 label 이 그대로 탭에 쓰인다. 하단 탭에 들어가는 항목만 본다.
+    const labels = [...layout.matchAll(/label: '([^']+)'/g)].map((m) => m[1]);
     expect(labels.length).toBeGreaterThan(0);
     for (const l of labels) expect(l.length).toBeLessThanOrEqual(6);
   });

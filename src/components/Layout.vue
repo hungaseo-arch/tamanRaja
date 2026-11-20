@@ -23,8 +23,9 @@ const route = useRoute();
 // tabLabel 은 하단 탭 바 전용 짧은 이름. 탭 라벨은 14px 라 375px 폭의 5칸
 // (칸당 75px, 좌우 여백 4px 를 빼면 글자 폭 71px)에서 한 줄에 들어가야 한다.
 // 14px 한글은 글자당 약 14px 이므로 공백 포함 5자(약 60~66px)까지가 한계다.
-// '27년 핸디(안)' 은 약 85px 라 두 줄로 꺾여 탭 높이(56px)를 넘으므로 줄였다.
-interface NavItem { path: string; label: string; tabLabel?: string; line1: string; line2: string; icon: Component }
+// '27년 핸디' 는 5자라 한 줄에 들어간다.
+// accent 는 확정 전(안) 화면 표시용. 활성 색을 초록 대신 주의색(--warning)으로 쓴다.
+interface NavItem { path: string; label: string; tabLabel?: string; line1: string; line2: string; icon: Component; accent?: boolean }
 
 const navItems = computed<NavItem[]>(() => {
   const items: NavItem[] = [
@@ -37,11 +38,11 @@ const navItems = computed<NavItem[]>(() => {
     items.push({ path: ROUTE_PATHS.PROFILE, label: '나의 기록', line1: '나의', line2: '기록', icon: UserRound });
     items.push({
       path: ROUTE_PATHS.HANDICAP_POLICY,
-      label: '27년 핸디캡 (안)',
-      tabLabel: '핸디(안)',
+      label: '27년 핸디',
       line1: '27년',
-      line2: '핸디캡 (안)',
+      line2: '핸디',
       icon: Scale,
+      accent: true,
     });
   }
   // 접속 기록은 관리자에게만 보인다. 메뉴를 감추는 것은 편의일 뿐 권한
@@ -110,7 +111,7 @@ function isActive(path: string): boolean {
               :class="cn(
                 'flex shrink-0 items-center justify-center whitespace-nowrap px-3 xl:px-4 py-1.5 rounded-lg text-sm font-medium transition-colors text-center leading-tight',
                 isActive(item.path)
-                  ? 'bg-primary text-primary-foreground'
+                  ? (item.accent ? 'bg-warning text-white' : 'bg-primary text-primary-foreground')
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent'
               )"
               :aria-current="isActive(item.path) ? 'page' : undefined"
@@ -186,11 +187,10 @@ function isActive(path: string): boolean {
           :to="item.path"
           :class="cn(
             'flex-1 min-w-0 flex flex-col items-center justify-start pt-1.5 gap-0.5 px-0.5 text-center text-sm whitespace-nowrap leading-tight font-medium transition-colors',
-            isActive(item.path) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+            isActive(item.path) ? (item.accent ? 'text-warning' : 'text-primary') : 'text-muted-foreground hover:text-foreground'
           )"
           :aria-current="isActive(item.path) ? 'page' : undefined"
-          :aria-label="item.tabLabel ? item.label : undefined"
-        >
+                  >
           <component :is="item.icon" class="w-5 h-5 shrink-0" aria-hidden="true" />
           <span class="max-w-full truncate">{{ item.tabLabel ?? item.label }}</span>
         </RouterLink>
@@ -219,7 +219,7 @@ function isActive(path: string): boolean {
             :to="item.path"
             :class="cn(
               'flex min-h-11 items-center gap-3 rounded-md px-3 text-base font-medium transition-colors hover:bg-accent',
-              isActive(item.path) ? 'bg-accent text-primary' : 'text-foreground'
+              isActive(item.path) ? (item.accent ? 'bg-accent text-warning' : 'bg-accent text-primary') : 'text-foreground'
             )"
             :aria-current="isActive(item.path) ? 'page' : undefined"
           >
@@ -238,7 +238,7 @@ function isActive(path: string): boolean {
             :to="item.path"
             :class="cn(
               'flex min-h-11 items-center gap-3 rounded-md px-3 text-base font-medium transition-colors hover:bg-accent',
-              isActive(item.path) ? 'text-primary' : 'text-foreground'
+              isActive(item.path) ? (item.accent ? 'text-warning' : 'text-primary') : 'text-foreground'
             )"
             :aria-current="isActive(item.path) ? 'page' : undefined"
           >
