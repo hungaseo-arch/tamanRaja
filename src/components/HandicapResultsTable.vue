@@ -352,7 +352,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
       <!-- 범례는 왼쪽, 관리자 버튼은 같은 줄 오른쪽 끝. 왼쪽에 빈 칸을 남기지 않는다. -->
       <div class="pp-head-row">
         <ul class="pp-legend">
-          <li><strong>27년 제안</strong> = 27년 기준 + 인간미. 인간미는 운영진이 −2 ~ +2 정수로 가감하는 보정값</li>
+          <li><strong>27년 제안</strong> = 27년 기준 + 인간미. 인간미는 운영진이 −2 ~ +2 정수로 가감하는 보정값 (<span class="pp-hum-legend">청록 글자</span>)</li>
           <li><span class="pp-up">빨강 인상</span> = 타수를 더 받는 쪽(유리), <span class="pp-down">파랑 인하</span> = 타수를 덜 받는 쪽</li>
           <li><strong>한도</strong> 증감 한도 적용 · <strong>부족</strong> 표본 부족(가중 라운드 3.00 미만) · <strong>휴면</strong> 복귀 전 참고값</li>
         </ul>
@@ -703,6 +703,10 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   font-size: 0.75rem;
   font-weight: 600;
 }
+.pp-hum-legend {
+  color: var(--humanity);
+  font-weight: 600;
+}
 .pp-hum-cell {
   display: inline-flex;
   align-items: center;
@@ -717,9 +721,13 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   font: inherit;
   cursor: text;
 }
-/* 인간미 색 구분 : 가산(+) 빨강, 감산(−) 파랑, 없음·0 은 흐린 회색. 부호 글자가 본체이고 색은 보조다. */
+/* 인간미 색 : 값이 있으면(±) 청록, 없음·0 은 흐린 회색. 증감 열의 빨강·파랑과 겹치지 않는다. 부호 글자가 본체이고 색은 보조다. */
 .pp-hum:not(.pp-up):not(.pp-down) .pp-hum-cell {
   color: var(--muted-foreground);
+}
+.pp-hum.pp-up,
+.pp-hum.pp-down {
+  color: var(--humanity);
 }
 .pp-hum.pp-up .pp-hum-cell,
 .pp-hum.pp-down .pp-hum-cell {
@@ -728,13 +736,10 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   background: color-mix(in oklch, currentColor 10%, transparent);
   font-weight: 700;
 }
-.pp-hum input.pp-up {
-  color: var(--pp-up);
-  border-color: var(--pp-up);
-}
+.pp-hum input.pp-up,
 .pp-hum input.pp-down {
-  color: var(--pp-down);
-  border-color: var(--pp-down);
+  color: var(--humanity);
+  border-color: var(--humanity);
 }
 .pp-hum-cell:hover,
 .pp-hum-cell:focus-visible {

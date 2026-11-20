@@ -78,6 +78,7 @@
      net-plus/net-minus : Net·평균 Net 의 +/- (파랑/주황). 열 색 약속은 그대로.
      delta-up/delta-down: 핸디 증감 (인상=빨강, 인하=파랑).
      std-accent         : 2027 기준핸디 강조 (보라).
+     humanity           : 인간미 보정값 글자·테두리 (청록). 증감 색과 겹치지 않는다.
      warning(-surface/-border): 주의. 참석 미정, 저장값 불일치. 글자는 흰 바탕에서
                           4.5:1 이상이고 -surface 위에서도 4.5:1 이상이다.
                           오류(destructive)와 같은 자리에 쓰지 않는다.
@@ -91,6 +92,7 @@
   --delta-up: oklch(0.55 0.22 25);
   --delta-down: var(--net-plus);
   --std-accent: oklch(0.491 0.27 292.581);
+  --humanity: oklch(0.48 0.1 195); /* 인간미 보정값 (청록). 인상 빨강·인하 파랑과 구분, 흰 바탕 4.5:1 이상 */
   --warning: oklch(0.554 0.135 66.442);
   --warning-surface: oklch(0.987 0.026 102.212);
   --warning-border: oklch(0.795 0.184 86.047);
