@@ -538,6 +538,7 @@ watch(compact, (isCompact) => {
             label="회원 목록"
             :skeleton-rows="8"
             empty-title="회원 없음"
+            empty-hint="회원 추가로 첫 회원 등록"
             container-class="py-6"
             @retry="load()"
           >
@@ -691,7 +692,7 @@ watch(compact, (isCompact) => {
             본인에게 전달하면 첫 로그인에서 새 PIN 설정
           </p>
 
-          <p v-if="addError" class="text-xs text-destructive">{{ addError }}</p>
+          <p v-if="addError" class="text-sm text-destructive">{{ addError }}</p>
 
           <div class="flex justify-end gap-2 pt-1">
             <Button variant="outline" :disabled="addSaving" @click="addOpen = false">취소</Button>
@@ -714,7 +715,7 @@ watch(compact, (isCompact) => {
             <Label for="dormant-month">휴면 시작월</Label>
             <Input id="dormant-month" v-model="dormantMonth" placeholder="YYYY-MM" />
           </div>
-          <p v-if="dormantError" class="text-xs text-destructive">{{ dormantError }}</p>
+          <p v-if="dormantError" class="text-sm text-destructive">{{ dormantError }}</p>
 
           <div class="flex justify-end gap-2 pt-1">
             <Button variant="outline" :disabled="dormantSaving" @click="dormantOpen = false">취소</Button>
@@ -736,7 +737,7 @@ watch(compact, (isCompact) => {
           <p class="text-xs text-muted-foreground">
             새 임시 PIN은 한 번만 표시 · 본인에게 전달하면 첫 로그인에서 새 PIN 설정
           </p>
-          <p v-if="resetError" class="text-xs text-destructive">{{ resetError }}</p>
+          <p v-if="resetError" class="text-sm text-destructive">{{ resetError }}</p>
 
           <div class="flex justify-end gap-2 pt-1">
             <Button variant="outline" :disabled="resetSaving" @click="resetOpen = false">취소</Button>
@@ -758,7 +759,7 @@ watch(compact, (isCompact) => {
           <p class="text-xs text-muted-foreground">
             경기 기록이 있는 회원은 서버가 삭제 거절 · 이 경우 휴면 처리 사용
           </p>
-          <p v-if="deleteError" class="text-xs text-destructive">{{ deleteError }}</p>
+          <p v-if="deleteError" class="text-sm text-destructive">{{ deleteError }}</p>
 
           <div class="flex justify-end gap-2 pt-1">
             <Button variant="outline" :disabled="deleteSaving" @click="deleteOpen = false">취소</Button>
@@ -770,7 +771,7 @@ watch(compact, (isCompact) => {
       </Dialog>
 
       <!-- 임시 PIN (회원 추가 · PIN 초기화 공통) -->
-      <Dialog v-model:open="tempPinOpen" label="임시 PIN" content-class="sm:max-w-sm">
+      <Dialog v-model:open="tempPinOpen" label="임시 PIN" content-class="sm:max-w-sm" :dismissible="false">
         <div v-if="tempPin" class="px-1 pt-1 space-y-4 text-center">
           <h2 class="text-base font-bold">{{ tempPin.name }} 님의 임시 PIN</h2>
           <p class="font-mono text-5xl font-bold tracking-[0.3em] select-all" aria-live="polite">
@@ -786,7 +787,7 @@ watch(compact, (isCompact) => {
           <p class="text-xs text-muted-foreground">
             본인에게 전달하면 첫 로그인에서 새 PIN 설정
           </p>
-          <Button class="w-full" @click="tempPinOpen = false">전달 완료 · 닫기</Button>
+          <Button class="w-full" @click="tempPinOpen = false">확인했음 · 닫기</Button>
         </div>
       </Dialog>
 
