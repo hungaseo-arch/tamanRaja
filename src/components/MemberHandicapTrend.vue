@@ -115,8 +115,8 @@ const ariaLabel = computed(
                 r="4"
                 :class="p.draft ? 'fill-background stroke-current stroke-2' : 'fill-current'"
               />
-              <text :x="p.x" :y="p.y - 8" text-anchor="middle" class="fill-current text-[13px] font-bold">{{ p.hc }}</text>
-              <text :x="p.x" :y="H - 1" text-anchor="middle" class="fill-muted-foreground text-xs">{{ p.year }}</text>
+              <text :x="p.x" :y="p.y - 8" text-anchor="middle" class="fill-current text-[9px] font-bold">{{ p.hc }}</text>
+              <text :x="p.x" :y="H - 1" text-anchor="middle" class="fill-muted-foreground text-[8.5px]">{{ p.year }}</text>
             </g>
           </svg>
         </template>
