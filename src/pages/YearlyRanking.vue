@@ -399,8 +399,8 @@ function stickyTint(rank: number | null): string {
                 <span
                   class="font-mono font-semibold ml-1"
                   :class="row.avg_net_score >= 0
-                    ? 'text-blue-600'
-                    : 'text-orange-700'"
+                    ? 'text-net-plus'
+                    : 'text-net-minus'"
                 >
                   {{ row.avg_net_score >= 0 ? '+' : '' }}{{ row.avg_net_score.toFixed(2) }}
                 </span>
@@ -585,8 +585,8 @@ function stickyTint(rank: number | null): string {
                         :class="entry.rank === null
                           ? ''
                           : entry.row.avg_net_score >= 0
-                            ? 'text-blue-600'
-                            : 'text-orange-700'"
+                            ? 'text-net-plus'
+                            : 'text-net-minus'"
                       >
                         {{ entry.row.avg_net_score >= 0 ? '+' : '' }}{{ entry.row.avg_net_score.toFixed(2) }}
                       </span>
@@ -638,7 +638,7 @@ function stickyTint(rank: number | null): string {
             <span class="font-mono">{{ stdHcMap.get(detailEntry.row.member_id) ?? '-' }}</span>
           </DetailItem>
           <DetailItem label="평균 Net">
-            <span :class="cn('font-mono', detailEntry.row.avg_net_score >= 0 ? 'text-blue-600' : 'text-orange-700')">
+            <span :class="cn('font-mono', detailEntry.row.avg_net_score >= 0 ? 'text-net-plus' : 'text-net-minus')">
               {{ detailEntry.row.avg_net_score >= 0 ? '+' : '' }}{{ detailEntry.row.avg_net_score.toFixed(2) }}
             </span>
           </DetailItem>

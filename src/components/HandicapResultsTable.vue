@@ -500,15 +500,15 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 
 <style>
 .pp-up {
-  /* 모달은 body 로 옮겨져 .policy-page 변수를 못 받으므로 대체값을 둔다. */
-  color: var(--pp-up, oklch(0.55 0.22 25));
+  /* 모달은 body 로 옮겨져 .policy-page 변수를 못 받으므로 :root 토큰을 대체값으로 둔다. */
+  color: var(--pp-up, var(--delta-up));
 }
 .pp-down {
-  color: var(--pp-down, #2563eb);
+  color: var(--pp-down, var(--delta-down));
 }
 .pp-std {
-  /* 2027 기준핸디 강조색 (보라, violet-700) */
-  color: #6d28d9;
+  /* 2027 기준핸디 강조색 (보라) */
+  color: var(--std-accent);
   font-weight: 700;
 }
 .pp-delta-label {

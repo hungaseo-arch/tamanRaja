@@ -11,6 +11,8 @@
      모두 이 계열이고, 아래 :root 토큰이 유일한 출처다.
    - 표의 열 색은 뜻을 나눈다: 기준 핸디는 주황, 당월·차월 핸디와 Net 은 파랑,
      원점수는 무채색.
+   - 의미색(Net ±, 핸디 증감, 2027 기준핸디)은 :root 의 --net-plus 등에서 정한다.
+     화면에 blue-600/orange-700/#2563eb 같은 값을 직접 쓰지 말 것.
    - Winner(금)·Medalist(은)·Host(보라) 배지는 여기가 아니라
      src/lib/rank.ts 한 곳에서 정한다. 색을 바꿀 일이 있으면 그 파일만 고친다.
    - 밝은 화면 하나만 쓴다. index.html 의 color-scheme: light 와 짝이며,
@@ -70,6 +72,18 @@
   --input: oklch(0.88 0.015 145);
   --ring: oklch(0.52 0.15 145);
   
+  /* 의미색: 같은 뜻의 값이 화면마다 달랐던 것을 여기 하나로 모았다.
+     net-plus/net-minus : Net·평균 Net 의 +/- (파랑/주황). 열 색 약속은 그대로.
+     delta-up/delta-down: 핸디 증감 (인상=빨강, 인하=파랑).
+     std-accent         : 2027 기준핸디 강조 (보라).
+     모두 흰 바탕에서 WCAG AA(4.5:1) 이상. 모달은 body 로 옮겨져 화면 전용
+     변수를 못 받으므로, 화면 전용 변수가 아니라 :root 에 둔다. */
+  --net-plus: oklch(0.546 0.245 262.881);
+  --net-minus: oklch(0.553 0.195 38.402);
+  --delta-up: oklch(0.55 0.22 25);
+  --delta-down: var(--net-plus);
+  --std-accent: oklch(0.491 0.27 292.581);
+
   /* Chart Tokens */
   --chart-1: oklch(0.58 0.18 145);
   --chart-2: oklch(0.62 0.2 210);
@@ -109,6 +123,13 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* Semantic Mapping (text-net-plus 등으로 쓴다) */
+  --color-net-plus: var(--net-plus);
+  --color-net-minus: var(--net-minus);
+  --color-delta-up: var(--delta-up);
+  --color-delta-down: var(--delta-down);
+  --color-std-accent: var(--std-accent);
 
   /* Charts Mapping */
   --color-chart-1: var(--chart-1);

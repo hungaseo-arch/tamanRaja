@@ -662,8 +662,8 @@ async function loadCourseRatings(): Promise<void> {
   --pp-sage: var(--secondary);
   --pp-text: var(--foreground);
   --pp-border: var(--border);
-  --pp-up: oklch(0.55 0.22 25);
-  --pp-down: #2563eb;
+  --pp-up: var(--delta-up);
+  --pp-down: var(--delta-down);
   min-height: 100%;
   background: var(--background);
   color: var(--foreground);
