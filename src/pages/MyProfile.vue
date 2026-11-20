@@ -250,7 +250,7 @@ function handleExport(): void {
               <p class="text-xs sm:text-sm text-muted-foreground mb-1">평균 Net</p>
               <p class="text-xl font-bold font-mono">
                 <template v-if="derived.avgNet !== null">
-                  <span :class="derived.avgNet >= 0 ? 'text-blue-600' : 'text-orange-700'">
+                  <span :class="derived.avgNet >= 0 ? 'text-net-plus' : 'text-net-minus'">
                     {{ derived.avgNet >= 0 ? '+' : '' }}{{ derived.avgNet.toFixed(1) }}
                   </span>
                 </template>
@@ -351,8 +351,8 @@ function handleExport(): void {
                     <TableCell class="text-center font-mono whitespace-nowrap">
                       <template v-if="row.attended && row.net_score !== null">
                         <span :class="row.net_score >= 0
-                          ? 'text-blue-600 font-semibold'
-                          : 'text-orange-700'"
+                          ? 'text-net-plus font-semibold'
+                          : 'text-net-minus'"
                         >
                           {{ row.net_score >= 0 ? '+' : '' }}{{ row.net_score }}
                         </span>
@@ -383,8 +383,8 @@ function handleExport(): void {
                       <span
                         v-if="derived.netAvg !== '-'"
                         :class="parseFloat(derived.netAvg) >= 0
-                          ? 'text-blue-600'
-                          : 'text-orange-700'"
+                          ? 'text-net-plus'
+                          : 'text-net-minus'"
                       >
                         {{ parseFloat(derived.netAvg) >= 0 ? '+' : '' }}{{ derived.netAvg }}
                       </span>
@@ -426,7 +426,7 @@ function handleExport(): void {
             <DetailItem label="NET 스코어">
               <span
                 v-if="detailRow.attended && detailRow.net_score !== null"
-                :class="cn('font-mono', detailRow.net_score >= 0 ? 'text-blue-600 font-semibold' : 'text-orange-700')"
+                :class="cn('font-mono', detailRow.net_score >= 0 ? 'text-net-plus font-semibold' : 'text-net-minus')"
               >{{ detailRow.net_score >= 0 ? '+' : '' }}{{ detailRow.net_score }}</span>
             </DetailItem>
             <DetailItem label="결과">

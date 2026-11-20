@@ -724,8 +724,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                     <span
                       v-if="getLocalNet(row)"
                       :class="getLocalNet(row).startsWith('-')
-                        ? 'text-orange-700'
-                        : 'text-blue-600 font-semibold'"
+                        ? 'text-net-minus'
+                        : 'text-net-plus font-semibold'"
                     >
                       {{ getLocalNet(row) }}
                     </span>
@@ -734,8 +734,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                   <template v-else-if="row.attended && row.net_score !== null">
                     <span
                       :class="row.net_score >= 0
-                        ? 'text-blue-600 font-semibold'
-                        : 'text-orange-700'"
+                        ? 'text-net-plus font-semibold'
+                        : 'text-net-minus'"
                     >
                       {{ row.net_score >= 0 ? '+' : '' }}{{ row.net_score }}
                     </span>
@@ -827,7 +827,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         <DetailItem label="NET 스코어">
           <span
             v-if="detailRow.attended && detailRow.net_score !== null"
-            :class="cn('font-mono', detailRow.net_score >= 0 ? 'text-blue-600 font-semibold' : 'text-orange-700')"
+            :class="cn('font-mono', detailRow.net_score >= 0 ? 'text-net-plus font-semibold' : 'text-net-minus')"
           >{{ detailRow.net_score >= 0 ? '+' : '' }}{{ detailRow.net_score }}</span>
         </DetailItem>
         <DetailItem label="결과 그룹">
