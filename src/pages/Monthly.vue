@@ -317,8 +317,6 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
 <template>
   <div class="w-full bg-background">
     <div class="container mx-auto px-4 py-2 max-w-5xl">
-        <p v-if="saveError" class="text-sm text-destructive px-1" role="alert">{{ saveError }}</p>
-
         <MonthlyTable
           :year-month="selectedMonth"
           :monthly-data="monthlyData"
@@ -335,6 +333,7 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
           v-model:manual-date="manualDate"
           v-model:manual-course="manualCourse"
           :save-state="saveState"
+          :save-error="saveError"
           :attendance-member-id="attendanceMemberId"
           :select-revision="selectRevision"
           @dirty-change="hasUnsaved = $event"

@@ -38,6 +38,22 @@ describe('월간 기록 표 모바일 규칙', () => {
     expect(detailButton).toContain('min-h-11');
   });
 
+  it('좁은 폭 읽기 모드에서도 이름 아래 보조 줄에 당월·차월 핸디를 보인다', () => {
+    expect(table).toMatch(/isEditing \? 'md:hidden' : 'sm:hidden'/);
+    expect(table).toContain("당월 {{ row.app_hc ?? '미정' }} · 차월");
+  });
+
+  it('저장 실패 문구를 하단 고정 저장 줄에 alert 로 보인다', () => {
+    expect(table).toMatch(/saveError\?: string \| null/);
+    expect(table).toMatch(/:role="props\.saveState === 'error' \? 'alert' : undefined"/);
+    expect(page).toContain(':save-error="saveError"');
+  });
+
+  it('편집 진입 때 저장된 조·시상이 자동 계산과 다르면 수동 지정으로 보존한다', () => {
+    expect(table).toMatch(/function preserveStoredManual/);
+    expect(table).toMatch(/function enterEdit\(\)[\s\S]*preserveStoredManual\(\)/);
+  });
+
   it('표 위 NET 설명·이름 안내 문구는 두지 않는다', () => {
     expect(table).not.toContain('낮을수록 좋음');
     expect(table).not.toContain('이름을 누르면 숨은 열까지');
