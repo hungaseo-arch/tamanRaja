@@ -221,8 +221,9 @@ const saving = ref(false);
 const draft = ref<Record<number, string>>({});
 
 /** 입력 문자열 → 값. 비어 있으면 null, 범위·정수가 아니면 NaN. */
-function parseHumanity(raw: string): number | null {
-  const t = raw.trim().replace(MINUS, '-');
+// type=number 입력은 v-model 이 숫자로 바꿔 넣으므로 문자열이 아닐 수 있다.
+function parseHumanity(raw: string | number): number | null {
+  const t = String(raw ?? '').trim().replace(MINUS, '-');
   if (t === '') return null;
   const n = Number(t);
   if (!Number.isInteger(n) || n < HUMANITY_MIN || n > HUMANITY_MAX) return NaN;
@@ -276,7 +277,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   { key: 'std_hc', label: '2027 기준', cls: 'num pp-col-std' },
   { key: 'humanity', label: '인간미', cls: 'num pp-col-hum' },
   { key: 'proposal', label: '2027 제안', cls: 'num pp-col-std' },
-  { key: 'final_delta', label: '증감', cls: 'num' },
+  { key: 'final_delta', label: '증감', cls: 'num pp-hide-sm' },
   { key: 'w_avg', label: '가중평균 오버파', cls: 'num pp-hide-sm' },
   { key: 'attend_rate', label: '2026 참석률', cls: 'num pp-hide-sm' },
 ];
@@ -320,7 +321,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
               >
                 <button type="button" class="pp-sort" @click="setSort(c.key)">
                   {{ c.label }}
-                  <span aria-hidden="true">{{ sortKey === c.key ? (sortAsc ? '▲' : '▼') : '' }}</span>
+                  <span v-if="sortKey === c.key" aria-hidden="true">{{ sortAsc ? '▲' : '▼' }}</span>
                 </button>
               </th>
             </tr>
@@ -363,7 +364,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                   <template v-else>{{ r.humanity == null ? '—' : fmtSignedInt(r.humanity) }}</template>
                 </td>
                 <td class="num pp-std">{{ Number.isNaN(humanityOf(r)) ? '—' : proposalOf(r) }}</td>
-                <td class="num" :class="deltaClass(r.final_delta)">
+                <td class="num pp-hide-sm" :class="deltaClass(r.final_delta)">
                   {{ fmtSigned2(r.final_delta) }}
                   <span class="pp-delta-label">{{ deltaLabel(r.final_delta) }}</span>
                 </td>
@@ -374,9 +375,9 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
           </tbody>
           <tfoot>
             <tr>
-              <!-- 좁은 화면은 보이는 열이 5개뿐이다. colspan 을 9 로 두면 숨은 열 4개가 폭을 나눠 가져가
+              <!-- 좁은 화면은 보이는 열이 4개뿐이다. colspan 을 9 로 두면 숨은 열 5개가 폭을 나눠 가져가
                    증감 열이 쪼그라들므로, 폭에 맞는 칸을 따로 둔다. -->
-              <td colspan="5" class="pp-foot-sm">
+              <td colspan="4" class="pp-foot-sm">
                 <strong>핸디 총합 {{ totalPrev }} → {{ totalStd }} ({{ totalLabel }})</strong>
               </td>
               <td colspan="9" class="pp-hide-sm">
@@ -470,14 +471,30 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 }
 .pp-results thead th:first-child,
 .pp-results tbody th {
-  width: 90px;
+  width: 80px;
   text-align: left;
 }
 .pp-results thead th.pp-col-std {
-  width: 58px;
+  width: 56px;
 }
 .pp-results thead th.pp-col-hum {
-  width: 72px;
+  width: 64px;
+}
+/* 좁은 화면은 네 열이 305px 안에 들어가야 하므로 셀 여백을 줄인다. */
+@media (max-width: 639px) {
+  .pp-results th,
+  .pp-results td {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+  .pp-hum-input {
+    width: 3rem;
+  }
+  /* 머리글은 고정폭 숫자 글꼴이라 넓다. 좁은 화면에서만 줄여 셀 안에 넣는다. */
+  .pp-results thead th {
+    font-size: 0.6875rem;
+    letter-spacing: -0.02em;
+  }
 }
 .pp-sort {
   flex-wrap: wrap;
@@ -577,7 +594,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   border-top: 1px solid var(--pp-border);
   text-align: right;
 }
-/* 좁은 화면: 성명 · 2027 기준 · 증감 세 열만 남기고 나머지는 성명을 눌러 열리는 창에서 본다. */
+/* 좁은 화면: 성명 · 2027 기준 · 인간미 · 2027 제안 네 열만 남기고 나머지는 성명을 눌러 열리는 창에서 본다. */
 .pp-hide-sm {
   display: none;
 }

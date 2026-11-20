@@ -36,12 +36,15 @@ describe('인간미 화면', () => {
   it('수정·저장은 관리자에게만 보인다', () => {
     expect(vue).toMatch(/v-if="isAdmin" class="pp-edit-bar"/);
   });
+  it('number 입력이 숫자로 들어와도 파싱한다 (v-model 은 type=number 를 숫자로 바꾼다)', () => {
+    expect(vue).toMatch(/String\(raw \?\? ''\)\.trim\(\)/);
+  });
   it('저장은 RPC 로만 한다 (테이블 직접 쓰기 없음)', () => {
     expect(vue).toMatch(/supabase\.rpc\('save_handicap_humanity'/);
     expect(vue).not.toMatch(/from\('handicap_humanity'\)\s*\.(insert|update|upsert|delete)/);
   });
-  it('푸터 colspan 이 열 수와 맞다 (넓은 화면 9, 좁은 화면 5)', () => {
+  it('푸터 colspan 이 열 수와 맞다 (넓은 화면 9, 좁은 화면 4)', () => {
     expect(vue).toMatch(/colspan="9" class="pp-hide-sm"/);
-    expect(vue).toMatch(/colspan="5" class="pp-foot-sm"/);
+    expect(vue).toMatch(/colspan="4" class="pp-foot-sm"/);
   });
 });
