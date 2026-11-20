@@ -262,7 +262,7 @@ watch(compact, (isCompact) => {
             <div class="pt-4">
               <Table
                 :scroll="false"
-                class="text-xs sm:text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
+                class="text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
                 caption="회원별 로그인·로그아웃 이력"
               >
                 <TableHeader>
@@ -297,7 +297,7 @@ watch(compact, (isCompact) => {
                 </TableBody>
               </Table>
 
-              <p class="text-xs text-muted-foreground mt-2 px-4">
+              <p class="text-sm text-muted-foreground mt-2 px-4">
                 {{ rows.length }}건
                 <template v-if="rows.length >= ROW_LIMIT">
                   (최근 {{ ROW_LIMIT }}건까지만 표시 — 기간 축소 필요)
