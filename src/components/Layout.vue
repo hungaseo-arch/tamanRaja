@@ -4,6 +4,7 @@ import { RouterLink, useRoute } from 'vue-router';
 import { User, CalendarDays, Trophy, UserRound, History, Users, Scale, Ellipsis, Menu } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
 import Dialog from '@/components/ui/Dialog.vue';
+import DialogTitle from '@/components/ui/DialogTitle.vue';
 import { useAuth } from '@/composables/useAuth';
 import { ROUTE_PATHS } from '@/lib';
 import { cn } from '@/lib/utils';
@@ -211,6 +212,7 @@ function isActive(path: string): boolean {
     </nav>
 
     <Dialog v-model:open="menuOpen" label="메뉴" content-class="max-w-sm">
+      <DialogTitle class="mb-2">메뉴</DialogTitle>
       <ul class="flex flex-col gap-1">
         <li v-for="item in navItems" :key="item.path">
           <RouterLink
@@ -229,6 +231,7 @@ function isActive(path: string): boolean {
     </Dialog>
 
     <Dialog v-model:open="moreOpen" label="더보기 메뉴" content-class="max-w-sm">
+      <DialogTitle class="mb-2">더보기</DialogTitle>
       <ul class="flex flex-col gap-1">
         <li v-for="item in moreItems" :key="item.path">
           <RouterLink

@@ -11,6 +11,8 @@ import { setPageTitle } from '@/lib/title';
 import type { SavePayload } from '@/components/MonthlyTable.vue';
 import MonthlyTable from '@/components/MonthlyTable.vue';
 import Dialog from '@/components/ui/Dialog.vue';
+import DialogTitle from '@/components/ui/DialogTitle.vue';
+import DialogFooter from '@/components/ui/DialogFooter.vue';
 import Button from '@/components/ui/Button.vue';
 
 const availableMonths = computed(() => getAvailableMonths());
@@ -354,14 +356,14 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
       
       <!-- 저장하지 않은 입력이 있는 채로 달을 바꾸려 할 때 -->
       <Dialog :open="leaveOpen" label="달 이동 확인" content-class="sm:max-w-sm" @update:open="(v: boolean) => { if (!v && pendingMonth) stayOnMonth(); }">
-        <div class="px-1 pt-1 space-y-3">
-          <h2 class="text-base font-bold">달 이동 확인</h2>
+        <div class="space-y-3">
+          <DialogTitle class="mb-0">달 이동 확인</DialogTitle>
           <p class="text-sm">저장하지 않은 입력이 사라짐</p>
           <p v-if="pendingMonth" class="text-sm text-muted-foreground">{{ selectedMonth }} → {{ pendingMonth }}</p>
-          <div class="flex justify-end gap-2 pt-1">
-            <Button type="button" variant="outline" size="sm" @click="stayOnMonth">이 달에 머물기</Button>
-            <Button type="button" size="sm" @click="confirmLeave">입력 폐기하고 이동</Button>
-          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" @click="stayOnMonth">이 달에 머물기</Button>
+            <Button type="button" variant="destructive" @click="confirmLeave">입력 폐기하고 이동</Button>
+          </DialogFooter>
         </div>
       </Dialog>
     </div>

@@ -6,6 +6,7 @@ import { describeLoginError, useAuth } from '@/composables/useAuth';
 import { MEMBERS, dataError, isDormantNow, loadMembers, membersLoading } from '@/data';
 import { ROUTE_PATHS } from '@/lib';
 import Dialog from '@/components/ui/Dialog.vue';
+import DialogTitle from '@/components/ui/DialogTitle.vue';
 import Button from '@/components/ui/Button.vue';
 import Select from '@/components/ui/Select.vue';
 import Input from '@/components/ui/Input.vue';
@@ -152,12 +153,13 @@ async function handleLogout(): Promise<void> {
     <!-- 로그인 상태 → 이름 줄(로그아웃) + [참석 확인] / [계정(PIN 변경)]
          로그아웃은 탭 밖 이름 줄에 둔다. 창은 늘 참석 확인 탭으로 열리므로,
          계정 탭 안에 두면 로그아웃하려고 탭을 한 번 더 눌러야 했다. -->
-    <div v-if="isLoggedIn" class="w-full px-5 pt-4 space-y-4">
-      <!-- pr-8: 창 오른쪽 위 닫기(X, right-2·w-9) 아래로 로그아웃이 붙지 않게 비운다 -->
-      <div class="flex items-center justify-between gap-2 pr-8">
-        <p class="text-sm font-medium text-foreground">{{ currentMember?.name }} 님</p>
-        <Button variant="outline" size="xs" class="gap-1.5" @click="handleLogout">
-          <LogOut class="w-3.5 h-3.5 text-muted-foreground" aria-hidden="true" />
+    <div v-if="isLoggedIn" class="w-full space-y-4">
+      <!-- 이름과 로그아웃은 왼쪽에 묶고, 오른쪽 끝은 닫기(X) 하나만 둔다.
+           pr-12: 닫기 버튼(44px) 아래로 파고들지 않게 비운다. -->
+      <div class="flex items-center gap-3 pr-12">
+        <p class="min-w-0 truncate text-lg font-bold">{{ currentMember?.name }} 님</p>
+        <Button variant="outline" size="xs" class="shrink-0 gap-1.5" @click="handleLogout">
+          <LogOut class="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           로그아웃
         </Button>
       </div>
@@ -189,12 +191,13 @@ async function handleLogout(): Promise<void> {
 
     <!-- 비로그인 → 로그인 폼 -->
     <form v-else class="space-y-4" @submit="handleLogin">
+      <DialogTitle class="mb-0">로그인</DialogTitle>
       <div class="space-y-2">
         <Label for="member-select">회원 선택</Label>
         <div
         v-if="membersUnavailable"
         id="member-select"
-        class="flex min-h-11 items-center justify-between gap-2 rounded-md border border-input px-3 text-sm"
+        class="flex min-h-11 items-center justify-between gap-2 rounded-md border border-input px-3 py-1 text-sm"
         role="status"
         tabindex="-1"
         >

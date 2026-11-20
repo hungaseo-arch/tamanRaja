@@ -9,7 +9,7 @@ defineProps<Props>();
 
 <template>
   <div class="flex items-baseline justify-between gap-4 px-3 py-2">
-    <dt class="shrink-0 text-xs text-muted-foreground">{{ label }}</dt>
+    <dt class="shrink-0 text-sm text-muted-foreground">{{ label }}</dt>
     <dd class="min-w-0 text-right text-sm font-medium">
       <slot><span class="text-muted-foreground">-</span></slot>
     </dd>

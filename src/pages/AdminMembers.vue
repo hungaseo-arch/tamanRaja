@@ -15,6 +15,8 @@ import Button from '@/components/ui/Button.vue';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
 import Dialog from '@/components/ui/Dialog.vue';
+import DialogTitle from '@/components/ui/DialogTitle.vue';
+import DialogFooter from '@/components/ui/DialogFooter.vue';
 import Input from '@/components/ui/Input.vue';
 import Label from '@/components/ui/Label.vue';
 import Select from '@/components/ui/Select.vue';
@@ -660,8 +662,8 @@ watch(compact, (isCompact) => {
 
       <!-- 회원 추가 -->
       <Dialog v-model:open="addOpen" label="회원 추가" content-class="sm:max-w-sm">
-        <div class="px-1 pt-1 space-y-3">
-          <h2 class="text-base font-bold">회원 추가</h2>
+        <div class="space-y-3">
+          <DialogTitle class="mb-0">회원 추가</DialogTitle>
           <div class="space-y-1">
             <Label for="add-name">이름</Label>
             <Input id="add-name" v-model="addName" :maxlength="50" placeholder="회원 이름" />
@@ -687,26 +689,26 @@ watch(compact, (isCompact) => {
             </div>
           </div>
 
-          <p class="text-xs text-muted-foreground">
+          <p class="text-sm text-muted-foreground">
             시작월부터 월간 기록 표에 표시 · 임시 PIN은 한 번만 표시 ·
             본인에게 전달하면 첫 로그인에서 새 PIN 설정
           </p>
 
           <p v-if="addError" class="text-sm text-destructive">{{ addError }}</p>
 
-          <div class="flex justify-end gap-2 pt-1">
+          <DialogFooter>
             <Button variant="outline" :disabled="addSaving" @click="addOpen = false">취소</Button>
             <Button :disabled="addSaving" @click="submitAdd()">
               {{ addSaving ? '추가 중…' : '추가' }}
             </Button>
-          </div>
+          </DialogFooter>
         </div>
       </Dialog>
 
       <!-- 휴면 처리 -->
       <Dialog v-model:open="dormantOpen" label="휴면 처리" content-class="sm:max-w-sm">
-        <div class="px-1 pt-1 space-y-3">
-          <h2 class="text-base font-bold">휴면 처리</h2>
+        <div class="space-y-3">
+          <DialogTitle class="mb-0">휴면 처리</DialogTitle>
           <p class="text-sm">
             <span class="font-medium">{{ dormantRow?.name }}</span> 회원을 아래 달부터
             집계·랭킹·로그인 목록에서 제외 · 지난 기록은 그대로 유지
@@ -717,74 +719,74 @@ watch(compact, (isCompact) => {
           </div>
           <p v-if="dormantError" class="text-sm text-destructive">{{ dormantError }}</p>
 
-          <div class="flex justify-end gap-2 pt-1">
+          <DialogFooter>
             <Button variant="outline" :disabled="dormantSaving" @click="dormantOpen = false">취소</Button>
             <Button :disabled="dormantSaving" @click="submitDormant()">
               {{ dormantSaving ? '저장 중…' : '휴면 처리' }}
             </Button>
-          </div>
+          </DialogFooter>
         </div>
       </Dialog>
 
       <!-- PIN 초기화 -->
       <Dialog v-model:open="resetOpen" label="PIN 초기화" content-class="sm:max-w-sm">
-        <div class="px-1 pt-1 space-y-3">
-          <h2 class="text-base font-bold">PIN 초기화</h2>
+        <div class="space-y-3">
+          <DialogTitle class="mb-0">PIN 초기화</DialogTitle>
           <p class="text-sm">
             <span class="font-medium">{{ resetRow?.name }}</span> 회원의 PIN 초기화 ·
             기존 로그인 모두 해제
           </p>
-          <p class="text-xs text-muted-foreground">
+          <p class="text-sm text-muted-foreground">
             새 임시 PIN은 한 번만 표시 · 본인에게 전달하면 첫 로그인에서 새 PIN 설정
           </p>
           <p v-if="resetError" class="text-sm text-destructive">{{ resetError }}</p>
 
-          <div class="flex justify-end gap-2 pt-1">
+          <DialogFooter>
             <Button variant="outline" :disabled="resetSaving" @click="resetOpen = false">취소</Button>
-            <Button :disabled="resetSaving" @click="submitReset()">
+            <Button variant="destructive" :disabled="resetSaving" @click="submitReset()">
               {{ resetSaving ? '초기화 중…' : '초기화' }}
             </Button>
-          </div>
+          </DialogFooter>
         </div>
       </Dialog>
 
       <!-- 삭제 -->
       <Dialog v-model:open="deleteOpen" label="회원 삭제" content-class="sm:max-w-sm">
-        <div class="px-1 pt-1 space-y-3">
-          <h2 class="text-base font-bold">회원 삭제</h2>
+        <div class="space-y-3">
+          <DialogTitle class="mb-0 text-destructive">회원 삭제</DialogTitle>
           <p class="text-sm">
             <span class="font-medium">{{ deleteRow?.name }}</span> 회원을 명단에서
             완전히 삭제 · 로그인 정보와 접속 기록도 함께 삭제되며 되돌리기 불가
           </p>
-          <p class="text-xs text-muted-foreground">
+          <p class="text-sm text-muted-foreground">
             경기 기록이 있는 회원은 서버가 삭제 거절 · 이 경우 휴면 처리 사용
           </p>
           <p v-if="deleteError" class="text-sm text-destructive">{{ deleteError }}</p>
 
-          <div class="flex justify-end gap-2 pt-1">
+          <DialogFooter>
             <Button variant="outline" :disabled="deleteSaving" @click="deleteOpen = false">취소</Button>
             <Button variant="destructive" :disabled="deleteSaving" @click="submitDelete()">
               {{ deleteSaving ? '삭제 중…' : '삭제' }}
             </Button>
-          </div>
+          </DialogFooter>
         </div>
       </Dialog>
 
       <!-- 임시 PIN (회원 추가 · PIN 초기화 공통) -->
       <Dialog v-model:open="tempPinOpen" label="임시 PIN" content-class="sm:max-w-sm" :dismissible="false">
-        <div v-if="tempPin" class="px-1 pt-1 space-y-4 text-center">
-          <h2 class="text-base font-bold">{{ tempPin.name }} 님의 임시 PIN</h2>
+        <div v-if="tempPin" class="space-y-4 text-center">
+          <DialogTitle class="mb-0 pr-0">{{ tempPin.name }} 님의 임시 PIN</DialogTitle>
           <p class="font-mono text-5xl font-bold tracking-[0.3em] select-all" aria-live="polite">
             {{ tempPin.pin }}
           </p>
-          <Button variant="outline" size="sm" class="gap-1.5" @click="copyTempPin()">
+          <Button variant="outline" class="gap-1.5" @click="copyTempPin()">
             <Copy class="w-4 h-4" aria-hidden="true" />
             {{ tempPinCopied ? '복사 완료' : '복사' }}
           </Button>
           <p class="text-sm text-destructive font-medium">
             이 창을 닫으면 다시 볼 수 없음
           </p>
-          <p class="text-xs text-muted-foreground">
+          <p class="text-sm text-muted-foreground">
             본인에게 전달하면 첫 로그인에서 새 PIN 설정
           </p>
           <Button class="w-full" @click="tempPinOpen = false">확인했음 · 닫기</Button>
