@@ -605,6 +605,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
               aria-label="골프장"
               size="xs"
               class="flex-1 min-w-0 sm:flex-initial sm:w-32"
+          select-class="text-sm sm:text-xs"
             />
             <input
               v-if="courseChoice === NEW_COURSE"
@@ -653,6 +654,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             placeholder=""
             size="xs"
             class="w-28 sm:w-22 shrink-0"
+          select-class="text-sm sm:text-xs"
           />
         </template>
         <Button
@@ -675,6 +677,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           placeholder="월 선택"
           size="xs"
           class="w-24 sm:w-18 shrink-0"
+          select-class="text-sm sm:text-xs"
         />
         <Button
           variant="outline"
@@ -698,7 +701,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           :aria-label="`${exportYear}년 전체 기록 CSV 다운로드(엑셀용)`"
           @click="exportYearlyRecords(props.selectedMonth)"
         >
-          <Download class="w-3.5 h-3.5" aria-hidden="true" />
+          <Download class="w-4 h-4" aria-hidden="true" />
           <span class="hidden sm:inline">CSV</span>
         </Button>
 
@@ -711,7 +714,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           aria-label="핸디 규칙 보기"
           @click="showHcHelp = true"
         >
-          <CircleHelp class="w-3.5 h-3.5" aria-hidden="true" />
+          <CircleHelp class="w-4 h-4" aria-hidden="true" />
           <span class="hidden sm:inline">핸디 규칙</span>
         </Button>
         </div>
