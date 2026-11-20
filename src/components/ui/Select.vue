@@ -44,8 +44,8 @@ const props = withDefaults(defineProps<Props>(), {
 });
 
 const SIZE_CLASS = {
-  default: 'h-11 py-2 text-base sm:h-10 sm:text-sm',
-  xs: 'h-11 py-0 text-base sm:h-8 sm:text-xs',
+  default: 'h-11 py-2 text-sm sm:h-10',
+  xs: 'h-11 py-0 text-sm sm:h-8',
 } as const;
 
 const emit = defineEmits<{
