@@ -413,7 +413,7 @@ async function loadCourseRatings(): Promise<void> {
 
       <PolicySection id="sec-limits" no="6" title="증감 한도">
         <div class="policy-table-wrap">
-          <table class="policy-table pp-fixed pp-center-all">
+          <table class="policy-table pp-fixed pp-center-all pp-limits">
             <colgroup><col style="width:33%" /><col style="width:33%" /><col style="width:34%" /></colgroup>
             <thead>
               <tr>
@@ -658,6 +658,9 @@ async function loadCourseRatings(): Promise<void> {
   min-height: 100%;
   background: var(--background);
   color: var(--foreground);
+  /* 한글을 단어 중간에서 끊지 않는다. 긴 덩어리는 overflow-wrap 이 마지막 방어선이다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 .policy-page h1,
 .policy-page h2 {
@@ -830,11 +833,15 @@ async function loadCourseRatings(): Promise<void> {
   }
   .policy-table.pp-whs th,
   .policy-table.pp-whs td {
-    padding: 0.3rem 0.25rem;
+    padding: 0.3rem 0.2rem;
   }
   .policy-table.pp-whs thead th {
     white-space: normal;
     line-height: 1.25;
+  }
+  .policy-table.pp-whs .policy-flag {
+    margin: 0 0 0 0.25rem;
+    padding: 0 0.25rem;
   }
   /* 성명·날짜처럼 줄바꿈하면 읽기 어려운 첫 열은 한 줄로 유지한다. */
   .policy-table.pp-whs tbody th,
@@ -846,6 +853,16 @@ async function loadCourseRatings(): Promise<void> {
   .policy-table.pp-fixed th {
     padding-left: 0.375rem;
     padding-right: 0.375rem;
+  }
+  /* 증감 한도: 사유 문장이 세로로 쪼개지지 않게 좁은 화면에서만 사유 열을 넓힌다. */
+  .policy-table.pp-limits col:nth-child(1) {
+    width: 28% !important;
+  }
+  .policy-table.pp-limits col:nth-child(2) {
+    width: 17% !important;
+  }
+  .policy-table.pp-limits col:nth-child(3) {
+    width: 55% !important;
   }
 }
 /* 열 폭을 colgroup 비율로 고정한다 (내용 길이에 따라 열이 쏠리지 않게). */
@@ -871,6 +888,7 @@ async function loadCourseRatings(): Promise<void> {
 .policy-list {
   margin: 0.5rem 0 0;
   padding-left: 1.1rem;
+  list-style: disc;
   font-size: 0.875rem;
 }
 .policy-list-first {
@@ -882,6 +900,7 @@ async function loadCourseRatings(): Promise<void> {
 /* 한도 적용·표본 부족 표시. 색(붉은 글자)과 함께 문자 라벨을 항상 붙인다. */
 .policy-flag {
   display: inline-block;
+  white-space: nowrap;
   margin: 0 0.375rem;
   padding: 0 0.375rem;
   border: 1px solid var(--pp-up);
