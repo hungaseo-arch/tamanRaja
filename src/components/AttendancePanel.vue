@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, nextTick, ref } from 'vue';
-import { Check } from 'lucide-vue-next';
+import { Check, CircleCheck, CircleHelp, CircleX } from 'lucide-vue-next';
 import { nextRovingIndex } from '@/components/ui/roving';
 import type { SessionMember } from '@/lib/session';
 import { formatValue } from '@/lib/format';
 import { resolveHandicap } from '@/data';
 import Button from '@/components/ui/Button.vue';
+import DialogFooter from '@/components/ui/DialogFooter.vue';
 
 /**
  * 참석 확인 패널. 예전에는 자기 Dialog 를 가진 창이었지만, 계정 창과 탭으로
@@ -37,10 +38,10 @@ const attended = ref<boolean | null>(props.currentAttended);
 
 // 참석/미정/불참 라디오. 미정(null)도 하나의 값이라 항상 하나가 선택돼 있고,
 // 선택된 버튼만 tabindex 0 이다.
-const options: { value: boolean | null; label: string; emoji: string }[] = [
-  { value: true, label: '참석', emoji: '✅' },
-  { value: null, label: '미정', emoji: '🤔' },
-  { value: false, label: '불참', emoji: '❌' },
+const options: { value: boolean | null; label: string; icon: typeof Check }[] = [
+  { value: true, label: '참석', icon: CircleCheck },
+  { value: null, label: '미정', icon: CircleHelp },
+  { value: false, label: '불참', icon: CircleX },
 ];
 const radioRefs = ref<HTMLButtonElement[]>([]);
 
@@ -75,28 +76,27 @@ function handleSubmit(e: Event): void {
 </script>
 
 <template>
-  <form class="space-y-5" @submit="handleSubmit">
-
+  <form class="space-y-4" @submit="handleSubmit">
     <!-- 핸디캡 정보 -->
     <div v-if="handicap" class="rounded-lg border border-border bg-muted/40 p-4">
-      <div class="grid grid-cols-2 gap-4 text-sm">
+      <div class="grid grid-cols-2 gap-4">
         <div class="text-center">
-          <div class="text-muted-foreground text-xs mb-1">기준 핸디</div>
+          <div class="text-muted-foreground text-sm mb-1">기준 핸디</div>
           <div class="font-mono font-bold text-2xl">{{ formatValue(handicap.std_hc) }}</div>
         </div>
         <div class="text-center">
-          <div class="text-muted-foreground text-xs mb-1">차월 핸디</div>
+          <div class="text-muted-foreground text-sm mb-1">차월 핸디</div>
           <div class="font-mono font-bold text-2xl text-primary">{{ formatValue(handicap.next_hc) }}</div>
         </div>
       </div>
     </div>
     <div v-else class="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground text-center">
       <p class="m-0">핸디캡 정보 없음</p>
-      <p class="m-0 mt-1 text-sm">직전 달 핸디캡이 등록되면 표시</p>
+      <p class="m-0 mt-1">직전 달 핸디캡이 등록되면 표시</p>
     </div>
 
     <!-- 참석 / 미정 / 불참 선택 -->
-    <p class="text-sm text-center text-muted-foreground">{{ yearMonth }} 참석 여부 선택</p>
+    <p class="text-base font-medium text-center">{{ yearMonth }} 참석 여부 선택</p>
     <div
       class="grid grid-cols-3 gap-2"
       role="radiogroup"
@@ -111,7 +111,7 @@ function handleSubmit(e: Event): void {
         role="radio"
         :aria-checked="attended === opt.value"
         :tabindex="attended === opt.value ? 0 : -1"
-        class="relative rounded-lg border p-3 text-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+        class="relative flex min-h-16 flex-col items-center justify-center gap-1 rounded-lg border p-3 text-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
         :class="[
           attended === opt.value
             ? opt.value === true
@@ -128,19 +128,19 @@ function handleSubmit(e: Event): void {
           class="absolute right-1.5 top-1.5 h-4 w-4"
           aria-hidden="true"
         />
-        <div class="text-xl mb-1" aria-hidden="true">{{ opt.emoji }}</div>
+        <component :is="opt.icon" class="h-6 w-6" aria-hidden="true" />
         <div class="text-sm font-medium">{{ opt.label }}</div>
         <span v-if="attended === opt.value" class="sr-only">선택됨</span>
       </button>
     </div>
 
-    <div class="flex justify-end gap-3">
+    <DialogFooter>
       <Button type="button" variant="outline" :disabled="saving" @click="emit('cancel')">취소</Button>
       <!-- 저장 중에는 눌러도 반응이 없어야 한다. 참석 확인을 두 번 보내면
            두 번째 요청이 첫 번째를 덮어써 순서가 뒤집힐 수 있다. -->
       <Button type="submit" :disabled="saving" aria-live="polite">
         {{ saving ? '저장 중...' : '저장' }}
       </Button>
-    </div>
+    </DialogFooter>
   </form>
 </template>

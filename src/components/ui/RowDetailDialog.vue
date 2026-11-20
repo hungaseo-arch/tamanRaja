@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import Dialog from '@/components/ui/Dialog.vue';
+import DialogTitle from '@/components/ui/DialogTitle.vue';
 
 /**
  * 표 한 줄의 상세 (디스클로저)
@@ -37,10 +38,10 @@ const isOpen = computed({
   <Dialog v-model:open="isOpen" content-class="sm:max-w-sm" :label="`${title} 상세`">
     <!-- 부제는 줄을 따로 쓴다. 한 줄에 이으면 긴 골프장 이름이 접히면서
          닫기 버튼 밑으로 파고든다. -->
-    <h2 class="mb-4 pr-8 text-lg font-semibold">
+    <DialogTitle>
       {{ title }}
       <span v-if="subtitle" class="block text-sm font-normal text-muted-foreground">{{ subtitle }}</span>
-    </h2>
+    </DialogTitle>
     <dl class="rounded-lg border border-border divide-y divide-border">
       <slot />
     </dl>

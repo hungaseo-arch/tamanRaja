@@ -5,6 +5,7 @@ import Layout from '@/components/Layout.vue';
 import LoginModal from '@/components/LoginModal.vue';
 import PinChangeForm from '@/components/PinChangeForm.vue';
 import Dialog from '@/components/ui/Dialog.vue';
+import DialogTitle from '@/components/ui/DialogTitle.vue';
 import Button from '@/components/ui/Button.vue';
 import Toaster from '@/components/ui/Toaster.vue';
 import AsyncState from '@/components/ui/AsyncState.vue';
@@ -183,8 +184,8 @@ onMounted(async () => {
     label="새 PIN 정하기"
     content-class="sm:max-w-sm"
   >
-    <div class="w-full px-1 pt-1 space-y-4">
-      <h2 class="text-base font-bold">처음 쓰는 PIN 정하기</h2>
+    <div class="w-full space-y-4">
+      <DialogTitle class="mb-0">처음 쓰는 PIN 정하기</DialogTitle>
       <!-- 신규 회원·PIN 초기화 회원이 임시 PIN 으로 처음 들어왔을 때의 안내. -->
       <div class="rounded-md bg-muted px-3 py-2 text-sm space-y-1">
         <p class="font-medium">임시 PIN 으로 로그인한 상태</p>
