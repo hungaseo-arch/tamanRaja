@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/composables/useToast';
@@ -73,7 +73,7 @@ async function load(): Promise<void> {
   ]);
   loading.value = false;
   if (err) {
-    error.value = err.message;
+    error.value = describeError(err, '산정결과를 불러오지 못했음');
     return;
   }
   const humMap = new Map<number, number>(
@@ -95,6 +95,12 @@ async function load(): Promise<void> {
     });
 }
 onMounted(load);
+
+// 수정 중 입력이 남아 있으면 새로고침·탭 닫기 때 브라우저 경고를 띄운다 (입력 소실 방지).
+function warnBeforeUnload(e: BeforeUnloadEvent): void {
+  e.preventDefault();
+  e.returnValue = '';
+}
 
 // ── 정렬 ─────────────────────────────────────────────────────────────────────
 type SortKey =
@@ -307,13 +313,23 @@ async function saveEdit(): Promise<void> {
   }
 }
 
+// 입력한 값이 있을 때만 이탈 경고를 건다.
+watch(
+  () => editing.value && changed.value.length > 0,
+  (on) => {
+    if (on) window.addEventListener('beforeunload', warnBeforeUnload);
+    else window.removeEventListener('beforeunload', warnBeforeUnload);
+  },
+);
+onBeforeUnmount(() => window.removeEventListener('beforeunload', warnBeforeUnload));
+
 const COLS: { key: SortKey; label: string; cls: string }[] = [
   { key: 'member_name', label: '성명', cls: '' },
   { key: 'std_hc_2025', label: '2025 기준(연말)', cls: 'num pp-hide-sm' },
   { key: 'prev_std_hc', label: '2026 기준', cls: 'num pp-hide-sm' },
   { key: 'std_hc', label: '2027 기준', cls: 'num pp-col-std' },
   { key: 'humanity', label: '인간미', cls: 'num pp-col-hum' },
-  { key: 'proposal', label: '2027 제안', cls: 'num pp-col-std' },
+  { key: 'proposal', label: '2027 제안', cls: 'num pp-col-std pp-col-proposal' },
   { key: 'final_delta', label: '증감', cls: 'num pp-hide-sm' },
   { key: 'w_avg', label: '가중평균 오버파', cls: 'num pp-hide-sm' },
   { key: 'attend_rate', label: '2026 참석률', cls: 'num pp-hide-sm' },
@@ -351,6 +367,12 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
           </template>
         </div>
       </div>
+      <!-- 열·색·배지 뜻은 표 바로 위에서 밝힌다. 모바일은 title 이 보이지 않으므로 글자로 둔다. -->
+      <ul class="pp-legend">
+        <li><strong>2027 제안</strong> = 2027 기준 + 인간미. 인간미는 운영진이 −2 ~ +2 정수로 가감하는 보정값</li>
+        <li><span class="pp-up">빨강 인상</span> = 타수를 더 받는 쪽(유리), <span class="pp-down">파랑 인하</span> = 타수를 덜 받는 쪽</li>
+        <li><strong>한도</strong> 증감 한도 적용 · <strong>부족</strong> 표본 부족(가중 라운드 3.00 미만) · <strong>휴면</strong> 복귀 전 참고값</li>
+      </ul>
       <div class="policy-table-wrap pp-results-wrap">
         <table class="policy-table pp-results">
           <thead>
@@ -386,7 +408,16 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                 </th>
                 <td class="num pp-hide-sm">{{ r.std_hc_2025 ?? '—' }}</td>
                 <td class="num pp-hide-sm">{{ r.prev_std_hc ?? '—' }}</td>
-                <td class="num pp-std">{{ r.std_hc }}</td>
+                <td class="num pp-std">
+                  {{ r.std_hc }}
+                  <!-- 좁은 화면은 숨은 열(2026 기준·증감)을 이 칸 아래 소형 캡션으로 합친다. -->
+                  <small class="pp-sm-cap">
+                    2026 {{ r.prev_std_hc ?? '—' }}
+                    <span v-if="r.final_delta !== null" :class="deltaClass(r.final_delta)">
+                      {{ fmtSigned2(r.final_delta) }} {{ deltaLabel(r.final_delta) }}
+                    </span>
+                  </small>
+                </td>
                 <td class="num pp-hum" :class="deltaClass(humanityOf(r) || null)">
                   <!-- ui/Input 은 문자열을 내보낸다. parseHumanity 가 String(raw ?? '') 로 읽으므로 그대로 받는다. -->
                   <Input
@@ -411,7 +442,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                   >{{ r.humanity == null ? '—' : fmtSignedInt(r.humanity) }}</button>
                   <template v-else>{{ r.humanity == null ? '—' : fmtSignedInt(r.humanity) }}</template>
                 </td>
-                <td class="num pp-std">{{ Number.isNaN(humanityOf(r)) ? '—' : proposalOf(r) }}</td>
+                <td class="num pp-std pp-proposal">{{ Number.isNaN(humanityOf(r)) ? '—' : proposalOf(r) }}</td>
                 <td class="num pp-hide-sm" :class="deltaClass(r.final_delta)">
                   {{ fmtSigned2(r.final_delta) }}
                   <span class="pp-delta-label">{{ deltaLabel(r.final_delta) }}</span>
@@ -545,6 +576,41 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 </template>
 
 <style>
+.pp-legend {
+  margin: 0 0 0.5rem;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--muted-foreground);
+}
+.pp-legend li + li {
+  margin-top: 0.125rem;
+}
+.pp-legend strong {
+  color: var(--foreground);
+}
+/* 2027 제안이 최종 확인값이다. 기준 열보다 크고 옅은 배경으로 눈에 띄게 한다. */
+.pp-results td.pp-proposal {
+  font-size: 1rem;
+  background: color-mix(in oklch, var(--std-accent) 8%, transparent);
+}
+/* 모바일 전용 캡션: 숨은 열 값(2026 기준·증감)을 2027 기준 칸에 합쳐 보여 준다. 640px 이상은 열이 보이므로 숨긴다. */
+.pp-sm-cap {
+  display: block;
+  margin-top: 0.125rem;
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  line-height: 1.25;
+  color: var(--muted-foreground);
+  white-space: normal;
+}
+@media (min-width: 640px) {
+  .pp-sm-cap {
+    display: none;
+  }
+}
 .pp-up {
   /* 모달은 body 로 옮겨져 .policy-page 변수를 못 받으므로 :root 토큰을 대체값으로 둔다. */
   color: var(--pp-up, var(--delta-up));
