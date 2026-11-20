@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue';
+import { computed, nextTick, onMounted, ref } from 'vue';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/composables/useToast';
@@ -248,9 +248,15 @@ const changed = computed(() =>
   }),
 );
 
-function startEdit(): void {
+function startEdit(focusId?: number): void {
   draft.value = Object.fromEntries(rows.value.map((r) => [r.member_id, r.humanity == null ? '' : String(r.humanity)]));
   editing.value = true;
+  // 셀을 직접 눌러 들어온 경우 해당 입력창에 바로 커서를 둔다.
+  if (focusId !== undefined) {
+    void nextTick(() => {
+      document.querySelector<HTMLInputElement>(`#hum-${focusId}`)?.focus();
+    });
+  }
 }
 function cancelEdit(): void {
   editing.value = false;
@@ -305,7 +311,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
       </p>
       <div v-if="isAdmin" class="pp-edit-bar">
         <template v-if="!editing">
-          <button type="button" class="pp-btn" @click="startEdit">인간미 수정</button>
+          <button type="button" class="pp-btn" @click="startEdit()">인간미 수정</button>
         </template>
         <template v-else>
           <button type="button" class="pp-btn pp-btn-primary" :disabled="saving || hasInvalid || changed.length === 0" @click="saveEdit">
@@ -360,6 +366,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                     v-model="draft[r.member_id]"
                     type="number"
                     class="pp-hum-input"
+                    :id="`hum-${r.member_id}`"
                     :class="{ 'pp-hum-invalid': isInvalid(r) }"
                     :min="HUMANITY_MIN"
                     :max="HUMANITY_MAX"
@@ -368,6 +375,13 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                     :aria-invalid="isInvalid(r)"
                     @keydown.enter.prevent="saveEdit"
                   />
+                  <button
+                    v-else-if="isAdmin"
+                    type="button"
+                    class="pp-hum-cell"
+                    :aria-label="`${r.member_name} 인간미 입력`"
+                    @click="startEdit(r.member_id)"
+                  >{{ r.humanity == null ? '—' : fmtSignedInt(r.humanity) }}</button>
                   <template v-else>{{ r.humanity == null ? '—' : fmtSignedInt(r.humanity) }}</template>
                 </td>
                 <td class="num pp-std">{{ Number.isNaN(humanityOf(r)) ? '—' : proposalOf(r) }}</td>
@@ -594,6 +608,21 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 .pp-hum-input:focus-visible {
   outline: 2px solid var(--ring);
   outline-offset: 1px;
+}
+.pp-hum-cell {
+  min-width: 2.5rem;
+  padding: 0.15rem 0.35rem;
+  border: 1px dashed var(--pp-border, #d1d5db);
+  border-radius: 0.25rem;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: text;
+}
+.pp-hum-cell:hover,
+.pp-hum-cell:focus-visible {
+  border-style: solid;
+  border-color: #15803d;
 }
 .pp-hum-invalid {
   border-color: #dc2626;

@@ -35,6 +35,8 @@ describe('인간미 화면', () => {
   });
   it('수정·저장은 관리자에게만 보인다', () => {
     expect(vue).toMatch(/v-if="isAdmin" class="pp-edit-bar"/);
+    // 관리자는 인간미 셀을 직접 눌러 편집 모드로 들어갈 수 있다.
+    expect(vue).toMatch(/v-else-if="isAdmin"[\s\S]*?@click="startEdit\(r\.member_id\)"/);
   });
   it('number 입력이 숫자로 들어와도 파싱한다 (v-model 은 type=number 를 숫자로 바꾼다)', () => {
     expect(vue).toMatch(/String\(raw \?\? ''\)\.trim\(\)/);
