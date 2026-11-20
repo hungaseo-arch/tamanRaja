@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { AlertCircle, LogOut } from 'lucide-vue-next';
 import { describeLoginError, useAuth } from '@/composables/useAuth';
@@ -47,6 +47,8 @@ const router = useRouter();
 const selectedMember = ref<string>('');
 const pin = ref<string>('');
 const loginError = ref<string>('');
+const pinInput = ref<InstanceType<typeof Input> | null>(null);
+const errorField = ref<'member' | 'pin' | null>(null);
 const loginLoading = ref<boolean>(false);
 // 기본은 꺼짐. 공용 기기에서 무심코 로그인한 사람이 로그인된 채 남지 않도록
 // 켜는 건 본인이 정하게 한다.
@@ -72,6 +74,7 @@ function resetState(): void {
   selectedMember.value = '';
   pin.value = '';
   loginError.value = '';
+  errorField.value = null;
   loginLoading.value = false;
   remember.value = false;
   pinFormKey.value++;
@@ -93,13 +96,18 @@ function onlyDigits(v: string): string {
 async function handleLogin(e: Event): Promise<void> {
   e.preventDefault();
   loginError.value = '';
+  errorField.value = null;
 
   if (!selectedMember.value) {
     loginError.value = '회원 선택 필요';
+    errorField.value = 'member';
+    document.getElementById('member-select')?.focus();
     return;
   }
   if (pin.value.length !== 4) {
-    loginError.value = 'PIN은 4자리 숫자만 가능';
+    loginError.value = 'PIN 4자리 숫자 입력 필요';
+    errorField.value = 'pin';
+    pinInput.value?.focus();
     return;
   }
 
@@ -112,7 +120,10 @@ async function handleLogin(e: Event): Promise<void> {
       return;
     }
     loginError.value = describeLoginError(result);
+    errorField.value = 'pin';
     pin.value = '';
+    await nextTick();
+    pinInput.value?.focus();
   } finally {
     loginLoading.value = false;
   }
@@ -183,7 +194,11 @@ async function handleLogout(): Promise<void> {
         <Label for="pin-input">PIN 입력</Label>
         <Input
           id="pin-input"
+          ref="pinInput"
           type="password"
+          autocomplete="current-password"
+          :ariaInvalid="errorField === 'pin'"
+          :ariaDescribedby="errorField === 'pin' ? 'login-modal-error' : undefined"
           inputmode="numeric"
           :maxlength="4"
           :model-value="pin"
@@ -199,10 +214,12 @@ async function handleLogout(): Promise<void> {
         </Label>
       </div>
 
-      <Alert v-if="loginError" variant="destructive">
-        <AlertCircle class="h-4 w-4" />
-        <AlertDescription>{{ loginError }}</AlertDescription>
-      </Alert>
+      <div v-if="loginError" id="login-modal-error">
+        <Alert variant="destructive">
+          <AlertCircle class="h-4 w-4" />
+          <AlertDescription>{{ loginError }}</AlertDescription>
+        </Alert>
+      </div>
 
       <Button type="submit" class="w-full" :disabled="loginLoading">
         {{ loginLoading ? '확인 중...' : '로그인' }}
