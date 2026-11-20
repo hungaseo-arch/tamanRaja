@@ -3,7 +3,7 @@ import { computed, nextTick, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { AlertCircle } from 'lucide-vue-next';
 import { describeLoginError, useAuth } from '@/composables/useAuth';
-import { MEMBERS, isDormantNow, loadMembers } from '@/data';
+import { MEMBERS, dataError, isDormantNow, loadMembers, membersLoading } from '@/data';
 import { ROUTE_PATHS } from '@/lib';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
@@ -43,6 +43,14 @@ const memberOptions = computed(() =>
     .sort((a, b) => a.name.localeCompare(b.name, 'ko'))
     .map((m) => ({ value: m.id, label: m.name }))
 );
+
+// 회원 목록이 비어 있으면 Select 자리에 불러오는 중 / 실패 사유 + 다시 시도를 보여 준다.
+const membersUnavailable = computed(() => memberOptions.value.length === 0);
+
+function retryMembers(): void {
+  dataError.value = null;
+  loadMembers();
+}
 
 function onlyDigits(v: string): string {
   return v.replace(/\D/g, '').slice(0, 4);
@@ -99,7 +107,20 @@ async function handleLogin(e: Event): Promise<void> {
           <form class="space-y-4" @submit="handleLogin">
             <div class="space-y-2">
               <Label for="member-select">회원 선택</Label>
+              <div
+              v-if="membersUnavailable"
+              id="member-select"
+              class="flex min-h-11 items-center justify-between gap-2 rounded-md border border-input px-3 text-sm"
+              role="status"
+              tabindex="-1"
+              >
+                <span :class="membersLoading ? 'text-muted-foreground' : 'text-destructive'">
+                  {{ membersLoading ? '회원 목록 불러오는 중...' : (dataError ?? '회원 목록 없음') }}
+                </span>
+                <Button v-if="!membersLoading" type="button" variant="outline" size="xs" @click="retryMembers">다시 시도</Button>
+              </div>
               <Select
+                v-else
                 id="member-select"
                 v-model="selectedMember"
                 :options="memberOptions"
@@ -135,7 +156,7 @@ async function handleLogin(e: Event): Promise<void> {
                 <AlertDescription>{{ loginError }}</AlertDescription>
               </Alert>
             </div>
-            <Button type="submit" class="w-full" :disabled="submitting">
+            <Button type="submit" class="w-full" :disabled="submitting || membersUnavailable">
               {{ submitting ? '확인 중...' : '로그인' }}
             </Button>
             <p class="text-sm text-muted-foreground text-center">

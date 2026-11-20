@@ -3,7 +3,7 @@ import { computed, nextTick, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { AlertCircle, LogOut } from 'lucide-vue-next';
 import { describeLoginError, useAuth } from '@/composables/useAuth';
-import { MEMBERS, isDormantNow } from '@/data';
+import { MEMBERS, dataError, isDormantNow, loadMembers, membersLoading } from '@/data';
 import { ROUTE_PATHS } from '@/lib';
 import Dialog from '@/components/ui/Dialog.vue';
 import Button from '@/components/ui/Button.vue';
@@ -88,6 +88,14 @@ watch(isOpen, (v) => {
   if (v) tab.value = 'attendance';
   else resetState();
 });
+
+// 회원 목록이 비어 있으면 Select 자리에 불러오는 중 / 실패 사유 + 다시 시도를 보여 준다.
+const membersUnavailable = computed(() => memberOptions.value.length === 0);
+
+function retryMembers(): void {
+  dataError.value = null;
+  loadMembers();
+}
 
 function onlyDigits(v: string): string {
   return v.replace(/\D/g, '').slice(0, 4);
@@ -182,7 +190,20 @@ async function handleLogout(): Promise<void> {
     <form v-else class="space-y-4" @submit="handleLogin">
       <div class="space-y-2">
         <Label for="member-select">회원 선택</Label>
+        <div
+        v-if="membersUnavailable"
+        id="member-select"
+        class="flex min-h-11 items-center justify-between gap-2 rounded-md border border-input px-3 text-sm"
+        role="status"
+        tabindex="-1"
+        >
+          <span :class="membersLoading ? 'text-muted-foreground' : 'text-destructive'">
+            {{ membersLoading ? '회원 목록 불러오는 중...' : (dataError ?? '회원 목록 없음') }}
+          </span>
+          <Button v-if="!membersLoading" type="button" variant="outline" size="xs" @click="retryMembers">다시 시도</Button>
+        </div>
         <Select
+          v-else
           id="member-select"
           v-model="selectedMember"
           :options="memberOptions"
@@ -221,7 +242,7 @@ async function handleLogout(): Promise<void> {
         </Alert>
       </div>
 
-      <Button type="submit" class="w-full" :disabled="loginLoading">
+      <Button type="submit" class="w-full" :disabled="loginLoading || membersUnavailable">
         {{ loginLoading ? '확인 중...' : '로그인' }}
       </Button>
     </form>
