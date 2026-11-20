@@ -100,7 +100,7 @@ useEventListener(window, 'resize', () => close(false));
     <Button
       variant="outline"
       size="xs"
-      class="w-8 px-0"
+      class="w-11 px-0 sm:w-8"
       :disabled="props.disabled"
       aria-haspopup="menu"
       :aria-expanded="open"

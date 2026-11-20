@@ -8,7 +8,7 @@ const props = defineProps<Props>();
   <div
     role="tablist"
     :class="cn(
-      'inline-flex h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground',
+      'inline-flex min-h-12 sm:h-10 sm:min-h-0 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground',
       props.class
     )"
   >

@@ -142,6 +142,17 @@ const monthOptions = computed(() =>
   })
 );
 
+// 이전·다음 달 이동. 고를 수 있는 달 전체(해를 넘어서도) 중 바로 이웃한 달이고,
+// 이동은 표의 update:selectedMonth → monthModel → requestMonth 를 지나 변경분 확인을 거친다.
+const sortedSelectable = computed(() =>
+  [...new Set([...existingMonths.value, ...SELECTABLE])].sort(),
+);
+const prevMonth = computed(() => {
+  const older = sortedSelectable.value.filter((ym) => ym < selectedMonth.value);
+  return older.length ? older[older.length - 1]! : null;
+});
+const nextMonth = computed(() => sortedSelectable.value.find((ym) => ym > selectedMonth.value) ?? null);
+
 // 직접 입력 (Supabase 미팅 없는 달, 또는 저장된 미래월 편집용)
 const manualDate = ref('');
 const manualCourse = ref('');
@@ -329,6 +340,8 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
           v-model:selected-year="selectedYear"
           :year-options="yearOptions"
           :month-options="monthOptions"
+          :prev-month="prevMonth"
+          :next-month="nextMonth"
           v-model:manual-date="manualDate"
           v-model:manual-course="manualCourse"
           :save-state="saveState"
