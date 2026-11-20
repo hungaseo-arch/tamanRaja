@@ -12,7 +12,7 @@ const { toasts, dismiss } = useToast();
          떠 있어야 하므로 v-if 로 감싸지 말 것 — 나중에 생긴 라이브 영역은
          브라우저가 무시한다. (P2-1) -->
     <div
-      class="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom)+1rem)] right-4 lg:bottom-4 z-60 flex w-full max-w-sm flex-col gap-2"
+      class="fixed bottom-[calc(3.5rem+env(safe-area-inset-bottom)+1rem)] left-4 right-4 sm:left-auto lg:bottom-4 z-60 flex sm:w-full sm:max-w-sm flex-col gap-2"
       role="status"
       aria-live="polite"
       aria-atomic="false"
@@ -28,6 +28,7 @@ const { toasts, dismiss } = useToast();
         <div
           v-for="t in toasts"
           :key="t.id"
+          :role="t.variant === 'destructive' ? 'alert' : undefined"
           :class="cn(
             'pointer-events-auto rounded-md border p-4 shadow-md bg-background',
             t.variant === 'destructive' && 'border-destructive/50 bg-destructive text-destructive-foreground'
@@ -40,7 +41,7 @@ const { toasts, dismiss } = useToast();
               <button
                 v-if="t.action"
                 type="button"
-                class="mt-2 rounded-md border border-current px-2.5 py-1 text-xs font-medium hover:bg-foreground/10"
+                class="mt-2 min-h-9 rounded-md border border-current px-3 text-sm font-medium hover:bg-foreground/10"
                 @click="t.action.onClick(); dismiss(t.id);"
               >
                 {{ t.action.label }}
@@ -48,7 +49,7 @@ const { toasts, dismiss } = useToast();
             </div>
             <button
               type="button"
-              class="text-sm opacity-70 hover:opacity-100"
+              class="-m-2 flex h-11 w-11 shrink-0 items-center justify-center text-lg opacity-70 hover:opacity-100"
               aria-label="닫기"
               @click="dismiss(t.id)"
             >

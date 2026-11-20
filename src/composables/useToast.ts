@@ -28,12 +28,14 @@ export interface ToastInput {
   description?: string;
   variant?: ToastVariant;
   action?: ToastAction;
-  /** 0 이면 사용자가 닫을 때까지 남는다. 기본 3초. */
+  /** 0 이면 사용자가 닫을 때까지 남는다. 기본 3초, 오류(destructive)는 8초. */
   duration?: number;
 }
 
 const TOAST_LIMIT = 5;
 const DEFAULT_DURATION = 3000;
+// 오류 사유는 읽을 시간이 필요하므로 더 오래 둔다 (중장년 사용자, WCAG 2.2.1).
+const DESTRUCTIVE_DURATION = 8000;
 
 // 모듈 단위 전역 reactive
 const toasts: Ref<ToastItem[]> = ref<ToastItem[]>([]);
@@ -55,7 +57,7 @@ export function useToast() {
 
     toasts.value = [item, ...toasts.value].slice(0, TOAST_LIMIT);
 
-    const duration = input.duration ?? DEFAULT_DURATION;
+    const duration = input.duration ?? (item.variant === 'destructive' ? DESTRUCTIVE_DURATION : DEFAULT_DURATION);
     if (duration > 0) {
       window.setTimeout(() => dismiss(id), duration);
     }
