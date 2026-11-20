@@ -378,11 +378,11 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                   </button>
                   <span
                     v-if="r.dormant_from"
-                    class="policy-flag pp-dormant"
+                    class="policy-flag pp-flag-dormant"
                   >휴면</span>
                   <!-- 휴면 회원은 휴면만 표시한다. 한도·부족은 휴면에 포함되므로 따로 보이지 않는다. -->
-                  <span v-if="r.capped && !r.dormant_from" class="policy-flag">한도</span>
-                  <span v-if="r.low_sample && !r.dormant_from" class="policy-flag" title="표본 부족">부족</span>
+                  <span v-if="r.capped && !r.dormant_from" class="policy-flag pp-flag-cap">한도</span>
+                  <span v-if="r.low_sample && !r.dormant_from" class="policy-flag pp-flag-low" title="표본 부족">부족</span>
                 </th>
                 <td class="num pp-hide-sm">{{ r.std_hc_2025 ?? '—' }}</td>
                 <td class="num pp-hide-sm">{{ r.prev_std_hc ?? '—' }}</td>
@@ -660,7 +660,16 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   border-style: solid;
   border-color: var(--primary);
 }
-.pp-dormant {
+/* 라벨마다 색을 달리한다 : 한도 빨강 · 부족 주황 · 휴면 회색. 글자가 본체이므로 색은 보조다. */
+.pp-results .pp-flag-cap {
+  border-color: var(--pp-up);
+  color: var(--pp-up);
+}
+.pp-results .pp-flag-low {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+.pp-results .pp-flag-dormant {
   border-color: var(--muted-foreground);
   color: var(--muted-foreground);
 }
