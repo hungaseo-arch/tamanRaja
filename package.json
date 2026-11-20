@@ -12,7 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.105.4",
+    "@supabase/postgrest-js": "2.105.4",
     "@vueuse/core": "^11.2.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
