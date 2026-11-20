@@ -418,7 +418,7 @@ function handleExport(): void {
             <DetailItem label="당월 핸디"><span class="font-mono">{{ formatValue(detailRow.app_hc) }}</span></DetailItem>
             <DetailItem label="차월 핸디">
               <span class="font-mono">{{ formatValue(detailRow.next_hc) }}</span>
-              <Badge v-if="detailRow.next_hc_mismatch" variant="outline" class="ml-1.5 border-amber-500 text-amber-700 font-normal">※ 저장값 불일치(관리자 확인 필요)</Badge>
+              <Badge v-if="detailRow.next_hc_mismatch" variant="outline" class="ml-1.5 border-warning-border text-warning font-normal">※ 저장값 불일치(관리자 확인 필요)</Badge>
             </DetailItem>
             <DetailItem label="스코어">
               <span v-if="detailRow.attended && detailRow.score !== null" class="font-mono">{{ detailRow.score }}</span>

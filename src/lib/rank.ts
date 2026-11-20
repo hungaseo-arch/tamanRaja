@@ -22,6 +22,18 @@ export const RANK_STYLE: Record<RankName, RankStyle> = {
   Host:     { badge: 'bg-linear-to-r from-violet-500 to-violet-600 text-white',      icon: Home,   text: 'text-violet-600' },
 };
 
+/** 연간 랭킹 상위 4명 카드의 테두리·바탕 (0 = 1위). 4위 이하는 무채색. */
+const PODIUM_CARD = [
+  'border-yellow-400 bg-yellow-50',
+  'border-gray-400 bg-gray-50',
+  'border-amber-700 bg-orange-50',
+  'border-slate-500 bg-slate-200/70',
+] as const;
+
+export function podiumCardClass(index: number): string {
+  return PODIUM_CARD[Math.min(Math.max(index, 0), PODIUM_CARD.length - 1)];
+}
+
 /** 문자열이 등수 이름인지. 서버에서 온 값을 그대로 넘길 수 있게 둔다. */
 export function isRankName(v: string | null | undefined): v is RankName {
   return v === 'Winner' || v === 'Medalist' || v === 'Host';

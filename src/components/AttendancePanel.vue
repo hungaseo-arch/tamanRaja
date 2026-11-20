@@ -116,7 +116,7 @@ function handleSubmit(e: Event): void {
             ? opt.value === true
               ? 'border-primary bg-primary/10 text-primary font-semibold'
               : opt.value === null
-                ? 'border-yellow-500 bg-yellow-50 text-yellow-700 font-semibold'
+                ? 'border-warning-border bg-warning-surface text-warning font-semibold'
                 : 'border-destructive bg-destructive/10 text-destructive font-semibold'
             : 'border-border hover:bg-muted/30',
         ]"

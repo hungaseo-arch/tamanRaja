@@ -11,10 +11,11 @@
      모두 이 계열이고, 아래 :root 토큰이 유일한 출처다.
    - 표의 열 색은 뜻을 나눈다: 기준 핸디는 주황, 당월·차월 핸디와 Net 은 파랑,
      원점수는 무채색.
-   - 의미색(Net ±, 핸디 증감, 2027 기준핸디)은 :root 의 --net-plus 등에서 정한다.
-     화면에 blue-600/orange-700/#2563eb 같은 값을 직접 쓰지 말 것.
-   - Winner(금)·Medalist(은)·Host(보라) 배지는 여기가 아니라
-     src/lib/rank.ts 한 곳에서 정한다. 색을 바꿀 일이 있으면 그 파일만 고친다.
+   - 의미색(Net ±, 핸디 증감, 2027 기준핸디, 주의, 1등조, 평균 타수)은 :root 의
+     --net-plus 등에서 정한다. 화면에 blue-600/yellow-700/#2563eb 같은 값을
+     직접 쓰지 말 것.
+   - Winner(금)·Medalist(은)·Host(보라) 배지와 연간 랭킹 상위 4명 카드 색은
+     여기가 아니라 src/lib/rank.ts 한 곳에서 정한다. 색을 바꿀 일이 있으면 그 파일만 고친다.
    - 밝은 화면 하나만 쓴다. index.html 의 color-scheme: light 와 짝이며,
      다크 팔레트는 켜는 코드가 없어 지웠다. 되살릴 거면 토글부터 만들 것.
 
@@ -76,6 +77,12 @@
      net-plus/net-minus : Net·평균 Net 의 +/- (파랑/주황). 열 색 약속은 그대로.
      delta-up/delta-down: 핸디 증감 (인상=빨강, 인하=파랑).
      std-accent         : 2027 기준핸디 강조 (보라).
+     warning(-surface/-border): 주의. 참석 미정, 저장값 불일치. 글자는 흰 바탕에서
+                          4.5:1 이상이고 -surface 위에서도 4.5:1 이상이다.
+                          오류(destructive)와 같은 자리에 쓰지 않는다.
+     group-first        : 1등조 배지 바탕 (흰 글자 5.2:1). Net 의 파랑과 같은 값이지만
+                          뜻이 달라 이름을 나눴다.
+     avg-score          : 연간 랭킹의 평균 타수 숫자 (보라 계열, std-accent 와 별개).
      모두 흰 바탕에서 WCAG AA(4.5:1) 이상. 모달은 body 로 옮겨져 화면 전용
      변수를 못 받으므로, 화면 전용 변수가 아니라 :root 에 둔다. */
   --net-plus: oklch(0.546 0.245 262.881);
@@ -83,6 +90,11 @@
   --delta-up: oklch(0.55 0.22 25);
   --delta-down: var(--net-plus);
   --std-accent: oklch(0.491 0.27 292.581);
+  --warning: oklch(0.554 0.135 66.442);
+  --warning-surface: oklch(0.987 0.026 102.212);
+  --warning-border: oklch(0.795 0.184 86.047);
+  --group-first: oklch(0.546 0.245 262.881);
+  --avg-score: oklch(0.558 0.288 302.321);
 
   /* Chart Tokens */
   --chart-1: oklch(0.58 0.18 145);
@@ -130,6 +142,11 @@
   --color-delta-up: var(--delta-up);
   --color-delta-down: var(--delta-down);
   --color-std-accent: var(--std-accent);
+  --color-warning: var(--warning);
+  --color-warning-surface: var(--warning-surface);
+  --color-warning-border: var(--warning-border);
+  --color-group-first: var(--group-first);
+  --color-avg-score: var(--avg-score);
 
   /* Charts Mapping */
   --color-chart-1: var(--chart-1);

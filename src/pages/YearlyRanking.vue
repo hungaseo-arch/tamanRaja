@@ -15,7 +15,7 @@ import {
 } from '@/data';
 import type { YearlySummary } from '@/lib';
 import { cn } from '@/lib/utils';
-import { RANK_STYLE } from '@/lib/rank';
+import { RANK_STYLE, podiumCardClass } from '@/lib/rank';
 import { useRecordExport } from '@/composables/useRecordExport';
 import { useCompactTable } from '@/composables/useCompactTable';
 import AsyncState from '@/components/ui/AsyncState.vue';
@@ -366,13 +366,7 @@ function stickyTint(rank: number | null): string {
         <Card
           v-for="(row, idx) in rankedQualified.slice(0, 4)"
           :key="row.member_id"
-          :class="idx === 0
-            ? 'border-yellow-400 bg-yellow-50'
-            : idx === 1
-              ? 'border-gray-400 bg-gray-50'
-              : idx === 2
-                ? 'border-amber-700 bg-orange-50'
-                : 'border-slate-500 bg-slate-200/70'"
+          :class="podiumCardClass(idx)"
         >
           <CardContent class="px-3 pt-2 pb-3 sm:px-3 sm:pb-3 text-center space-y-0.5">
             <p class="text-xl">
@@ -389,7 +383,7 @@ function stickyTint(rank: number | null): string {
             >
               <template v-if="key === 'avg_score'">
                 평균 스코어
-                <span class="font-mono font-semibold ml-1 text-purple-600">
+                <span class="font-mono font-semibold ml-1 text-avg-score">
                   <template v-if="row.avg_score !== null">{{ row.avg_score.toFixed(1) }}</template>
                   <span v-else class="text-muted-foreground">-</span>
                 </span>
@@ -594,7 +588,7 @@ function stickyTint(rank: number | null): string {
                     <TableCell class="text-center font-mono whitespace-nowrap">
                       <span
                         v-if="entry.row.avg_score !== null"
-                        :class="entry.rank === null ? 'font-semibold' : 'text-purple-600 font-semibold'"
+                        :class="entry.rank === null ? 'font-semibold' : 'text-avg-score font-semibold'"
                       >{{ entry.row.avg_score.toFixed(1) }}</span>
                       <span v-else class="text-muted-foreground">-</span>
                     </TableCell>
@@ -643,7 +637,7 @@ function stickyTint(rank: number | null): string {
             </span>
           </DetailItem>
           <DetailItem label="평균 스코어">
-            <span v-if="detailEntry.row.avg_score !== null" class="font-mono text-purple-600 font-semibold">
+            <span v-if="detailEntry.row.avg_score !== null" class="font-mono text-avg-score font-semibold">
               {{ detailEntry.row.avg_score.toFixed(1) }}
             </span>
           </DetailItem>
