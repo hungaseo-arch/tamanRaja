@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { getMonthlyData, getAvailableMonths, getAttendanceMonth, canAnswerAttendance, firstSaturday, GOLF_COURSES, MEETINGS, MEETING_RESULTS, MEMBERS, loadData } from '@/data';
 import { useAuth } from '@/composables/useAuth';
@@ -10,6 +10,8 @@ import { ROUTE_PATHS } from '@/lib';
 import { setPageTitle } from '@/lib/title';
 import type { SavePayload } from '@/components/MonthlyTable.vue';
 import MonthlyTable from '@/components/MonthlyTable.vue';
+import Dialog from '@/components/ui/Dialog.vue';
+import Button from '@/components/ui/Button.vue';
 
 const availableMonths = computed(() => getAvailableMonths());
 
@@ -33,14 +35,60 @@ const selectedMonth = ref<string>(defaultMonth);
 
 const router = useRouter();
 
+// ── 저장하지 않은 입력 보호 ────────────────────────────────────────────────────
+// 표가 알려 주는 변경분 여부. 있는 채로 달이 바뀌면 입력값이 통째로 사라지므로
+// 달을 바꾸는 모든 길(월·연도 선택, 주소 ?month=, 참석 대상 달)이 requestMonth 를 지난다.
+const hasUnsaved = ref(false);
+const pendingMonth = ref<string | null>(null);
+const leaveOpen = ref(false);
+// 취소하면 올라 있던 select 가 고른 값을 그대로 보여 주므로, 번호를 올려 칸을 새로 그린다.
+const selectRevision = ref(0);
+
+function requestMonth(ym: string): void {
+  if (ym === selectedMonth.value) return;
+  if (!hasUnsaved.value) {
+    selectedMonth.value = ym;
+    return;
+  }
+  pendingMonth.value = ym;
+  leaveOpen.value = true;
+}
+
+function confirmLeave(): void {
+  const ym = pendingMonth.value;
+  pendingMonth.value = null;
+  leaveOpen.value = false;
+  if (ym) selectedMonth.value = ym;
+}
+
+// 이전 달에 머문다. 주소(뒤로 가기·링크)가 먼저 바뀌어 있었다면 ?month= 도 되돌려
+// 주소와 화면이 어긋나지 않게 한다.
+function stayOnMonth(): void {
+  pendingMonth.value = null;
+  leaveOpen.value = false;
+  selectRevision.value++;
+  if (route.path === ROUTE_PATHS.MONTHLY && route.query.month !== selectedMonth.value) {
+    void router.replace({ query: { ...route.query, month: selectedMonth.value } });
+  }
+}
+
+// 새로고침·탭 닫기. 변경분이 있을 때만 브라우저 기본 경고를 띄운다.
+function warnBeforeUnload(e: BeforeUnloadEvent): void {
+  if (!hasUnsaved.value) return;
+  e.preventDefault();
+  e.returnValue = '';
+}
+onMounted(() => window.addEventListener('beforeunload', warnBeforeUnload));
+onBeforeUnmount(() => window.removeEventListener('beforeunload', warnBeforeUnload));
+
 // ?month= 와 고른 달은 양쪽으로 맞춘다 — 주소를 단톡방에 붙이면 같은 달이 열린다.
 // 참석 창(#/attendance)은 이 화면을 배경으로 빌려 쓸 뿐이라 주소를 건드리지 않는다.
 watch(() => route.query.month, (m) => {
-  if (m && typeof m === 'string') selectedMonth.value = m;
+  if (m && typeof m === 'string') requestMonth(m);
 });
 // 링크로 바로 들어오면 모임 목록이 늦게 와서 대상 달이 바뀔 수 있다.
 watch(attendanceYM, (ym) => {
-  if (route.path === ROUTE_PATHS.ATTENDANCE && !queryMonth) selectedMonth.value = ym;
+  if (route.path === ROUTE_PATHS.ATTENDANCE && !queryMonth) requestMonth(ym);
 });
 // 문서 제목에 보고 있는 달을 붙인다 (4-5). 참석 창은 라우터가 정한 제목 그대로.
 watch(selectedMonth, (m) => {
@@ -49,6 +97,12 @@ watch(selectedMonth, (m) => {
 watch(selectedMonth, (m) => {
   if (route.path !== ROUTE_PATHS.MONTHLY || route.query.month === m) return;
   void router.replace({ query: { ...route.query, month: m } });
+});
+
+// 월 선택 칸은 requestMonth 를 거친다 (위 보호 참고).
+const monthModel = computed({
+  get: () => selectedMonth.value,
+  set: (v: string) => requestMonth(v),
 });
 
 const monthlyData = computed(() => getMonthlyData(selectedMonth.value));
@@ -77,7 +131,7 @@ const selectedYear = computed({
     if (y === selectedMonth.value.slice(0, 4)) return;
     const months = Array.from({ length: 12 }, (_, i) => `${y}-${String(12 - i).padStart(2, '0')}`)
       .filter(isSelectable);
-    selectedMonth.value = months.find((ym) => ym <= currentYM) ?? months[months.length - 1] ?? `${y}-01`;
+    requestMonth(months.find((ym) => ym <= currentYM) ?? months[months.length - 1] ?? `${y}-01`);
   },
 });
 
@@ -271,7 +325,7 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
           :can-unlock="canUnlock"
           :is-future-month="isFutureMonth"
           :is-editable="isEditableMonth"
-          v-model:selected-month="selectedMonth"
+          v-model:selected-month="monthModel"
           v-model:selected-year="selectedYear"
           :year-options="yearOptions"
           :month-options="monthOptions"
@@ -279,10 +333,24 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
           v-model:manual-course="manualCourse"
           :save-state="saveState"
           :attendance-member-id="attendanceMemberId"
+          :select-revision="selectRevision"
+          @dirty-change="hasUnsaved = $event"
           @save="handleSaveMonth"
           @open-attendance="openAttendance"
         />
       
+      <!-- 저장하지 않은 입력이 있는 채로 달을 바꾸려 할 때 -->
+      <Dialog :open="leaveOpen" label="달 이동 확인" content-class="sm:max-w-sm" @update:open="(v: boolean) => { if (!v && pendingMonth) stayOnMonth(); }">
+        <div class="px-1 pt-1 space-y-3">
+          <h2 class="text-base font-bold">달 이동 확인</h2>
+          <p class="text-sm">저장하지 않은 입력이 사라짐</p>
+          <p v-if="pendingMonth" class="text-sm text-muted-foreground">{{ selectedMonth }} → {{ pendingMonth }}</p>
+          <div class="flex justify-end gap-2 pt-1">
+            <Button type="button" variant="outline" size="sm" @click="stayOnMonth">이 달에 머물기</Button>
+            <Button type="button" size="sm" @click="confirmLeave">입력 폐기하고 이동</Button>
+          </div>
+        </div>
+      </Dialog>
     </div>
   </div>
 </template>
