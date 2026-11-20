@@ -17,9 +17,14 @@ describe('나의 기록 연도별 핸디 추이', () => {
   it('읽기 전용이다 (insert·update·delete·rpc 없음)', () => {
     expect(trend).not.toMatch(/\.(insert|update|upsert|delete|rpc)\(/);
   });
-  it('확정 전 연도는 안 으로 표시한다', () => {
+  it('확정 전 연도는 확정 전 으로 표시하고 개조식 문구를 쓴다', () => {
     expect(trend).toMatch(/status !== 'confirmed'/);
     expect(trend).toContain('확정 전');
+    expect(trend).not.toMatch(/입니다|합니다/);
+  });
+  it('데이터가 없어도 카드를 숨기지 않고 안내를 보인다', () => {
+    expect(trend).not.toMatch(/<Card v-if/);
+    expect(trend).toMatch(/:empty="view\.length === 0"/);
   });
   it('나의 기록에서 로그인한 본인의 id 로 붙인다', () => {
     expect(profile).toMatch(/<MemberHandicapTrend :member-id="currentMember\.id"/);
