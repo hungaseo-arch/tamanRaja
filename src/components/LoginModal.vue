@@ -202,7 +202,7 @@ async function handleLogout(): Promise<void> {
         tabindex="-1"
         >
           <span :class="membersLoading ? 'text-muted-foreground' : 'text-destructive'">
-            {{ membersLoading ? '회원 목록 불러오는 중...' : (dataError ?? '회원 목록 없음') }}
+            {{ membersLoading ? '회원 목록 불러오는 중…' : (dataError ?? '회원 목록 없음') }}
           </span>
           <Button v-if="!membersLoading" type="button" variant="outline" size="xs" @click="retryMembers">다시 시도</Button>
         </div>
@@ -248,7 +248,7 @@ async function handleLogout(): Promise<void> {
       </div>
 
       <Button type="submit" class="w-full" :disabled="loginLoading || membersUnavailable">
-        {{ loginLoading ? '확인 중...' : '로그인' }}
+        {{ loginLoading ? '확인 중…' : '로그인' }}
       </Button>
     </form>
   </Dialog>

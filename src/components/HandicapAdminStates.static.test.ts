@@ -26,14 +26,14 @@ describe('상태 표시 통일', () => {
   });
   it('회원 없음·핸디캡 정보 없음에 이유 한 줄이 있다', () => {
     expect(admin).toMatch(/empty-title="회원 없음"\s+empty-hint=/);
-    expect(attend).toContain('직전 달 핸디캡이 등록되면 표시');
+    expect(attend).toContain('직전 달 핸디가 등록되면 표시');
   });
 });
 
 describe('임시 PIN 창', () => {
   it('바깥 클릭·Esc·X 로 닫히지 않고 버튼으로만 닫힌다', () => {
     expect(admin).toMatch(/v-model:open="tempPinOpen"[^>]*:dismissible="false"/);
-    expect(admin).toContain('확인했음 · 닫기');
+    expect(admin).toContain('확인');
   });
 });
 
@@ -51,14 +51,14 @@ describe('글자 크기', () => {
 describe('핸디 정책 F2 보강', () => {
   it('결과 표는 제안·인간미·색·배지 뜻을 표 위 범례로 설명한다', () => {
     expect(table).toContain('class="pp-legend"');
-    expect(table).toContain('인간미는 운영진이 −2 ~ +2 정수로 가감하는 보정값');
+    expect(table).toContain('인간미는 관리자가 −2 ~ +2 정수로 가감하는 보정값');
   });
   it('모바일 표는 숨은 증감을 2027 기준 칸 캡션으로 합친다', () => {
     expect(table).toMatch(/class="pp-sm-cap"[\s\S]*deltaLabel\(r\.final_delta\)/);
   });
   it('조회 오류는 원문 대신 describeError 로 바꿔 보인다', () => {
     expect(table).toContain("describeError(err, '산정결과를 불러오지 못했음')");
-    expect(policy).toContain("describeError(error, '구장 정보를 불러오지 못했음')");
+    expect(policy).toContain("describeError(error, '골프장 정보를 불러오지 못했음')");
     expect(policy).not.toMatch(/courseRatingsError\.value = error\.message/);
   });
   it('인쇄 직전 details 를 펼치고, 수치는 상수에서 파생하며, 단계 목록은 의미를 유지한다', () => {

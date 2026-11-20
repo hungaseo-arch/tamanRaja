@@ -8,7 +8,7 @@ import { useCompactTable } from '@/composables/useCompactTable';
 import { useToast } from '@/composables/useToast';
 import { ROUTE_PATHS } from '@/lib';
 import { describeError } from '@/lib/errors';
-import { DASH } from '@/lib/format';
+import { DASH, formatYearMonth } from '@/lib/format';
 import Alert from '@/components/ui/Alert.vue';
 import AlertDescription from '@/components/ui/AlertDescription.vue';
 import AsyncState from '@/components/ui/AsyncState.vue';
@@ -331,7 +331,7 @@ async function submitDormant(): Promise<void> {
   }
 
   dormantOpen.value = false;
-  toast({ title: `${row.name} · ${dormantMonth.value}부터 휴면 처리 완료` });
+  toast({ title: `${row.name} · ${formatYearMonth(dormantMonth.value)}부터 휴면 처리 완료` });
   await load();
 }
 
@@ -480,7 +480,7 @@ function formatLastLogin(iso: string | null): string {
 }
 
 function statusLabel(row: AdminMemberRow): string {
-  return row.dormant_from ? `휴면 ${row.dormant_from}~` : '현역';
+  return row.dormant_from ? `휴면 ${formatYearMonth(row.dormant_from)}~` : '현역';
 }
 
 // ── 좁은 화면의 관리 메뉴 ────────────────────────────────────────────────────
@@ -581,7 +581,7 @@ watch(compact, (isCompact) => {
                     <TableHead class="font-bold text-center whitespace-nowrap">등급</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap">상태</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">가입</TableHead>
-                    <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">참석</TableHead>
+                    <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">참석 횟수</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">마지막 로그인</TableHead>
                     <TableHead class="font-bold text-right whitespace-nowrap">관리</TableHead>
                   </TableRow>
@@ -832,7 +832,7 @@ watch(compact, (isCompact) => {
       <!-- 임시 PIN (회원 추가 · PIN 초기화 공통) -->
       <Dialog v-model:open="tempPinOpen" label="임시 PIN" content-class="sm:max-w-sm" :dismissible="false">
         <div v-if="tempPin" class="space-y-4 text-center">
-          <DialogTitle class="mb-0 pr-0">{{ tempPin.name }} 님의 임시 PIN</DialogTitle>
+          <DialogTitle class="mb-0 pr-0">{{ tempPin.name }} 회원 임시 PIN</DialogTitle>
           <p class="font-mono text-5xl font-bold tracking-[0.3em] select-all" aria-live="polite">
             {{ tempPin.pin }}
           </p>
@@ -846,7 +846,7 @@ watch(compact, (isCompact) => {
           <p class="text-sm text-muted-foreground">
             본인에게 전달하면 첫 로그인에서 새 PIN 설정
           </p>
-          <Button class="w-full" @click="tempPinOpen = false">확인했음 · 닫기</Button>
+          <Button class="w-full" @click="tempPinOpen = false">확인</Button>
         </div>
       </Dialog>
 
@@ -860,7 +860,7 @@ watch(compact, (isCompact) => {
           <DetailItem label="가입연도">
             <span class="font-mono">{{ detailRow.enrollment_year ?? DASH }}</span>
           </DetailItem>
-          <DetailItem label="참석">
+          <DetailItem label="참석 횟수">
             <span class="font-mono">{{ detailRow.attended_count }}회</span>
           </DetailItem>
           <DetailItem label="기록(불참 포함)">

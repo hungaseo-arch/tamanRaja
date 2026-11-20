@@ -61,7 +61,7 @@ function onRadioKeydown(e: KeyboardEvent): void {
   void nextTick(() => radioRefs.value[next]?.focus());
 }
 
-// 이전 달(현재달) 핸디캡 → 기준 핸디 / 차월 핸디 표시
+// 이전 달(현재달) 핸디캡 → 기준핸디 / 차월 핸디 표시
 const prevYM = computed(() => {
   const [y, m] = props.yearMonth.split('-').map(Number);
   const pm = m === 1 ? 12 : m - 1;
@@ -129,28 +129,28 @@ function handleSubmit(e: Event): void {
     <div v-if="handicap" class="rounded-lg border border-border bg-muted/40 p-3">
       <div class="grid grid-cols-2 gap-4">
         <div class="text-center">
-          <div class="text-muted-foreground text-sm mb-1">기준 핸디</div>
+          <div class="text-muted-foreground text-sm mb-1">기준핸디</div>
           <div class="font-mono font-bold text-xl">{{ formatValue(handicap.std_hc) }}</div>
         </div>
         <div class="text-center">
-          <div class="text-muted-foreground text-sm mb-1">이번 모임 적용 핸디</div>
+          <div class="text-muted-foreground text-sm mb-1">당월 핸디</div>
           <div class="font-mono font-bold text-xl text-primary">{{ formatValue(handicap.next_hc) }}</div>
         </div>
       </div>
     </div>
     <div v-else class="rounded-lg border border-border bg-muted/40 p-4 text-sm text-muted-foreground text-center">
-      <p class="m-0">핸디캡 정보 없음</p>
-      <p class="m-0 mt-1">직전 달 핸디캡이 등록되면 표시</p>
+      <p class="m-0">핸디 정보 없음</p>
+      <p class="m-0 mt-1">직전 달 핸디가 등록되면 표시</p>
     </div>
 
-    <p v-if="!hasChoice" class="m-0 text-sm text-muted-foreground text-center">아직 답하지 않으셨습니다. 하나를 선택해 주세요.</p>
+    <p v-if="!hasChoice" class="m-0 text-sm text-muted-foreground text-center">응답 전 · 하나 선택 필요</p>
 
     <DialogFooter>
       <Button type="button" variant="outline" :disabled="saving" @click="emit('cancel')">취소</Button>
       <!-- 저장 중에는 눌러도 반응이 없어야 한다. 결과 알림은 바깥 토스트가 맡는다. 참석 확인을 두 번 보내면
            두 번째 요청이 첫 번째를 덮어써 순서가 뒤집힐 수 있다. -->
       <Button type="submit" :disabled="saving || !hasChoice">
-        {{ saving ? '저장 중...' : '저장' }}
+        {{ saving ? '저장 중…' : '저장' }}
       </Button>
     </DialogFooter>
   </form>

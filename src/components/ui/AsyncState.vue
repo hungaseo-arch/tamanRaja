@@ -49,7 +49,7 @@ const emit = defineEmits<{ retry: [] }>();
       </div>
     </template>
     <p v-else class="text-center text-muted-foreground animate-pulse py-8">
-      {{ props.label ? `${props.label} 불러오는 중...` : '불러오는 중...' }}
+      {{ props.label ? `${props.label} 불러오는 중…` : '불러오는 중…' }}
     </p>
   </div>
 

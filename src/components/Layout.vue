@@ -109,10 +109,10 @@ function isActive(path: string): boolean {
           <RouterLink
             :to="ROUTE_PATHS.HOME"
             class="flex items-center gap-2 sm:gap-3 min-w-0 text-foreground no-underline hover:opacity-80"
-            aria-label="따만라자 모임 홈으로 이동"
+            aria-label="따만라자 골프모임 홈으로 이동"
           >
             <span class="text-2xl sm:text-4xl shrink-0" aria-hidden="true">🏌️</span>
-            <span class="text-base sm:text-xl font-bold whitespace-nowrap truncate">따만라자 모임</span>
+            <span class="text-base sm:text-xl font-bold whitespace-nowrap truncate">따만라자 골프모임</span>
           </RouterLink>
 
           <!-- 네비게이션 (lg 이상). 그보다 좁으면 하단 탭 바가 대신한다. -->

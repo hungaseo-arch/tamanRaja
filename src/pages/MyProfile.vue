@@ -321,11 +321,11 @@ function handleExport(): void {
                       <Badge variant="default">{{ historyYear }}년</Badge>
                     </TableHead>
                     <TableHead class="font-bold text-foreground whitespace-nowrap hidden sm:table-cell">골프장</TableHead>
-                    <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">기준 핸디</TableHead>
+                    <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">기준핸디</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">당월 핸디</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">차월 핸디</TableHead>
-                    <TableHead class="font-bold text-center whitespace-nowrap">스코어</TableHead>
-                    <TableHead class="font-bold text-center whitespace-nowrap">NET 스코어</TableHead>
+                    <TableHead class="font-bold text-center whitespace-nowrap">스코어(오버파)</TableHead>
+                    <TableHead class="font-bold text-center whitespace-nowrap">Net</TableHead>
                     <TableHead class="font-bold text-center whitespace-nowrap">결과</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -427,16 +427,16 @@ function handleExport(): void {
               <span v-if="detailRow.attended" class="text-primary">참석</span>
               <span v-else class="text-muted-foreground font-normal">불참</span>
             </DetailItem>
-            <DetailItem label="기준 핸디"><span class="font-mono">{{ formatValue(detailRow.std_hc) }}</span></DetailItem>
+            <DetailItem label="기준핸디"><span class="font-mono">{{ formatValue(detailRow.std_hc) }}</span></DetailItem>
             <DetailItem label="당월 핸디"><span class="font-mono">{{ formatValue(detailRow.app_hc) }}</span></DetailItem>
             <DetailItem label="차월 핸디">
               <span class="font-mono">{{ formatValue(detailRow.next_hc) }}</span>
               <Badge v-if="isAdmin && detailRow.next_hc_mismatch" variant="outline" class="ml-1.5 border-warning-border text-warning font-normal">※ 저장값 불일치(관리자 확인 필요)</Badge>
             </DetailItem>
-            <DetailItem label="스코어">
+            <DetailItem label="스코어(오버파)">
               <span v-if="detailRow.attended && detailRow.score !== null" class="font-mono">{{ detailRow.score }}</span>
             </DetailItem>
-            <DetailItem label="NET 스코어">
+            <DetailItem label="Net">
               <span
                 v-if="detailRow.attended && detailRow.net_score !== null"
                 :class="cn('font-mono', detailRow.net_score >= 0 ? 'text-net-plus font-semibold' : 'text-net-minus')"

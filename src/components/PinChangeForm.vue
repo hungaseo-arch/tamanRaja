@@ -93,7 +93,7 @@ async function handleSubmit(e: Event): Promise<void> {
       await fail(field, describeChangePinError(result));
     }
   } catch {
-    error.value = '저장 중 오류 발생';
+    error.value = '저장 실패';
     errorField.value = null;
   } finally {
     loading.value = false;
@@ -168,7 +168,7 @@ async function handleSubmit(e: Event): Promise<void> {
     </Alert>
 
     <Button type="submit" class="w-full" :disabled="loading">
-      {{ loading ? '저장 중...' : 'PIN 변경' }}
+      {{ loading ? '저장 중…' : 'PIN 변경' }}
     </Button>
   </form>
 </template>

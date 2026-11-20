@@ -115,7 +115,7 @@ async function handleLogin(e: Event): Promise<void> {
               tabindex="-1"
               >
                 <span :class="membersLoading ? 'text-muted-foreground' : 'text-destructive'">
-                  {{ membersLoading ? '회원 목록 불러오는 중...' : (dataError ?? '회원 목록 없음') }}
+                  {{ membersLoading ? '회원 목록 불러오는 중…' : (dataError ?? '회원 목록 없음') }}
                 </span>
                 <Button v-if="!membersLoading" type="button" variant="outline" size="xs" @click="retryMembers">다시 시도</Button>
               </div>
@@ -158,7 +158,7 @@ async function handleLogin(e: Event): Promise<void> {
               </Alert>
             </div>
             <Button type="submit" class="w-full" :disabled="submitting || membersUnavailable">
-              {{ submitting ? '확인 중...' : '로그인' }}
+              {{ submitting ? '확인 중…' : '로그인' }}
             </Button>
             <p class="text-sm text-muted-foreground text-center">
               PIN 분실 시 관리자(서종환·조학영)에게 초기화 요청

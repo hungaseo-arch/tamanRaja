@@ -152,7 +152,7 @@ function netColorClass(v: number): string {
   return v >= 0 ? 'text-net-plus' : 'text-net-minus';
 }
 
-// 순위는 표 정렬과 분리돼 있다. 참석·기준 핸디로 정렬해도 순위는 그대로고,
+// 순위는 표 정렬과 분리돼 있다. 참석·기준핸디로 정렬해도 순위는 그대로고,
 // 평균 Net / 평균 스코어를 누를 때만 기준이 바뀐다.
 // 기준 지표가 같으면 나머지 지표로 가린다. 둘 다 같으면 동순위(공동 N위)다.
 function byRankingRule(a: YearlySummary, b: YearlySummary): number {
@@ -213,7 +213,7 @@ function setSort(key: SortKey): void {
     sortAsc.value = true; // 새 열은 항상 오름차순부터 (모든 지표가 낮을수록 좋다)
   }
   // 순위를 매길 수 있는 두 지표는 누르는 순간 랭킹 기준이 된다.
-  // 참석·기준 핸디는 순위 기준이 될 수 없으므로 직전 기준을 유지한다.
+  // 참석·기준핸디는 순위 기준이 될 수 없으므로 직전 기준을 유지한다.
   if (key === 'avg_net_score' || key === 'avg_score') rankBasis.value = key;
 }
 
@@ -289,7 +289,7 @@ const tableRows = computed<TableEntry[]>(() => {
 });
 
 // ── 줄 상세 (디스클로저) ─────────────────────────────────────────────────────
-// 좁은 화면에서는 기준 핸디와 Winner/Medalist/Host 열이 숨는다. 회원 이름을
+// 좁은 화면에서는 기준핸디와 Winner/Medalist/Host 열이 숨는다. 회원 이름을
 // 누르면 그 회원의 한 해 성적을 숨은 것까지 모아 보여 준다.
 // md 부터는 열이 전부 보여 창을 열어도 표와 같은 내용이라 아예 열지 않는다.
 const compact = useCompactTable('md');
@@ -470,7 +470,7 @@ function stickyTint(rank: number | null): string {
             <Table
               :scroll="false"
               class="text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
-              :caption="`${selectedYear}년 연간 랭킹 — ${rankBasisLabel} 낮은 순, 치른 ${yearMeetingCount}경기 중 50% 이상(${minRoundsNum}회) 참석자 대상`">
+              :caption="`${selectedYear}년 연간 랭킹 — ${rankBasisLabel} 낮은 순, 치른 ${yearMeetingCount}회 모임 중 50% 이상(${minRoundsNum}회) 참석자 대상`">
               <TableHeader>
                 <TableRow>
                   <!-- 가로 스크롤에도 순위·회원은 남는다.
@@ -492,10 +492,10 @@ function stickyTint(rank: number | null): string {
                     <button
                       type="button"
                       class="w-full h-full min-h-11 sm:min-h-0 px-1.5 sm:px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
-                      :aria-label="`참석 기준으로 정렬`"
+                      :aria-label="`참석 횟수 기준으로 정렬`"
                       @click="setSort('attended_count')"
                     >
-                      참석
+                      참석 횟수
                       <component
                         :is="sortKey !== 'attended_count' ? ChevronsUpDown : sortAsc ? ArrowUp : ArrowDown"
                         class="w-3 h-3"
@@ -512,10 +512,10 @@ function stickyTint(rank: number | null): string {
                     <button
                       type="button"
                       class="w-full h-full min-h-11 sm:min-h-0 px-1.5 sm:px-2 py-2.5 inline-flex items-center justify-center gap-1 select-none hover:text-primary"
-                      :aria-label="`기준 핸디 기준으로 정렬`"
+                      :aria-label="`기준핸디 기준으로 정렬`"
                       @click="setSort('std_hc')"
                     >
-                      기준 핸디
+                      기준핸디
                       <component
                         :is="sortKey !== 'std_hc' ? ChevronsUpDown : sortAsc ? ArrowUp : ArrowDown"
                         class="w-3 h-3"
@@ -650,7 +650,7 @@ function stickyTint(rank: number | null): string {
             <span v-else class="text-muted-foreground text-sm">50% 미만 참석 — 순위 제외</span>
           </DetailItem>
           <DetailItem label="참석 횟수">{{ detailEntry.row.attended_count }}회</DetailItem>
-          <DetailItem label="기준 핸디">
+          <DetailItem label="기준핸디">
             <span class="font-mono">{{ stdHcMap.get(detailEntry.row.member_id) ?? '-' }}</span>
           </DetailItem>
           <DetailItem label="평균 Net">
@@ -658,7 +658,7 @@ function stickyTint(rank: number | null): string {
               {{ formatNet(detailEntry.row.avg_net_score) }}
             </span>
           </DetailItem>
-          <DetailItem label="평균 스코어">
+          <DetailItem label="평균 스코어(오버파)">
             <span v-if="detailEntry.row.avg_score !== null" class="font-mono text-avg-score font-semibold">
               {{ detailEntry.row.avg_score.toFixed(1) }}
             </span>
@@ -684,9 +684,9 @@ function stickyTint(rank: number | null): string {
 
       <!-- 순위 부여 조건. 한 번 읽으면 되는 조건만 둔다. -->
       <p class="text-sm text-muted-foreground leading-relaxed">
-        {{ selectedYear }}년 치른 {{ yearMeetingCount }}경기 중
+        {{ selectedYear }}년 치른 {{ yearMeetingCount }}회 모임 중
         <strong class="text-foreground">50% 이상({{ minRoundsNum }}회)</strong> 참석한
-        회원에게만 순위 부여 · 참석·기준 핸디 정렬은 순위에 영향 없음 · 기준이 같으면 공동 순위
+        회원에게만 순위 부여 · 참석·기준핸디 정렬은 순위에 영향 없음 · 기준이 같으면 공동 순위
       </p>
     </div>
   </div>
