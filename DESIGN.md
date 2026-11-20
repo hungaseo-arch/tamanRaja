@@ -170,7 +170,10 @@ components:
 ### Do:
 - **Do** 숫자와 순위를 먼저 읽히게 하고, 숫자 칸에 `font-mono`를 쓴다.
 - **Do** 의미색은 `--net-plus` 같은 토큰으로만 쓰고, 부호·라벨을 함께 둔다(색만으로 뜻 전달 금지).
-- **Do** 터치 영역 44px 이상, 본문 14px 이상, 텍스트 대비 AA 4.5 이상을 목표로 한다. (현재 툴바 `size="xs"` 32px와 표 12px는 이 목표에 못 미침. 후속 점검 대상)
+- **Do** 터치 영역 44px 이상, 본문 14px 이상, 텍스트 대비 AA 4.5 이상을 목표로 한다. 예외로 표 안 라벨(11px)과 산정결과 표의 관리자 버튼(12px, 32px)은 밀도를 위해 작게 둔다.
+- **Do** 움직임은 `prefers-reduced-motion: reduce` 에서 전역으로 꺼진다(`index.css` base). 새 애니메이션도 이 규칙에 맡긴다.
+- **Do** 브라우저 표면 색(`theme-color`, manifest `theme_color`, favicon)은 `--primary`(#1b7e2a)와 같은 값을 쓴다.
+- **Do** 컨트롤(Input, Select, Button xs)은 14px, 본문은 16px이다. 산정결과 라벨은 한도 빨강, 부족 주황, 휴면 회색으로 구분한다.
 - **Do** 모달은 `body`로 옮겨지므로 화면 전용 변수가 아니라 `:root` 토큰을 쓴다.
 
 ### Don't:
