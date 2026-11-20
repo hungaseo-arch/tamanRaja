@@ -383,7 +383,6 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
               >
                 <button type="button" class="pp-sort" @click="setSort(c.key)">
                   {{ c.label }}
-                  <span v-if="sortKey === c.key" aria-hidden="true">{{ sortAsc ? '▲' : '▼' }}</span>
                 </button>
               </th>
             </tr>
@@ -587,9 +586,8 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 .pp-legend strong {
   color: var(--foreground);
 }
-/* 2027 제안이 최종 확인값이다. 기준 열보다 크고 옅은 배경으로 눈에 띄게 한다. */
+/* 2027 제안이 최종 확인값이다. 글자 크기는 다른 열과 같고 옅은 배경으로 구분한다. */
 .pp-results td.pp-proposal {
-  font-size: 1rem;
   background: color-mix(in oklch, var(--std-accent) 8%, transparent);
 }
 /* 모바일 전용 캡션: 숨은 열 값(2026 기준·증감)을 2027 기준 칸에 합쳐 보여 준다. 640px 이상은 열이 보이므로 숨긴다. */
@@ -619,7 +617,6 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   /* 2027 기준핸디 강조색 (보라) */
   color: var(--std-accent);
   font-weight: 700;
-  font-size: 0.875rem;
 }
 .pp-delta-label {
   display: inline;
