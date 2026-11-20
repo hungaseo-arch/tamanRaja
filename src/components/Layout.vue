@@ -64,6 +64,16 @@ const moreActive = computed(() => moreItems.value.some((item) => item.path === r
 // 상단 nav 는 lg(1024px) 이상에서만 쓴다. 그보다 좁으면 하단 탭 바가 대신한다.
 watch(() => route.path, () => { moreOpen.value = false; });
 
+// 스크롤 상자는 main 하나라 라우터의 scrollBehavior(window 대상)가 닿지 않는다.
+// 화면이 바뀌면 맨 위로 올리고 포커스도 본문으로 옮겨 낭독 위치를 초기화한다.
+const mainEl = ref<HTMLElement | null>(null);
+watch(() => route.path, () => {
+  const el = mainEl.value;
+  if (!el) return;
+  el.scrollTop = 0;
+  el.focus({ preventScroll: true });
+});
+
 // 해시 라우터라 href="#main-content" 를 그대로 두면 라우트가 바뀐다.
 // 기본 동작을 막고 본문으로 포커스만 옮긴다.
 function focusMain(): void {
@@ -160,10 +170,10 @@ function isActive(path: string): boolean {
          높이를 정하지 않고 내용만큼 길어지고, 넘치는 만큼 여기서 스크롤된다.
          가로 폭도 여기서 자르지 않는다 — 각 화면이 container … max-w-5xl 로
          스스로 정한다. 여기에 max-w 를 두면 그 선언이 조용히 무시된다. -->
-    <main id="main-content" tabindex="-1" class="focus:outline-none flex-1 min-h-0 overflow-y-auto w-full">
+    <main id="main-content" ref="mainEl" tabindex="-1" class="focus:outline-none flex-1 min-h-0 overflow-y-auto w-full">
       <slot />
     </main>
-    <footer class="shrink-0 text-center text-xs text-muted-foreground py-4 border-t border-border">
+    <footer class="hidden lg:block shrink-0 text-center text-sm text-muted-foreground py-4 border-t border-border">
       Copyright © ASEOA
     </footer>
 
@@ -179,11 +189,19 @@ function isActive(path: string): boolean {
           :key="item.path"
           :to="item.path"
           :class="cn(
-            'flex-1 min-w-0 flex flex-col items-center justify-start pt-1.5 gap-0.5 px-0.5 text-center text-sm whitespace-nowrap leading-tight font-medium transition-colors',
-            isActive(item.path) ? (item.accent ? 'text-warning' : 'text-primary') : 'text-muted-foreground hover:text-foreground'
+            'relative flex-1 min-w-0 flex flex-col items-center justify-start pt-1.5 gap-0.5 px-0.5 text-center text-sm whitespace-nowrap leading-tight transition-colors',
+            isActive(item.path)
+              ? cn('font-bold', item.accent ? 'text-warning' : 'text-primary')
+              : 'font-medium text-muted-foreground hover:text-foreground'
           )"
           :aria-current="isActive(item.path) ? 'page' : undefined"
-                  >
+        >
+          <!-- 색 외 단서: 활성 탭 상단 막대 + 굵은 글씨 -->
+          <span
+            v-if="isActive(item.path)"
+            :class="cn('absolute inset-x-3 top-0 h-1 rounded-b-full', item.accent ? 'bg-warning' : 'bg-primary')"
+            aria-hidden="true"
+          />
           <component :is="item.icon" class="w-5 h-5 shrink-0" aria-hidden="true" />
           <span class="max-w-full truncate">{{ item.tabLabel ?? item.label }}</span>
         </RouterLink>
@@ -191,13 +209,14 @@ function isActive(path: string): boolean {
           v-if="moreItems.length"
           type="button"
           :class="cn(
-            'flex-1 min-w-0 flex flex-col items-center justify-start pt-1.5 gap-0.5 px-0.5 text-center text-sm whitespace-nowrap leading-tight font-medium transition-colors',
-            moreActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+            'relative flex-1 min-w-0 flex flex-col items-center justify-start pt-1.5 gap-0.5 px-0.5 text-center text-sm whitespace-nowrap leading-tight transition-colors',
+            moreActive ? 'font-bold text-primary' : 'font-medium text-muted-foreground hover:text-foreground'
           )"
           aria-haspopup="dialog"
           :aria-expanded="moreOpen"
           @click="moreOpen = true"
         >
+          <span v-if="moreActive" class="absolute inset-x-3 top-0 h-1 rounded-b-full bg-primary" aria-hidden="true" />
           <Ellipsis class="w-5 h-5 shrink-0" aria-hidden="true" />
           더보기
         </button>
@@ -212,7 +231,7 @@ function isActive(path: string): boolean {
             :to="item.path"
             :class="cn(
               'flex min-h-11 items-center gap-3 rounded-md px-3 text-base font-medium transition-colors hover:bg-accent',
-              isActive(item.path) ? (item.accent ? 'text-warning' : 'text-primary') : 'text-foreground'
+              isActive(item.path) ? (item.accent ? 'bg-warning/10 font-bold text-warning' : 'bg-primary/10 font-bold text-primary') : 'text-foreground'
             )"
             :aria-current="isActive(item.path) ? 'page' : undefined"
           >
