@@ -588,10 +588,11 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 }
 /* 성명 칸의 배지는 작게 줄이고 줄바꿈 때 여백을 최소로 둔다. */
 .pp-results .policy-flag {
-  margin: 0.125rem 0.25rem 0.125rem 0;
-  padding: 0 0.25rem;
-  font-size: 0.75rem;
-  line-height: 1.4;
+  margin: 0.125rem 0.125rem 0.125rem 0;
+  padding: 0 0.1875rem;
+  border-radius: 0.1875rem;
+  font-size: 0.6875rem;
+  line-height: 1.25;
 }
 .pp-results thead th:first-child,
 .pp-results tbody th {
