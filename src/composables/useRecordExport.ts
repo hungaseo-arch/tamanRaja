@@ -112,7 +112,8 @@ export function useRecordExport() {
       r.member_name,
       r.attended_count,
       r.std_hc,
-      Number(r.avg_net_score.toFixed(2)),
+      // 평균 Net 을 못 받은 회원은 NaN 이므로 CSV 에는 빈 칸으로 낸다.
+      Number.isFinite(r.avg_net_score) ? Number(r.avg_net_score.toFixed(2)) : null,
       r.avg_score === null ? null : Number(r.avg_score.toFixed(1)),
       r.winner_count,
       r.medalist_count,
