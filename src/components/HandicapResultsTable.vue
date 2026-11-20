@@ -325,7 +325,7 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', warnBeforeUnloa
 
 const COLS: { key: SortKey; label: string; cls: string }[] = [
   { key: 'member_name', label: '성명', cls: '' },
-  { key: 'std_hc_2025', label: '2025 기준(연말)', cls: 'num pp-hide-sm' },
+  { key: 'std_hc_2025', label: '2025 기준', cls: 'num pp-hide-sm' },
   { key: 'prev_std_hc', label: '2026 기준', cls: 'num pp-hide-sm' },
   { key: 'std_hc', label: '2027 기준', cls: 'num pp-col-std' },
   { key: 'humanity', label: '인간미', cls: 'num pp-col-hum' },
@@ -524,7 +524,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 
     <RowDetailDialog v-model:open="dialogOpen" :title="selected?.member_name ?? ''" subtitle="2027 기준핸디 산정결과 (안)">
       <template v-if="selected">
-        <DetailItem label="2025 기준(연말)">{{ selected.std_hc_2025 ?? '—' }}</DetailItem>
+        <DetailItem label="2025 기준">{{ selected.std_hc_2025 ?? '—' }}</DetailItem>
         <DetailItem label="2026 기준">{{ selected.prev_std_hc ?? '—' }}</DetailItem>
         <DetailItem label="2027 기준(안)"><span class="pp-std">{{ selected.std_hc }}</span></DetailItem>
         <DetailItem label="인간미">{{ selected.humanity == null ? '—' : fmtSignedInt(selected.humanity) }}</DetailItem>
