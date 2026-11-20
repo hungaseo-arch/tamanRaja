@@ -224,12 +224,7 @@ async function loadCourseRatings(): Promise<void> {
     <div class="container mx-auto px-4 max-w-5xl py-2 space-y-3">
       <header class="space-y-2">
         <h1 class="text-lg font-bold">27년 핸디캡 (안)</h1>
-        <!-- 확정 전 안(案)임을 페이지 맨 위에서 밝힌다. 색만으로 전달하지 않도록 문구가 본체다. -->
-        <p class="policy-status" role="status">
-          <span class="policy-status-dot" aria-hidden="true" />
-          2027년 적용(안) · 2026-11-08 기준 · 회원 확정 전
-        </p>
-        <p class="text-sm leading-relaxed">
+        <p class="body-indent text-sm leading-relaxed">
           2027년 기준핸디 산정 방식과 회원별 산출 근거 공개 자료. 내용은 <strong>확정 전 안(案)</strong>이며
           회원 확정 전 변경 가능
         </p>
@@ -674,25 +669,6 @@ async function loadCourseRatings(): Promise<void> {
 .policy-page h1,
 .policy-page h2 {
   color: var(--pp-text);
-}
-.policy-status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0;
-  padding: 0.35rem 0.75rem;
-  border: 1px solid var(--primary);
-  border-radius: 999px;
-  background: var(--pp-sage);
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--primary);
-}
-.policy-status-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 999px;
-  background: var(--primary);
 }
 
 .policy-section {

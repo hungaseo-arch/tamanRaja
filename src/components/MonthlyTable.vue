@@ -564,7 +564,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
 
         <!-- 그달 요약. 제목과 컨트롤 사이 가운데에 놓는다(mx-auto 가 남는 폭을
              양쪽으로 나눠 가진다). 좁은 화면에서는 줄이 접혀 제목 아래로
-             내려가고, Winner·Medalist 는 sm 미만에서 숨는다. -->
+             내려간다. Winner·Medalist 는 편집 중에만 sm 미만에서 숨는다. -->
         <div v-if="isFutureMonth" class="mx-auto flex items-center gap-1.5 text-sm">
           <span class="font-medium text-muted-foreground whitespace-nowrap">참석 예정 인원</span>
           <span class="font-bold">{{ futureAttendedCount }}명</span>

@@ -4,15 +4,9 @@ import { supabase } from '@/lib/supabase';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
 import AsyncState from '@/components/ui/AsyncState.vue';
-import Table from '@/components/ui/Table.vue';
-import TableHeader from '@/components/ui/TableHeader.vue';
-import TableBody from '@/components/ui/TableBody.vue';
-import TableRow from '@/components/ui/TableRow.vue';
-import TableHead from '@/components/ui/TableHead.vue';
-import TableCell from '@/components/ui/TableCell.vue';
 
 // 나의 기록 : 연도별 기준핸디 추이. handicap_annual 의 본인 행만 읽는다 (DB 변경 없음).
-// 확정 전(draft) 연도는 '확정 전' 으로 표시한다. 본인 행이 하나도 없으면 카드는 두고 안내 한 줄을 보인다.
+// 표 없이 꺾은선 그래프만 둔다. 확정 전(draft) 연도는 속이 빈 점으로 표시한다. 본인 행이 하나도 없으면 카드는 두고 안내 한 줄을 보인다.
 const props = defineProps<{ memberId: string | number }>();
 
 interface YearRow {
@@ -58,22 +52,8 @@ async function load(): Promise<void> {
 onMounted(load);
 watch(() => props.memberId, load);
 
-/** 표에 보이는 줄: 전년 대비 증감을 함께 계산한다 (전년 기준핸디가 비면 바로 앞 연도 값을 쓴다). */
-const view = computed(() =>
-  rows.value.map((r, i) => {
-    const base = r.prev_std_hc ?? (i > 0 ? rows.value[i - 1].std_hc : null);
-    return { ...r, delta: base === null ? null : r.std_hc - base, draft: r.status !== 'confirmed' };
-  }),
-);
-
-function fmtDelta(d: number | null): string {
-  if (d === null) return '—';
-  if (d === 0) return '0';
-  return `${d > 0 ? '+' : '−'}${Math.abs(d)}`;
-}
-function deltaLabel(d: number | null): string {
-  return d === null || d === 0 ? '' : d > 0 ? '인상' : '인하';
-}
+/** 그래프에 그리는 줄. 확정되지 않은 연도는 draft 로 표시한다. */
+const view = computed(() => rows.value.map((r) => ({ ...r, draft: r.status !== 'confirmed' })));
 
 // 꺾은선: 가로는 연도 순서, 세로는 핸디 (값이 클수록 위). 점이 하나여도 그린다.
 const W = 300;
@@ -122,7 +102,7 @@ const ariaLabel = computed(
         <template v-if="chart">
           <svg
             :viewBox="`0 0 ${W} ${H}`"
-            class="block w-full max-w-md h-auto mx-auto mb-2 text-primary"
+            class="block w-full max-w-md h-auto mx-auto text-primary"
             role="img"
             :aria-label="ariaLabel"
             preserveAspectRatio="xMidYMid meet"
@@ -139,27 +119,6 @@ const ariaLabel = computed(
               <text :x="p.x" :y="H - 1" text-anchor="middle" class="fill-muted-foreground text-xs">{{ p.year }}</text>
             </g>
           </svg>
-          <Table :scroll="false" class="text-sm" caption="연도별 기준핸디와 전년 대비 증감">
-            <TableHeader>
-              <TableRow>
-                <TableHead class="static text-center font-semibold text-foreground px-1.5 py-1.5">연도</TableHead>
-                <TableHead class="static text-center font-semibold text-foreground px-1.5 py-1.5">기준핸디</TableHead>
-                <TableHead class="static text-center font-semibold text-foreground px-1.5 py-1.5">전년 대비</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody class="[&_tr:last-child>th]:border-0">
-              <TableRow v-for="r in view" :key="r.year">
-                <TableHead scope="row" class="static text-center px-1.5 py-1.5 font-bold text-foreground">
-                  {{ r.year }}<span v-if="r.draft" class="ml-1 text-xs text-muted-foreground">확정 전</span>
-                </TableHead>
-                <TableCell class="text-center font-mono font-bold px-1.5 py-1.5">{{ r.std_hc }}</TableCell>
-                <TableCell class="text-center font-mono px-1.5 py-1.5">
-                  {{ fmtDelta(r.delta) }}<span v-if="deltaLabel(r.delta)" class="ml-1 font-sans text-xs text-muted-foreground">{{ deltaLabel(r.delta) }}</span>
-                </TableCell>
-              </TableRow>
-            </TableBody>
-          </Table>
-          <p v-if="view.some((r) => r.draft)" class="text-xs text-muted-foreground m-0 mt-1">'확정 전' 표시 연도는 변경 가능한 값</p>
         </template>
       </AsyncState>
     </CardContent>
