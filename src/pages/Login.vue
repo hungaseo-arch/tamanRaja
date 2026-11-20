@@ -129,6 +129,7 @@ async function handleLogin(e: Event): Promise<void> {
             </div>
             <div class="space-y-2">
               <Label for="pin-input">PIN 입력</Label>
+              <p class="text-sm text-muted-foreground">처음이면 관리자에게 받은 임시 PIN 입력</p>
               <Input
                 id="pin-input"
                 ref="pinInput"

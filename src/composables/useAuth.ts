@@ -82,7 +82,7 @@ export function describeLoginError(result: Exclude<LoginResult, { ok: true }>): 
 export function describeChangePinError(result: Exclude<ChangePinResult, { ok: true }>): string {
   switch (result.reason) {
     case 'invalid':
-      return '기존 PIN 불일치';
+      return '기존 PIN 불일치 · 임시 PIN은 관리자에게 받은 4자리';
     case 'same':
       return '새 PIN이 기존 PIN과 같음';
     case 'weak':

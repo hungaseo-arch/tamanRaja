@@ -103,6 +103,7 @@ async function handleSubmit(e: Event): Promise<void> {
 
 <template>
   <form class="space-y-6" @submit="handleSubmit">
+    <p class="text-sm text-muted-foreground">본인만 아는 4자리 · 1111, 1234 같은 쉬운 숫자는 불가</p>
     <div class="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
       <Label for="old-pin" class="sm:w-20 shrink-0 sm:text-right">{{ oldLabel }}</Label>
       <Input
