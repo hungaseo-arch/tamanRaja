@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { PostgrestClient } from '@supabase/postgrest-js';
 import { getSessionToken } from './session';
 
 // 세션 토큰 전달 헤더. PostgREST 가 요청 헤더를 request.headers GUC 에 실어주므로
@@ -20,12 +20,14 @@ function fetchWithSession(input: RequestInfo | URL, init: RequestInit = {}): Pro
   return fetch(input, { ...init, headers });
 }
 
-export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL,
-  import.meta.env.VITE_SUPABASE_ANON_KEY,
-  {
-    // Supabase Auth 는 쓰지 않는다. 인증은 verify_pin RPC + 자체 세션 토큰이다.
-    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
-    global: { fetch: fetchWithSession },
-  },
-);
+// 앱이 쓰는 것은 from()·rpc() 뿐이다. supabase-js 전체(auth·storage·realtime)를
+// 끌어오면 첫 화면 번들이 두 배가 되므로 PostgREST 클라이언트만 쓴다.
+// supabase-js 와 같은 헤더(apikey, Authorization: 익명 키)를 직접 붙인다.
+// Supabase Auth 는 쓰지 않는다. 인증은 verify_pin RPC + 자체 세션 토큰이다.
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+export const supabase = new PostgrestClient(`${SUPABASE_URL}/rest/v1`, {
+  headers: { apikey: SUPABASE_ANON_KEY, Authorization: `Bearer ${SUPABASE_ANON_KEY}` },
+  fetch: fetchWithSession,
+});
