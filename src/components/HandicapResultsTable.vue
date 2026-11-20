@@ -325,14 +325,14 @@ onBeforeUnmount(() => window.removeEventListener('beforeunload', warnBeforeUnloa
 
 const COLS: { key: SortKey; label: string; cls: string }[] = [
   { key: 'member_name', label: '성명', cls: '' },
-  { key: 'std_hc_2025', label: '2025 기준', cls: 'num pp-hide-sm' },
-  { key: 'prev_std_hc', label: '2026 기준', cls: 'num pp-hide-sm' },
-  { key: 'std_hc', label: '2027 기준', cls: 'num pp-col-std' },
+  { key: 'std_hc_2025', label: '25년 기준', cls: 'num pp-hide-sm' },
+  { key: 'prev_std_hc', label: '26년 기준', cls: 'num pp-hide-sm' },
+  { key: 'std_hc', label: '27년 기준', cls: 'num pp-col-std' },
   { key: 'humanity', label: '인간미', cls: 'num pp-col-hum' },
-  { key: 'proposal', label: '2027 제안', cls: 'num pp-col-std pp-col-proposal' },
+  { key: 'proposal', label: '27년 제안', cls: 'num pp-col-std pp-col-proposal' },
   { key: 'final_delta', label: '증감', cls: 'num pp-hide-sm' },
   { key: 'w_avg', label: '가중평균 오버파', cls: 'num pp-hide-sm' },
-  { key: 'attend_rate', label: '2026 참석률', cls: 'num pp-hide-sm' },
+  { key: 'attend_rate', label: '26년 참석률', cls: 'num pp-hide-sm' },
 ];
 </script>
 
@@ -346,7 +346,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
       label="산정결과"
       :skeleton-rows="8"
       empty-title="표시할 산정결과 없음"
-      empty-hint="2027 산정결과가 등록되면 표시 · 관리자에게 문의"
+      empty-hint="27년 산정결과가 등록되면 표시 · 관리자에게 문의"
       @retry="load"
     >
       <!-- 관리자 버튼은 표 오른쪽 끝에 맞춘다. -->
@@ -366,7 +366,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
       </div>
       <!-- 열·색·배지 뜻은 표 바로 위에서 밝힌다. 모바일은 title 이 보이지 않으므로 글자로 둔다. -->
       <ul class="pp-legend">
-        <li><strong>2027 제안</strong> = 2027 기준 + 인간미. 인간미는 운영진이 −2 ~ +2 정수로 가감하는 보정값</li>
+        <li><strong>27년 제안</strong> = 27년 기준 + 인간미. 인간미는 운영진이 −2 ~ +2 정수로 가감하는 보정값</li>
         <li><span class="pp-up">빨강 인상</span> = 타수를 더 받는 쪽(유리), <span class="pp-down">파랑 인하</span> = 타수를 덜 받는 쪽</li>
         <li><strong>한도</strong> 증감 한도 적용 · <strong>부족</strong> 표본 부족(가중 라운드 3.00 미만) · <strong>휴면</strong> 복귀 전 참고값</li>
       </ul>
@@ -522,20 +522,20 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
       </div>
     </Dialog>
 
-    <RowDetailDialog v-model:open="dialogOpen" :title="selected?.member_name ?? ''" subtitle="2027 기준핸디 산정결과 (안)">
+    <RowDetailDialog v-model:open="dialogOpen" :title="selected?.member_name ?? ''" subtitle="27년 기준핸디 산정결과 (안)">
       <template v-if="selected">
-        <DetailItem label="2025 기준">{{ selected.std_hc_2025 ?? '—' }}</DetailItem>
-        <DetailItem label="2026 기준">{{ selected.prev_std_hc ?? '—' }}</DetailItem>
-        <DetailItem label="2027 기준(안)"><span class="pp-std">{{ selected.std_hc }}</span></DetailItem>
+        <DetailItem label="25년 기준">{{ selected.std_hc_2025 ?? '—' }}</DetailItem>
+        <DetailItem label="26년 기준">{{ selected.prev_std_hc ?? '—' }}</DetailItem>
+        <DetailItem label="27년 기준(안)"><span class="pp-std">{{ selected.std_hc }}</span></DetailItem>
         <DetailItem label="인간미">{{ selected.humanity == null ? '—' : fmtSignedInt(selected.humanity) }}</DetailItem>
-        <DetailItem label="2027 제안(안)"><span class="pp-std">{{ proposalOf(selected) }}</span></DetailItem>
+        <DetailItem label="27년 제안(안)"><span class="pp-std">{{ proposalOf(selected) }}</span></DetailItem>
         <DetailItem label="증감">
           <span :class="deltaClass(selected.final_delta)">
             {{ fmtSigned2(selected.final_delta) }} {{ deltaLabel(selected.final_delta) }}
           </span>
         </DetailItem>
         <DetailItem label="가중평균 오버파">{{ fmt(selected.w_avg) }}</DetailItem>
-        <DetailItem label="2026 참석률">
+        <DetailItem label="26년 참석률">
           {{ fmt(selected.attend_rate) }}%
         </DetailItem>
         <DetailItem label="A 구간 평균">{{ fmt(selected.avg_a) }}</DetailItem>
