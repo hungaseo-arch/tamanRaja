@@ -95,10 +95,15 @@ function isActive(path: string): boolean {
                제목을 숨기지 않는다 (기존에는 sm 미만에서 통째로 사라졌다). -->
           <!-- 사이트 이름은 h1 이 아니다. h1 은 각 페이지가 "무슨 화면인지"를
                말하는 데 쓴다 — 여기에 h1 을 두면 페이지마다 h1 이 둘이 된다. -->
-          <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+          <!-- 누르면 홈 화면으로 간다. 홈 경로가 메인 화면으로 이어 준다. -->
+          <RouterLink
+            :to="ROUTE_PATHS.HOME"
+            class="flex items-center gap-2 sm:gap-3 min-w-0 text-foreground no-underline hover:opacity-80"
+            aria-label="따만라자 모임 홈으로 이동"
+          >
             <span class="text-2xl sm:text-4xl shrink-0" aria-hidden="true">🏌️</span>
-            <span class="text-base sm:text-xl font-bold text-foreground whitespace-nowrap truncate">따만라자 모임</span>
-          </div>
+            <span class="text-base sm:text-xl font-bold whitespace-nowrap truncate">따만라자 모임</span>
+          </RouterLink>
 
           <!-- 네비게이션 (lg 이상). 그보다 좁으면 하단 탭 바가 대신한다. -->
           <nav class="hidden lg:flex flex-1 min-w-0 items-center justify-center gap-1 px-2 xl:px-6" aria-label="주요 메뉴">
