@@ -224,7 +224,7 @@ async function loadCourseRatings(): Promise<void> {
     <div class="container mx-auto px-4 max-w-5xl py-2 space-y-3">
       <header class="space-y-2">
         <h1 class="text-lg font-bold">27년 핸디캡 (안)</h1>
-        <p class="body-indent text-sm leading-relaxed">
+        <p class="text-sm leading-relaxed">
           2027년 기준핸디 산정 방식과 회원별 산출 근거 공개 자료. 내용은 <strong>확정 전 안(案)</strong>이며
           회원 확정 전 변경 가능
         </p>
@@ -717,6 +717,12 @@ async function loadCourseRatings(): Promise<void> {
 }
 .policy-lead {
   margin: 0 0 0.75rem;
+}
+/* 섹션 번호 원(너비 1.5rem, 헤더 좌측 여백 0.875rem)의 가로 중심에서 글이 시작되도록
+   본문 안내 문단만 0.75rem 안쪽으로 들인다. */
+.policy-body > .policy-lead,
+.policy-body > .policy-note {
+  margin-left: 0.75rem;
 }
 .policy-card {
   padding: 0.625rem 0.75rem;

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, reactive, ref, watch } from 'vue';
-import { CalendarCheck, ChevronLeft, ChevronRight, CircleHelp, Download } from 'lucide-vue-next';
+import { CalendarCheck, CircleHelp, Download } from 'lucide-vue-next';
 import type { MonthlyRow, ResultRank, ResultGroup } from '@/lib';
 import { formatDate, formatMeetingHeading, formatYearMonth } from '@/lib/format';
 import { cn } from '@/lib/utils';
@@ -53,9 +53,6 @@ interface Props {
   canUnlock?: boolean;
   selectedMonth: string;
   monthOptions: SelectOption[];
-  // 고를 수 있는 바로 이전·다음 달. 없으면 null 이고 이동 버튼은 비활성화된다.
-  prevMonth?: string | null;
-  nextMonth?: string | null;
   selectedYear: string;
   yearOptions: SelectOption[];
   manualDate: string;
@@ -654,20 +651,9 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             :options="yearOptions"
             placeholder=""
             size="xs"
-            class="w-28 sm:w-22 shrink-0"
+            class="w-22 sm:w-20 shrink-0"
           />
         </template>
-        <Button
-          variant="outline"
-          size="xs"
-          class="w-11 px-0 shrink-0 sm:w-8"
-          :disabled="!props.prevMonth"
-          aria-label="이전 달"
-          title="이전 달"
-          @click="props.prevMonth && emit('update:selectedMonth', props.prevMonth)"
-        >
-          <ChevronLeft class="w-4 h-4" aria-hidden="true" />
-        </Button>
         <label for="monthly-month" class="sr-only">조회할 월</label>
         <Select
           id="monthly-month"
@@ -676,19 +662,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           :options="monthOptions"
           placeholder="월 선택"
           size="xs"
-          class="w-24 sm:w-18 shrink-0"
+          class="w-18 sm:w-16 shrink-0"
         />
-        <Button
-          variant="outline"
-          size="xs"
-          class="w-11 px-0 shrink-0 sm:w-8"
-          :disabled="!props.nextMonth"
-          aria-label="다음 달"
-          title="다음 달"
-          @click="props.nextMonth && emit('update:selectedMonth', props.nextMonth)"
-        >
-          <ChevronRight class="w-4 h-4" aria-hidden="true" />
-        </Button>
 
         <!-- 엑셀(CSV) 다운로드 — 해당 연도 전체 기록.
              좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->
@@ -755,12 +730,6 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                좁은 화면의 편집 모드만 표가 스스로 옆으로 민다 — 입력칸이 붙어
                최소 폭이 화면보다 넓어지는데, 페이지째 밀리면 저장 버튼까지
                화면 밖으로 나간다. 회원 열은 sticky 라 그대로 남는다. (3-3) -->
-          <!-- NET 은 낮을수록 좋다. 색(파랑 +, 주황 −)만으로 읽히지 않게 표 바로 위에 적는다.
-               상세 단서는 숨은 열이 있는 폭(compact)·읽기 모드에서만 둔다. -->
-          <p class="mb-1 px-2 text-sm text-muted-foreground">NET 스코어 = 스코어 − 당월 핸디 · 낮을수록 좋음</p>
-          <p v-if="compact && !isEditing" class="mb-2 px-2 text-sm text-muted-foreground">
-            이름을 누르면 숨은 열까지 상세 표시<template v-if="attendanceMemberId"> · 내 이름은 참석 창 열림</template>
-          </p>
           <Table
             :scroll="tableScrolls"
             class="text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
@@ -1002,53 +971,57 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
          (src/data/index.ts, DB recompute_next_hc) 과 어긋나면 이쪽을 고친다. -->
     <Dialog v-model:open="showHcHelp" label="핸디 규칙" content-class="sm:max-w-lg">
       <DialogTitle>핸디 규칙</DialogTitle>
-      <div class="space-y-4 text-sm">
+      <div class="space-y-4 text-[13px] leading-relaxed">
         <section class="space-y-1.5">
-          <h3 class="font-semibold">용어</h3>
-          <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
-            <li><b class="text-foreground">기준 핸디</b> — 매년 1월에 새로 정하는 그 해의 기본 핸디</li>
-            <li><b class="text-foreground">당월 핸디</b> — 이달 경기에 적용하는 핸디 · NET = 스코어 − 당월 핸디</li>
-            <li><b class="text-foreground">차월 핸디</b> — 이달 결과로 정해지는 다음 달의 당월 핸디</li>
-            <li><b class="text-foreground">조 편성</b> — NET 이 낮은 순으로 참석자 절반이 1등조, 나머지가 2등조</li>
-          </ul>
+          <h3 class="text-sm font-semibold m-0">용어</h3>
+          <dl class="grid grid-cols-[4.5rem_1fr] gap-x-3 gap-y-1.5 m-0 text-muted-foreground">
+            <dt class="font-semibold text-foreground">기준 핸디</dt>
+            <dd class="m-0">매년 1월에 새로 정하는 그 해의 기본 핸디</dd>
+            <dt class="font-semibold text-foreground">당월 핸디</dt>
+            <dd class="m-0">이달 경기에 적용하는 핸디. NET = 스코어 − 당월 핸디</dd>
+            <dt class="font-semibold text-foreground">차월 핸디</dt>
+            <dd class="m-0">이달 결과로 정해지는 다음 달의 당월 핸디</dd>
+            <dt class="font-semibold text-foreground">조 편성</dt>
+            <dd class="m-0">NET 이 낮은 순으로 참석자 절반이 1등조, 나머지가 2등조</dd>
+          </dl>
         </section>
 
         <section class="space-y-1.5">
-          <h3 class="font-semibold">차월 핸디 정하기</h3>
-          <div class="overflow-x-auto">
-            <table class="w-full text-sm border-collapse">
+          <h3 class="text-sm font-semibold m-0">차월 핸디 정하기</h3>
+          <div class="overflow-x-auto rounded-md border">
+            <table class="w-full border-collapse text-[13px]">
               <thead>
-                <tr class="border-b">
-                  <th class="py-1 pr-2 text-left font-semibold">직전 라운드</th>
-                  <th class="py-1 pr-2 text-left font-semibold">이번 달</th>
-                  <th class="py-1 text-left font-semibold">차월 핸디</th>
+                <tr class="bg-muted/50 border-b">
+                  <th class="px-2 py-1.5 text-left font-semibold">직전 라운드</th>
+                  <th class="px-2 py-1.5 text-left font-semibold">이번 달</th>
+                  <th class="px-2 py-1.5 text-left font-semibold">차월 핸디</th>
                 </tr>
               </thead>
               <tbody class="text-muted-foreground">
                 <tr class="border-b">
-                  <td class="py-1 pr-2">1등조</td><td class="py-1 pr-2">1등조</td>
-                  <td class="py-1 text-foreground">당월 핸디 − 1</td>
+                  <td class="px-2 py-1.5">1등조</td><td class="px-2 py-1.5">1등조</td>
+                  <td class="px-2 py-1.5 text-foreground">당월 핸디 − 1</td>
                 </tr>
                 <tr class="border-b">
-                  <td class="py-1 pr-2">2등조</td><td class="py-1 pr-2">2등조</td>
-                  <td class="py-1 text-foreground">당월 핸디 + 1</td>
+                  <td class="px-2 py-1.5">2등조</td><td class="px-2 py-1.5">2등조</td>
+                  <td class="px-2 py-1.5 text-foreground">당월 핸디 + 1</td>
                 </tr>
                 <tr class="border-b">
-                  <td class="py-1 pr-2">1등조</td><td class="py-1 pr-2">2등조</td>
-                  <td class="py-1 text-foreground">기준 핸디로 복귀</td>
+                  <td class="px-2 py-1.5">1등조</td><td class="px-2 py-1.5">2등조</td>
+                  <td class="px-2 py-1.5 text-foreground">기준 핸디로 복귀</td>
                 </tr>
                 <tr>
-                  <td class="py-1 pr-2">2등조</td><td class="py-1 pr-2">1등조</td>
-                  <td class="py-1 text-foreground">기준 핸디로 복귀</td>
+                  <td class="px-2 py-1.5">2등조</td><td class="px-2 py-1.5">1등조</td>
+                  <td class="px-2 py-1.5 text-foreground">기준 핸디로 복귀</td>
                 </tr>
               </tbody>
             </table>
           </div>
-          <ul class="list-disc pl-5 space-y-1 text-muted-foreground">
+          <ul class="list-disc pl-5 space-y-1 m-0 text-muted-foreground">
             <li>홀수 핸디도 그대로 인정</li>
-            <li>계속 1등조라 핸디가 내려가 있어도 <b class="text-foreground">단 한 번</b> 2등조에 들면 기준 핸디로 복귀 · 2등조도 반대로 동일</li>
-            <li><b class="text-foreground">기준 핸디로 복귀하면 모든 것을 초기화</b> · 당월 핸디가 기준 핸디와 같은 달(매년 1월, 기준 핸디를 새로 정한 달, 조 변경으로 복귀한 다음 달)은 직전 라운드와 견주지 않고 그 달 결과만으로 ±1</li>
-            <li>"직전 라운드" = 마지막으로 조에 편성된 달 · 불참한 달은 건너뛰고 비교</li>
+            <li>계속 1등조라 핸디가 내려가 있어도 <b class="text-foreground">단 한 번</b> 2등조에 들면 기준 핸디로 복귀. 2등조도 반대로 동일</li>
+            <li><b class="text-foreground">기준 핸디로 복귀하면 모든 것을 초기화</b>. 당월 핸디가 기준 핸디와 같은 달(매년 1월, 기준 핸디를 새로 정한 달, 조 변경으로 복귀한 다음 달)은 직전 라운드와 견주지 않고 그 달 결과만으로 ±1</li>
+            <li>"직전 라운드" = 마지막으로 조에 편성된 달. 불참한 달은 건너뛰고 비교</li>
             <li>불참한 달은 당월 핸디를 그대로 다음 달로 이월</li>
           </ul>
         </section>

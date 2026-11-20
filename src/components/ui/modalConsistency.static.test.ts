@@ -16,8 +16,9 @@ const attendance = read('components/AttendancePanel.vue');
 const monthlyTable = read('components/MonthlyTable.vue');
 
 describe('컨트롤 글자 크기', () => {
-  it('Button xs·Select·Input 은 모든 폭에서 text-sm (16px 본문보다 2px 작게)', () => {
-    expect(button).toMatch(/xs: '[^']*\btext-sm\b[^']*'/);
+  it('Button xs·Select 는 모든 폭에서 13px, Input 은 text-base 가 아니다', () => {
+    expect(button).toMatch(/xs: '[^']*text-\[13px\][^']*'/);
+    expect(select).toMatch(/xs: '[^']*text-\[13px\]/);
     expect(button).not.toMatch(/xs: '[^']*sm:text-xs/);
     expect(select).not.toContain('text-base');
     expect(select).not.toContain('sm:text-xs');

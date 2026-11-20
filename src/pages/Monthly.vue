@@ -149,11 +149,6 @@ const monthOptions = computed(() =>
 const sortedSelectable = computed(() =>
   [...new Set([...existingMonths.value, ...SELECTABLE])].sort(),
 );
-const prevMonth = computed(() => {
-  const older = sortedSelectable.value.filter((ym) => ym < selectedMonth.value);
-  return older.length ? older[older.length - 1]! : null;
-});
-const nextMonth = computed(() => sortedSelectable.value.find((ym) => ym > selectedMonth.value) ?? null);
 
 // 직접 입력 (Supabase 미팅 없는 달, 또는 저장된 미래월 편집용)
 const manualDate = ref('');
@@ -342,8 +337,6 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
           v-model:selected-year="selectedYear"
           :year-options="yearOptions"
           :month-options="monthOptions"
-          :prev-month="prevMonth"
-          :next-month="nextMonth"
           v-model:manual-date="manualDate"
           v-model:manual-course="manualCourse"
           :save-state="saveState"

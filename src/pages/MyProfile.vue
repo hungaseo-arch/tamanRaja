@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { Download } from 'lucide-vue-next';
 import { useAuth } from '@/composables/useAuth';
 import { useRecordExport } from '@/composables/useRecordExport';
@@ -277,13 +277,6 @@ function handleExport(): void {
             </CardContent>
           </Card>
         </div>
-
-        <!-- 시상 카드 설명. 용어만 있으면 무엇을 센 횟수인지 알 수 없다. -->
-        <p class="text-sm text-muted-foreground leading-relaxed">
-          Winner·Medalist·Host 는 월례회 시상 횟수. 시상 기준과 핸디 반영은
-          <RouterLink :to="ROUTE_PATHS.HANDICAP_POLICY" class="text-primary underline underline-offset-4">27년 핸디캡 (안)</RouterLink>
-          참고
-        </p>
 
         <!-- 연도별 기준핸디 추이 (선택한 연도와 무관하게 전체 연도) -->
         <MemberHandicapTrend :member-id="currentMember.id" />
