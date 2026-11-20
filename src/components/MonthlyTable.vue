@@ -584,7 +584,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         <!-- 컨트롤은 한 덩어리다. 낱개로 두면 좁은 폭에서 줄이 접힐 때
              왼쪽으로 흩어져 제목 아래에 아무렇게나 붙는다. 오른쪽 끝은
              가운데 요약의 mx-auto 가 밀어 준다. -->
-        <div class="flex flex-wrap items-center justify-end gap-2">
+        <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
         <!-- 연월 입력창 / 골프장명 (미래달) / 저장·수정 (관리자) -->
         <template v-if="canManage">
           <template v-if="isFutureMonth">
@@ -634,9 +634,9 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             :disabled="props.saveState === 'saving'"
             @click="requestCancel"
           >취소</Button>
-          <Button v-else size="xs" variant="outline" class="shrink-0" @click="enterEdit">수정</Button>
+          <Button v-else size="xs" variant="outline" class="flex-1 sm:flex-none" @click="enterEdit">수정</Button>
         </template>
-        <Button v-else-if="showUnlock" size="xs" variant="outline" class="shrink-0" @click="openUnlock">
+        <Button v-else-if="showUnlock" size="xs" variant="outline" class="flex-[2] sm:flex-none" @click="openUnlock">
           잠금 해제 후 수정
         </Button>
 
@@ -651,7 +651,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             :options="yearOptions"
             placeholder=""
             size="xs"
-            class="w-22 sm:w-20 shrink-0"
+            class="min-w-22 flex-1 sm:w-20 sm:min-w-0 sm:flex-none"
           />
         </template>
         <label for="monthly-month" class="sr-only">조회할 월</label>
@@ -662,7 +662,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           :options="monthOptions"
           placeholder="월 선택"
           size="xs"
-          class="w-18 sm:w-16 shrink-0"
+          class="min-w-18 flex-1 sm:w-16 sm:min-w-0 sm:flex-none"
         />
 
         <!-- 엑셀(CSV) 다운로드 — 해당 연도 전체 기록.
