@@ -349,12 +349,9 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
       empty-hint="2027 산정결과가 등록되면 표시 · 관리자에게 문의"
       @retry="load"
     >
-      <!-- 안내 문장과 관리자 버튼을 한 줄에 둔다. 버튼은 표 오른쪽 끝에 맞춘다. -->
-      <div class="pp-head-row">
-        <p class="policy-note pp-head-note">
-          성명 선택 시 산정 근거(구간별 평균·가중 라운드·시상보정·산출핸디 등) 창 표시. 열 제목 선택 시 정렬 변경
-        </p>
-        <div v-if="isAdmin" class="pp-edit-bar">
+      <!-- 관리자 버튼은 표 오른쪽 끝에 맞춘다. -->
+      <div v-if="isAdmin" class="pp-head-row">
+        <div class="pp-edit-bar">
           <template v-if="!editing">
             <Button variant="outline" size="xs" class="h-8 px-2 text-xs" @click="startEdit()">인간미 수정</Button>
           </template>
@@ -688,12 +685,9 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
+  justify-content: flex-end;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
-}
-.pp-head-note {
-  flex: 1 1 16rem;
-  margin: 0;
 }
 .pp-edit-bar {
   display: flex;
