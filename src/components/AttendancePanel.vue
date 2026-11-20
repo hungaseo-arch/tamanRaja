@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
+import { Check } from 'lucide-vue-next';
+import { nextRovingIndex } from '@/components/ui/roving';
 import type { SessionMember } from '@/lib/session';
 import { formatValue } from '@/lib/format';
 import { resolveHandicap } from '@/data';
@@ -32,6 +34,24 @@ const emit = defineEmits<{
 // 창이 닫히면 Dialog 가 내용을 통째로 지우므로(v-if), 이 패널은 열릴 때마다
 // 새로 만들어진다. 현재 값은 여기서 한 번만 받아 두면 된다.
 const attended = ref<boolean | null>(props.currentAttended);
+
+// 참석/미정/불참 라디오. 미정(null)도 하나의 값이라 항상 하나가 선택돼 있고,
+// 선택된 버튼만 tabindex 0 이다.
+const options: { value: boolean | null; label: string; emoji: string }[] = [
+  { value: true, label: '참석', emoji: '✅' },
+  { value: null, label: '미정', emoji: '🤔' },
+  { value: false, label: '불참', emoji: '❌' },
+];
+const radioRefs = ref<HTMLButtonElement[]>([]);
+
+function onRadioKeydown(e: KeyboardEvent): void {
+  const current = options.findIndex((o) => o.value === attended.value);
+  const next = nextRovingIndex(e.key, current, options.length);
+  if (next === null) return;
+  e.preventDefault();
+  attended.value = options[next].value;
+  void nextTick(() => radioRefs.value[next]?.focus());
+}
 
 // 이전 달(현재달) 핸디캡 → 기준 핸디 / 차월 핸디 표시
 const prevYM = computed(() => {
@@ -76,33 +96,40 @@ function handleSubmit(e: Event): void {
 
     <!-- 참석 / 미정 / 불참 선택 -->
     <p class="text-sm text-center text-muted-foreground">{{ yearMonth }} 참석 여부 선택</p>
-    <div class="grid grid-cols-3 gap-2">
+    <div
+      class="grid grid-cols-3 gap-2"
+      role="radiogroup"
+      :aria-label="`${yearMonth} 참석 여부`"
+      @keydown="onRadioKeydown"
+    >
       <button
+        v-for="(opt, i) in options"
+        :key="String(opt.value)"
+        :ref="(el) => { if (el) radioRefs[i] = el as HTMLButtonElement; }"
         type="button"
-        class="rounded-lg border p-3 text-center transition-colors cursor-pointer"
-        :class="attended === true ? 'border-primary bg-primary/10 text-primary font-semibold' : 'border-border hover:bg-muted/30'"
-        @click="attended = true"
+        role="radio"
+        :aria-checked="attended === opt.value"
+        :tabindex="attended === opt.value ? 0 : -1"
+        class="relative rounded-lg border p-3 text-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+        :class="[
+          attended === opt.value
+            ? opt.value === true
+              ? 'border-primary bg-primary/10 text-primary font-semibold'
+              : opt.value === null
+                ? 'border-yellow-500 bg-yellow-50 text-yellow-700 font-semibold'
+                : 'border-destructive bg-destructive/10 text-destructive font-semibold'
+            : 'border-border hover:bg-muted/30',
+        ]"
+        @click="attended = opt.value"
       >
-        <div class="text-xl mb-1">✅</div>
-        <div class="text-sm font-medium">참석</div>
-      </button>
-      <button
-        type="button"
-        class="rounded-lg border p-3 text-center transition-colors cursor-pointer"
-        :class="attended === null ? 'border-yellow-500 bg-yellow-50 text-yellow-700 font-semibold' : 'border-border hover:bg-muted/30'"
-        @click="attended = null"
-      >
-        <div class="text-xl mb-1">🤔</div>
-        <div class="text-sm font-medium">미정</div>
-      </button>
-      <button
-        type="button"
-        class="rounded-lg border p-3 text-center transition-colors cursor-pointer"
-        :class="attended === false ? 'border-destructive bg-destructive/10 text-destructive font-semibold' : 'border-border hover:bg-muted/30'"
-        @click="attended = false"
-      >
-        <div class="text-xl mb-1">❌</div>
-        <div class="text-sm font-medium">불참</div>
+        <Check
+          v-if="attended === opt.value"
+          class="absolute right-1.5 top-1.5 h-4 w-4"
+          aria-hidden="true"
+        />
+        <div class="text-xl mb-1" aria-hidden="true">{{ opt.emoji }}</div>
+        <div class="text-sm font-medium">{{ opt.label }}</div>
+        <span v-if="attended === opt.value" class="sr-only">선택됨</span>
       </button>
     </div>
 
