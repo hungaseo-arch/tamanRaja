@@ -110,7 +110,13 @@ const loading = ref(false);
 const error = ref<string | null>(null);
 const ROW_LIMIT = 300;
 
+// 요청 순번. 필터를 연속 바꿀 때 늦게 온 이전 응답이 최신 화면을 덮지 못하게 한다.
+let loadSeq = 0;
+
 async function load(): Promise<void> {
+  // 비관리자는 곧 redirect 되므로 RPC 를 부르지 않는다.
+  if (!isAdmin.value) return;
+  const seq = ++loadSeq;
   loading.value = true;
   error.value = null;
 
@@ -121,6 +127,7 @@ async function load(): Promise<void> {
     p_event: eventFilter.value || null,
     p_limit: ROW_LIMIT,
   });
+  if (seq !== loadSeq) return;
 
   if (rpcError) {
     // 권한 없음(42501)도 그대로 보여준다. 빈 표로 두면 기록이 없는 것과

@@ -105,7 +105,7 @@ async function handleSubmit(e: Event): Promise<void> {
   <form class="space-y-4" @submit="handleSubmit">
     <p class="text-sm text-muted-foreground">본인만 아는 4자리 · 1111, 1234 같은 쉬운 숫자는 불가</p>
     <div class="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-      <Label for="old-pin" class="sm:w-20 shrink-0 sm:text-right">{{ oldLabel }}</Label>
+      <Label for="old-pin" class="sm:w-28 shrink-0 sm:text-right whitespace-nowrap">{{ oldLabel }}</Label>
       <Input
         id="old-pin"
         ref="oldInput"
@@ -122,7 +122,7 @@ async function handleSubmit(e: Event): Promise<void> {
     </div>
 
     <div class="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-      <Label for="new-pin" class="sm:w-20 shrink-0 sm:text-right">새 PIN</Label>
+      <Label for="new-pin" class="sm:w-28 shrink-0 sm:text-right whitespace-nowrap">새 PIN</Label>
       <Input
         id="new-pin"
         ref="newInput"
@@ -139,7 +139,7 @@ async function handleSubmit(e: Event): Promise<void> {
     </div>
 
     <div class="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-      <Label for="confirm-pin" class="sm:w-20 shrink-0 sm:text-right">새 PIN 확인</Label>
+      <Label for="confirm-pin" class="sm:w-28 shrink-0 sm:text-right whitespace-nowrap">새 PIN 확인</Label>
       <Input
         id="confirm-pin"
         ref="confirmInput"

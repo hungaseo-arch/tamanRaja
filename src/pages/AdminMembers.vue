@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { Copy, RefreshCw, UserPlus } from 'lucide-vue-next';
+import { AlertCircle, Copy, RefreshCw, UserPlus } from 'lucide-vue-next';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/composables/useAuth';
 import { useCompactTable } from '@/composables/useCompactTable';
@@ -9,6 +9,8 @@ import { useToast } from '@/composables/useToast';
 import { ROUTE_PATHS } from '@/lib';
 import { describeError } from '@/lib/errors';
 import { DASH } from '@/lib/format';
+import Alert from '@/components/ui/Alert.vue';
+import AlertDescription from '@/components/ui/AlertDescription.vue';
 import AsyncState from '@/components/ui/AsyncState.vue';
 import Badge from '@/components/ui/Badge.vue';
 import Button from '@/components/ui/Button.vue';
@@ -69,11 +71,18 @@ const error = ref<string | null>(null);
 /** 어느 줄에 요청이 나가 있는지. 그 줄의 버튼만 잠근다. */
 const busyId = ref<number | null>(null);
 
+// 요청 순번. 연속 새로고침에서 늦게 도착한 이전 응답이 최신 응답을 덮지 못하게 한다.
+let loadSeq = 0;
+
 async function load(): Promise<void> {
+  // 비관리자는 곧 redirect 되므로 RPC 를 부르지 않는다.
+  if (!isAdmin.value) return;
+  const seq = ++loadSeq;
   loading.value = true;
   error.value = null;
 
   const { data, error: rpcError } = await supabase.rpc('admin_members');
+  if (seq !== loadSeq) return;
 
   if (rpcError) {
     // 권한 없음(42501)도 그대로 보여준다. 빈 표로 두면 회원이 없는 것과
@@ -245,9 +254,23 @@ async function submitAdd(): Promise<void> {
 }
 
 // ── 등급 변경 ────────────────────────────────────────────────────────────────
-async function toggleRole(row: AdminMemberRow): Promise<void> {
-  const next = row.role === 'admin' ? 'member' : 'admin';
+// 권한 부여·회수는 오탭 비용이 커서 확인 창을 한 번 거친다.
+const roleOpen = ref(false);
+const roleRow = ref<AdminMemberRow | null>(null);
+const roleSaving = ref(false);
+const roleNext = computed(() => (roleRow.value?.role === 'admin' ? 'member' : 'admin'));
+
+function toggleRole(row: AdminMemberRow): void {
+  roleRow.value = row;
+  roleOpen.value = true;
+}
+
+async function submitRole(): Promise<void> {
+  const row = roleRow.value;
+  if (!row) return;
+  const next = roleNext.value;
   busyId.value = row.id;
+  roleSaving.value = true;
 
   const res = await callRpc(
     'set_member_role',
@@ -255,6 +278,8 @@ async function toggleRole(row: AdminMemberRow): Promise<void> {
     '등급 변경 실패'
   );
   busyId.value = null;
+  roleSaving.value = false;
+  roleOpen.value = false;
 
   if (!res) return;
   if (!res.ok) {
@@ -466,7 +491,7 @@ function menuItems(row: AdminMemberRow): DropdownMenuItem[] {
   if (showRoleButton(row)) {
     items.push({
       label: row.role === 'admin' ? '회원으로 내리기' : '관리자로 올리기',
-      onSelect: () => void toggleRole(row),
+      onSelect: () => toggleRole(row),
       disabled: roleBlock(row) !== null,
       hint: roleBlock(row) ?? undefined,
     });
@@ -547,7 +572,7 @@ watch(compact, (isCompact) => {
             <div class="pt-4">
               <Table
                 :scroll="compact"
-                class="text-xs sm:text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
+                class="text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
                 caption="회원 명단과 등급"
               >
                 <TableHeader>
@@ -651,7 +676,7 @@ watch(compact, (isCompact) => {
                 </TableBody>
               </Table>
 
-              <p class="text-xs text-muted-foreground mt-2 px-4">
+              <p class="text-sm text-muted-foreground mt-2 px-4">
                 {{ rows.length }}명 · 관리자 {{ adminCount }}명 ·
                 기록이 있는 회원은 삭제 불가 · 명단에서 빼려면 휴면 사용
               </p>
@@ -694,12 +719,35 @@ watch(compact, (isCompact) => {
             본인에게 전달하면 첫 로그인에서 새 PIN 설정
           </p>
 
-          <p v-if="addError" class="text-sm text-destructive">{{ addError }}</p>
+          <Alert v-if="addError" variant="destructive">
+            <AlertCircle class="h-4 w-4" aria-hidden="true" />
+            <AlertDescription>{{ addError }}</AlertDescription>
+          </Alert>
 
           <DialogFooter>
             <Button variant="outline" :disabled="addSaving" @click="addOpen = false">취소</Button>
             <Button :disabled="addSaving" @click="submitAdd()">
               {{ addSaving ? '추가 중…' : '추가' }}
+            </Button>
+          </DialogFooter>
+        </div>
+      </Dialog>
+
+      <!-- 등급 변경 확인 -->
+      <Dialog v-model:open="roleOpen" label="등급 변경" content-class="sm:max-w-sm">
+        <div class="space-y-3">
+          <DialogTitle class="mb-0">등급 변경</DialogTitle>
+          <p class="text-sm">
+            <span class="font-medium">{{ roleRow?.name }}</span> 회원을
+            <span class="font-medium">{{ roleNext === 'admin' ? '관리자' : '회원' }}</span>(으)로 변경
+          </p>
+          <p class="text-sm text-muted-foreground">
+            {{ roleNext === 'admin' ? '관리자는 기록 입력과 회원 관리 권한 보유' : '관리 권한 즉시 회수' }}
+          </p>
+          <DialogFooter>
+            <Button variant="outline" :disabled="roleSaving" @click="roleOpen = false">취소</Button>
+            <Button :disabled="roleSaving" @click="submitRole()">
+              {{ roleSaving ? '변경 중…' : '변경' }}
             </Button>
           </DialogFooter>
         </div>
@@ -717,7 +765,10 @@ watch(compact, (isCompact) => {
             <Label for="dormant-month">휴면 시작월</Label>
             <Input id="dormant-month" v-model="dormantMonth" placeholder="YYYY-MM" />
           </div>
-          <p v-if="dormantError" class="text-sm text-destructive">{{ dormantError }}</p>
+          <Alert v-if="dormantError" variant="destructive">
+            <AlertCircle class="h-4 w-4" aria-hidden="true" />
+            <AlertDescription>{{ dormantError }}</AlertDescription>
+          </Alert>
 
           <DialogFooter>
             <Button variant="outline" :disabled="dormantSaving" @click="dormantOpen = false">취소</Button>
@@ -739,7 +790,10 @@ watch(compact, (isCompact) => {
           <p class="text-sm text-muted-foreground">
             새 임시 PIN은 한 번만 표시 · 본인에게 전달하면 첫 로그인에서 새 PIN 설정
           </p>
-          <p v-if="resetError" class="text-sm text-destructive">{{ resetError }}</p>
+          <Alert v-if="resetError" variant="destructive">
+            <AlertCircle class="h-4 w-4" aria-hidden="true" />
+            <AlertDescription>{{ resetError }}</AlertDescription>
+          </Alert>
 
           <DialogFooter>
             <Button variant="outline" :disabled="resetSaving" @click="resetOpen = false">취소</Button>
@@ -761,7 +815,10 @@ watch(compact, (isCompact) => {
           <p class="text-sm text-muted-foreground">
             경기 기록이 있는 회원은 서버가 삭제 거절 · 이 경우 휴면 처리 사용
           </p>
-          <p v-if="deleteError" class="text-sm text-destructive">{{ deleteError }}</p>
+          <Alert v-if="deleteError" variant="destructive">
+            <AlertCircle class="h-4 w-4" aria-hidden="true" />
+            <AlertDescription>{{ deleteError }}</AlertDescription>
+          </Alert>
 
           <DialogFooter>
             <Button variant="outline" :disabled="deleteSaving" @click="deleteOpen = false">취소</Button>
