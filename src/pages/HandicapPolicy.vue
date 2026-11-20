@@ -229,7 +229,7 @@ async function loadCourseRatings(): Promise<void> {
           <span class="policy-status-dot" aria-hidden="true" />
           2027년 적용(안) · 2026-11-08 기준 · 회원 확정 전
         </p>
-        <p class="text-sm leading-relaxed">
+        <p class="body-indent text-sm leading-relaxed">
           2027년 기준핸디 산정 방식과 회원별 산출 근거 공개 자료. 내용은 <strong>확정 전 안(案)</strong>이며
           회원 확정 전 변경 가능
         </p>
