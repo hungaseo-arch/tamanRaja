@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, type Component } from 'vue';
+import { computed, ref, watch, type Component } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
-import { User, CalendarDays, Trophy, UserRound, History, Users, Scale } from 'lucide-vue-next';
+import { User, CalendarDays, Trophy, UserRound, History, Users, Scale, Ellipsis } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
+import Dialog from '@/components/ui/Dialog.vue';
 import { useAuth } from '@/composables/useAuth';
 import { ROUTE_PATHS } from '@/lib';
 import { cn } from '@/lib/utils';
@@ -47,6 +48,15 @@ const navItems = computed<NavItem[]>(() => {
   }
   return items;
 });
+
+// 하단 탭 바는 5칸까지만 글자가 깨지지 않는다. 항목이 5개를 넘으면(관리자)
+// 앞 4개만 탭에 두고 나머지는 '더보기' 창에 담는다.
+const TAB_LIMIT = 5;
+const tabItems = computed(() => (navItems.value.length > TAB_LIMIT ? navItems.value.slice(0, TAB_LIMIT - 1) : navItems.value));
+const moreItems = computed(() => (navItems.value.length > TAB_LIMIT ? navItems.value.slice(TAB_LIMIT - 1) : []));
+const moreOpen = ref(false);
+const moreActive = computed(() => moreItems.value.some((item) => item.path === route.path));
+watch(() => route.path, () => { moreOpen.value = false; });
 
 // 해시 라우터라 href="#main-content" 를 그대로 두면 라우트가 바뀐다.
 // 기본 동작을 막고 본문으로 포커스만 옮긴다.
@@ -153,7 +163,7 @@ function isActive(path: string): boolean {
     >
       <div class="flex items-stretch h-14">
         <RouterLink
-          v-for="item in navItems"
+          v-for="item in tabItems"
           :key="item.path"
           :to="item.path"
           :class="cn(
@@ -165,7 +175,39 @@ function isActive(path: string): boolean {
           <component :is="item.icon" class="w-5 h-5 shrink-0" aria-hidden="true" />
           {{ item.tabLabel ?? item.label }}
         </RouterLink>
+        <button
+          v-if="moreItems.length"
+          type="button"
+          :class="cn(
+            'flex-1 min-w-0 flex flex-col items-center justify-start pt-1.5 gap-0.5 px-0.5 text-center text-xs leading-tight font-medium transition-colors',
+            moreActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+          )"
+          aria-haspopup="dialog"
+          :aria-expanded="moreOpen"
+          @click="moreOpen = true"
+        >
+          <Ellipsis class="w-5 h-5 shrink-0" aria-hidden="true" />
+          더보기
+        </button>
       </div>
     </nav>
+
+    <Dialog v-model:open="moreOpen" label="더보기 메뉴" content-class="max-w-sm">
+      <ul class="flex flex-col gap-1">
+        <li v-for="item in moreItems" :key="item.path">
+          <RouterLink
+            :to="item.path"
+            :class="cn(
+              'flex min-h-11 items-center gap-3 rounded-md px-3 text-base font-medium transition-colors hover:bg-accent',
+              isActive(item.path) ? 'text-primary' : 'text-foreground'
+            )"
+            :aria-current="isActive(item.path) ? 'page' : undefined"
+          >
+            <component :is="item.icon" class="w-5 h-5 shrink-0" aria-hidden="true" />
+            {{ item.label }}
+          </RouterLink>
+        </li>
+      </ul>
+    </Dialog>
   </div>
 </template>
