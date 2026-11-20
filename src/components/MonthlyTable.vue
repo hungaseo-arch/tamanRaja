@@ -317,7 +317,7 @@ function attendanceLabel(row: MonthlyRow): { text: string; class: string } {
   if (props.isFutureMonth) {
     const v = localAttendance[row.member_id];
     if (v === true) return { text: '참석', class: 'text-primary' };
-    if (v === null) return { text: '미정', class: 'text-yellow-700' };
+    if (v === null) return { text: '미정', class: 'text-warning' };
     if (v === false) return { text: '불참', class: 'text-destructive' };
     return { text: '미응답', class: 'text-muted-foreground font-normal' };
   }
@@ -758,7 +758,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                     </select>
                   </template>
                   <template v-else-if="row.result_group">
-                    <Badge v-if="row.result_group === '1등조'" class="bg-blue-600 text-white border-0 hover:bg-blue-700">1등조</Badge>
+                    <Badge v-if="row.result_group === '1등조'" class="bg-group-first text-white border-0">1등조</Badge>
                     <Badge v-else variant="secondary">2등조</Badge>
                   </template>
                   <span v-else class="text-muted-foreground">-</span>
@@ -786,7 +786,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                   </template>
                   <!-- 순위 없는 회원: 작은 화면(결과 그룹 컬럼 숨김)에서만 그룹 표시 -->
                   <template v-else-if="row.result_group">
-                    <Badge v-if="row.result_group === '1등조'" class="md:hidden bg-blue-600 text-white border-0 hover:bg-blue-700">1등조</Badge>
+                    <Badge v-if="row.result_group === '1등조'" class="md:hidden bg-group-first text-white border-0">1등조</Badge>
                     <Badge v-else variant="secondary" class="md:hidden">2등조</Badge>
                   </template>
                 </TableCell>
@@ -819,7 +819,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         </DetailItem>
         <DetailItem label="차월 핸디">
           <span v-if="detailRow.attended && detailRow.score !== null && detailRow.next_hc !== null" class="font-mono">{{ detailRow.next_hc }}</span>
-          <Badge v-if="detailRow.next_hc_mismatch" variant="outline" class="ml-1.5 border-amber-500 text-amber-700 font-normal">※ 저장값 불일치(관리자 확인 필요)</Badge>
+          <Badge v-if="detailRow.next_hc_mismatch" variant="outline" class="ml-1.5 border-warning-border text-warning font-normal">※ 저장값 불일치(관리자 확인 필요)</Badge>
         </DetailItem>
         <DetailItem label="스코어">
           <span v-if="detailRow.attended && detailRow.score !== null" class="font-mono">{{ detailRow.score }}</span>
@@ -831,7 +831,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           >{{ detailRow.net_score >= 0 ? '+' : '' }}{{ detailRow.net_score }}</span>
         </DetailItem>
         <DetailItem label="결과 그룹">
-          <Badge v-if="detailRow.result_group === '1등조'" class="bg-blue-600 text-white border-0">1등조</Badge>
+          <Badge v-if="detailRow.result_group === '1등조'" class="bg-group-first text-white border-0">1등조</Badge>
           <Badge v-else-if="detailRow.result_group" variant="secondary">2등조</Badge>
         </DetailItem>
         <DetailItem label="결과">

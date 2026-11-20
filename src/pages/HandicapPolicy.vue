@@ -653,7 +653,7 @@ async function loadCourseRatings(): Promise<void> {
 </template>
 
 <style>
-/* 이 페이지 전용 팔레트 (60-30-10). 파스텔은 배경(fill) 전용이고 글자는 #546E7A 로 고정해
+/* 이 페이지 전용 팔레트 (60-30-10). 파스텔은 배경(fill) 전용이고 글자는 --foreground 로 두어
    명도 대비를 확보한다. 앱 전역 토큰은 건드리지 않도록 .policy-page 안에서만 쓴다. */
 .policy-page {
   --pp-bg: var(--card);
