@@ -142,10 +142,6 @@ function ariaSort(key: SortKey): 'ascending' | 'descending' | 'none' {
   return sortAsc.value ? 'ascending' : 'descending';
 }
 
-// 참석률 분모 설명. 작업지시서 3-5절 "참석률 분모(필수 문구)" 와 같은 문장이다.
-const ATTEND_DENOM_TEXT =
-  '2026년 중 해당 회원이 모임 명부에 등재된 횟수임. 휴면 개시 이후 모임과 명부 미등재 모임은 분모에서 제외함. ' +
-  '13명은 분모 11이며, 이성남 3(2026-04 휴면) · 박재현 10(2026-06-06 모임 명부 미등재)임.';
 const DORMANT_TIP = '휴면 중. 복귀 전까지 적용되지 않는 참고값임 (9번 섹션 안내 참조)';
 
 // ── 상세 창 ──────────────────────────────────────────────────────────────────
@@ -344,13 +340,13 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
         </p>
         <div v-if="isAdmin" class="pp-edit-bar">
           <template v-if="!editing">
-            <Button variant="outline" size="xs" @click="startEdit()">인간미 수정</Button>
+            <Button variant="outline" size="xs" class="h-8 px-2 text-xs" @click="startEdit()">인간미 수정</Button>
           </template>
           <template v-else>
-            <Button size="xs" :disabled="saving || hasInvalid || changed.length === 0" @click="requestSave">
+            <Button size="xs" class="h-8 px-2 text-xs" :disabled="saving || hasInvalid || changed.length === 0" @click="requestSave">
               {{ saving ? '저장 중' : `저장${changed.length ? ` (${changed.length}건)` : ''}` }}
             </Button>
-            <Button variant="outline" size="xs" :disabled="saving" @click="cancelEdit">취소</Button>
+            <Button variant="outline" size="xs" class="h-8 px-2 text-xs" :disabled="saving" @click="cancelEdit">취소</Button>
             <span v-if="hasInvalid" class="pp-edit-msg pp-up" role="alert">인간미는 −2 ~ +2 사이 정수만 입력 가능</span>
           </template>
         </div>
@@ -382,10 +378,11 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                   </button>
                   <span
                     v-if="r.dormant_from"
-                    class="policy-flag pp-dormant"
+                    class="policy-flag pp-flag-dormant"
                   >휴면</span>
-                  <span v-if="r.capped" class="policy-flag">한도</span>
-                  <span v-if="r.low_sample" class="policy-flag">표본부족</span>
+                  <!-- 휴면 회원은 휴면만 표시한다. 한도·부족은 휴면에 포함되므로 따로 보이지 않는다. -->
+                  <span v-if="r.capped && !r.dormant_from" class="policy-flag pp-flag-cap">한도</span>
+                  <span v-if="r.low_sample && !r.dormant_from" class="policy-flag pp-flag-low" title="표본 부족">부족</span>
                 </th>
                 <td class="num pp-hide-sm">{{ r.std_hc_2025 ?? '—' }}</td>
                 <td class="num pp-hide-sm">{{ r.prev_std_hc ?? '—' }}</td>
@@ -397,7 +394,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                     v-model="draft[r.member_id]"
                     type="number"
                     :id="`hum-${r.member_id}`"
-                    :class="cn('mx-auto h-11 sm:h-8 w-12 sm:w-14 px-1 text-center', isInvalid(r) && 'border-destructive bg-destructive/10')"
+                    :class="cn('mx-auto h-9 sm:h-8 w-11 sm:w-14 px-1 text-center', isInvalid(r) && 'border-destructive bg-destructive/10')"
                     :min="HUMANITY_MIN"
                     :max="HUMANITY_MAX"
                     step="1"
@@ -513,7 +510,6 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
         <DetailItem label="가중평균 오버파">{{ fmt(selected.w_avg) }}</DetailItem>
         <DetailItem label="2026 참석률">
           {{ fmt(selected.attend_rate) }}%
-          <span class="pp-caption">{{ ATTEND_DENOM_TEXT }}</span>
         </DetailItem>
         <DetailItem label="A 구간 평균">{{ fmt(selected.avg_a) }}</DetailItem>
         <DetailItem label="B 구간 평균">{{ fmt(selected.avg_b) }}</DetailItem>
@@ -581,6 +577,19 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   vertical-align: bottom;
   line-height: 1.3;
 }
+/* 본문 행은 모든 칸을 세로 가운데로 맞춘다. 입력 상자가 있어도 성명·숫자가 같은 줄에 놓인다. */
+.pp-results tbody th,
+.pp-results tbody td {
+  vertical-align: middle;
+}
+/* 성명 칸의 배지는 작게 줄이고 줄바꿈 때 여백을 최소로 둔다. */
+.pp-results .policy-flag {
+  margin: 0.125rem 0.125rem 0.125rem 0;
+  padding: 0 0.1875rem;
+  border-radius: 0.1875rem;
+  font-size: 0.6875rem;
+  line-height: 1.25;
+}
 .pp-results thead th:first-child,
 .pp-results tbody th {
   width: 80px;
@@ -636,9 +645,9 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 2.75rem;
-  min-height: 2.75rem;
-  padding: 0.15rem 0.35rem;
+  min-width: 2.25rem;
+  min-height: 2rem;
+  padding: 0.1rem 0.3rem;
   border: 1px dashed var(--pp-border, var(--border));
   border-radius: 0.25rem;
   background: transparent;
@@ -651,7 +660,16 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   border-style: solid;
   border-color: var(--primary);
 }
-.pp-dormant {
+/* 라벨마다 색을 달리한다 : 한도 빨강 · 부족 주황 · 휴면 회색. 글자가 본체이므로 색은 보조다. */
+.pp-results .pp-flag-cap {
+  border-color: var(--pp-up);
+  color: var(--pp-up);
+}
+.pp-results .pp-flag-low {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+.pp-results .pp-flag-dormant {
   border-color: var(--muted-foreground);
   color: var(--muted-foreground);
 }
@@ -744,13 +762,6 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   .pp-foot-sm {
     display: none;
   }
-}
-.pp-caption {
-  display: block;
-  margin-top: 0.125rem;
-  font-size: 0.75rem;
-  font-weight: 400;
-  color: var(--muted-foreground);
 }
 .pp-note-text {
   display: block;

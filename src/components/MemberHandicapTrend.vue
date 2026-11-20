@@ -119,7 +119,6 @@ const ariaLabel = computed(
               <text :x="p.x" :y="H - 1" text-anchor="middle" class="fill-muted-foreground text-xs">{{ p.year }}</text>
             </g>
           </svg>
-          <p v-if="view.some((r) => r.draft)" class="text-sm text-muted-foreground m-0">속이 빈 점은 확정 전 값으로 변경 가능</p>
         </template>
       </AsyncState>
     </CardContent>

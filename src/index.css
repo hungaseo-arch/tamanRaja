@@ -221,6 +221,19 @@
     border-radius: 0.25rem;
   }
 
+  /* 움직임 줄이기를 켠 사용자에게는 전환과 애니메이션을 사실상 끈다.
+     0 이 아니라 0.01ms 로 두어 animationend·transitionend 를 기다리는 코드가 멈추지 않게 한다. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
   body {
     @apply bg-background text-foreground font-sans min-h-screen;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";

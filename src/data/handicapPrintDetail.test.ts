@@ -23,7 +23,7 @@ describe('핸디캡 산정결과 인쇄 상세', () => {
   });
   it('휴면 안내는 모달에 DORMANT_TIP 로 보이고 뱃지에는 터치 불가 속성이 없다', () => {
     expect(vue).toMatch(/<DetailItem v-if="selected\.dormant_from" label="휴면">[\s\S]*?\{\{ DORMANT_TIP \}\}/);
-    const badge = vue.slice(vue.indexOf('pp-dormant"'), vue.indexOf('>휴면</span>'));
+    const badge = vue.slice(vue.indexOf('pp-flag-dormant"'), vue.indexOf('>휴면</span>'));
     expect(badge).not.toMatch(/tabindex|role=|:title|:aria-label/);
   });
   it('산정결과와 인간미 조회는 Promise.all 로 병렬 처리한다', () => {
