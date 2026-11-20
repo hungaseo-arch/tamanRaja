@@ -50,9 +50,10 @@ const loginError = ref<string>('');
 const pinInput = ref<InstanceType<typeof Input> | null>(null);
 const errorField = ref<'member' | 'pin' | null>(null);
 const loginLoading = ref<boolean>(false);
-// 기본은 꺼짐. 공용 기기에서 무심코 로그인한 사람이 로그인된 채 남지 않도록
-// 켜는 건 본인이 정하게 한다.
-const remember = ref<boolean>(false);
+// 기본은 켜짐. 로그인 화면(Login.vue)과 같은 값이다. 회원 대부분이 자기
+// 휴대폰으로 들어오고, 공용 기기의 위험은 무활동 자동 로그아웃이 막는다.
+// 공용 기기라면 본인이 끈다.
+const remember = ref<boolean>(true);
 
 // PIN 변경 폼은 PinChangeForm 이 들고 있다. 창을 닫을 때 key 를 바꿔 입력값을 비운다.
 const pinFormKey = ref(0);
@@ -76,7 +77,7 @@ function resetState(): void {
   loginError.value = '';
   errorField.value = null;
   loginLoading.value = false;
-  remember.value = false;
+  remember.value = true;
   pinFormKey.value++;
 }
 
