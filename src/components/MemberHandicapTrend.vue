@@ -126,11 +126,11 @@ const ariaLabel = computed(
                 r="4"
                 :class="p.draft ? 'fill-background stroke-current stroke-2' : 'fill-current'"
               />
-              <text :x="p.x" :y="p.y - 8" text-anchor="middle" class="fill-current text-[10px] font-bold">{{ p.hc }}</text>
-              <text :x="p.x" :y="H - 1" text-anchor="middle" class="fill-muted-foreground text-[9px]">{{ p.year }}</text>
+              <text :x="p.x" :y="p.y - 8" text-anchor="middle" class="fill-current text-[13px] font-bold">{{ p.hc }}</text>
+              <text :x="p.x" :y="H - 1" text-anchor="middle" class="fill-muted-foreground text-xs">{{ p.year }}</text>
             </g>
           </svg>
-          <Table :scroll="false" class="text-xs sm:text-sm" caption="연도별 기준핸디와 전년 대비 증감">
+          <Table :scroll="false" class="text-sm" caption="연도별 기준핸디와 전년 대비 증감">
             <TableHeader>
               <TableRow>
                 <TableHead class="static text-center font-semibold text-foreground px-1.5 py-1.5">연도</TableHead>
@@ -141,11 +141,11 @@ const ariaLabel = computed(
             <TableBody class="[&_tr:last-child>th]:border-0">
               <TableRow v-for="r in view" :key="r.year">
                 <TableHead scope="row" class="static text-center px-1.5 py-1.5 font-bold text-foreground">
-                  {{ r.year }}<span v-if="r.draft" class="ml-1 text-[11px] text-muted-foreground">안</span>
+                  {{ r.year }}<span v-if="r.draft" class="ml-1 text-xs text-muted-foreground">안</span>
                 </TableHead>
                 <TableCell class="text-center font-mono font-bold px-1.5 py-1.5">{{ r.std_hc }}</TableCell>
                 <TableCell class="text-center font-mono px-1.5 py-1.5">
-                  {{ fmtDelta(r.delta) }}<span v-if="deltaLabel(r.delta)" class="ml-1 font-sans text-[11px] text-muted-foreground">{{ deltaLabel(r.delta) }}</span>
+                  {{ fmtDelta(r.delta) }}<span v-if="deltaLabel(r.delta)" class="ml-1 font-sans text-xs text-muted-foreground">{{ deltaLabel(r.delta) }}</span>
                 </TableCell>
               </TableRow>
             </TableBody>

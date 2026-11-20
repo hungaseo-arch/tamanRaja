@@ -684,7 +684,7 @@ async function loadCourseRatings(): Promise<void> {
   border: 1px solid var(--primary);
   border-radius: 999px;
   background: var(--pp-sage);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 600;
   color: var(--primary);
 }
@@ -727,7 +727,7 @@ async function loadCourseRatings(): Promise<void> {
   border-radius: 999px;
   background: var(--primary);
   color: var(--primary-foreground);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
 }
 .policy-chevron {
   width: 1.125rem;
@@ -762,14 +762,14 @@ async function loadCourseRatings(): Promise<void> {
   border-radius: 0.375rem;
   background: var(--pp-blue);
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   line-height: 1.55;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 .policy-note {
   margin: 0.375rem 0 0;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
 }
 /* 표·수식 바로 아래의 설명은 각주로 보고 들여쓴다. */
 .policy-table-wrap ~ .policy-note,
@@ -821,7 +821,7 @@ async function loadCourseRatings(): Promise<void> {
 /* 375px 표 보정 (작업지시서 4-4). 가로 스크롤 대신 글자·여백을 줄이고, 넘치는 열은 숨긴다. */
 .pw-only {
   display: block;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   line-height: 1.2;
 }
@@ -953,13 +953,22 @@ async function loadCourseRatings(): Promise<void> {
   background: var(--pp-bg);
 }
 .policy-details summary {
+  /* list-item 을 유지해 펼침 마커(▶)를 살리고, 세로 여백으로 44px 를 채운다. */
+  padding-block: 0.75rem;
   cursor: pointer;
   font-weight: 700;
 }
 .policy-link {
+  position: relative;
   margin-left: 0.375rem;
   text-decoration: underline;
   cursor: pointer;
+}
+/* 줄 높이를 키우지 않고 눌리는 범위만 세로 44px 로 넓힌다. */
+.policy-link::after {
+  content: '';
+  position: absolute;
+  inset: -0.75rem -0.25rem;
 }
 
 /* 인쇄: 접힌 섹션도 모두 펼치고 접기 버튼의 화살표는 숨긴다. */
