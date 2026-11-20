@@ -249,9 +249,6 @@ async function loadCourseRatings(): Promise<void> {
     <div class="container mx-auto px-4 max-w-5xl py-2 space-y-3">
       <header class="space-y-2">
         <h1 class="text-lg font-bold">27년 핸디캡 (안)</h1>
-        <p class="policy-draft" role="note">
-          <span class="policy-draft-tag">확정 전 안(案)</span>
-          회원 확정 전 변경 가능 · 적용은 2027년 1월 모임부터        </p>
       </header>
 
       <PolicySection id="sec-results" no="1" title="회원별 산정결과 (안)" default-open>
@@ -985,22 +982,6 @@ async function loadCourseRatings(): Promise<void> {
   content: '';
   position: absolute;
   inset: -0.75rem -0.25rem;
-}
-
-/* 상단 상태 표시: 확정 전 안임을 위계 높은 태그로 먼저 보여 준다. */
-.policy-draft {
-  margin: 0;
-  font-size: 0.875rem;
-  line-height: 1.6;
-}
-.policy-draft-tag {
-  display: inline-block;
-  margin-right: 0.375rem;
-  padding: 0.0625rem 0.5rem;
-  border: 1px solid var(--pp-text);
-  border-radius: 0.25rem;
-  font-weight: 700;
-  color: var(--pp-text);
 }
 
 /* 인쇄: 접힌 섹션도 모두 펼치고 접기 버튼의 화살표는 숨긴다. */

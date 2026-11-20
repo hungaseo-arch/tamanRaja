@@ -261,10 +261,8 @@ describe('화면 문구', () => {
     expect(text).not.toMatch(/가중합|참석률 가중치|6라운드/);
   });
 
-  it('상단 설명에 확정 전 안(案)임이 있다', () => {
-    // 상단 배지는 삭제했다. 확정 전임은 제목의 (안)과 첫 설명 문장이 전한다.
-    expect(text).toContain('확정 전 안(案)');
-    expect(text).toContain('회원 확정 전 변경 가능');
+  it('제목에 (안)이 있다', () => {
+    expect(text).toContain('27년 핸디캡 (안)');
   });
 
   it('필수 문구가 모두 있다', () => {
