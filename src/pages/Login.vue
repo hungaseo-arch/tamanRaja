@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, nextTick, ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { AlertCircle } from 'lucide-vue-next';
 import { describeLoginError, useAuth } from '@/composables/useAuth';
@@ -27,10 +27,12 @@ onMounted(() => {
 const selectedMember = ref('');
 const pin = ref('');
 const loginError = ref('');
+const pinInput = ref<InstanceType<typeof Input> | null>(null);
+const errorField = ref<'member' | 'pin' | null>(null);
 const submitting = ref(false);
 // 기본은 켜짐 (4-3 안 A). 회원 대부분이 자기 휴대폰으로 들어와 매번 PIN 을
-// 치는 수고가 더 크다. 공용 기기에 남는 위험은 30분 무활동 자동 로그아웃
-// (IDLE_TIMEOUT_MS, 서버 app.idle_timeout())이 그대로 막는다 — 유지를 켜도
+// 치는 수고가 더 크다. 공용 기기에 남는 위험은 무활동 자동 로그아웃(회원 3시간·관리자 30분,
+// idleTimeoutMs(), 서버 app.idle_timeout_for())이 그대로 막는다 — 유지를 켜도
 // 그 한도는 똑같이 걸린다. 공용 기기라면 본인이 끄면 된다.
 const remember = ref(true);
 
@@ -49,12 +51,17 @@ function onlyDigits(v: string): string {
 async function handleLogin(e: Event): Promise<void> {
   e.preventDefault();
   loginError.value = '';
+  errorField.value = null;
   if (!selectedMember.value) {
     loginError.value = '회원 선택 필요';
+    errorField.value = 'member';
+    document.getElementById('member-select')?.focus();
     return;
   }
   if (pin.value.length !== 4) {
-    loginError.value = 'PIN은 4자리 숫자만 가능';
+    loginError.value = 'PIN 4자리 숫자 입력 필요';
+    errorField.value = 'pin';
+    pinInput.value?.focus();
     return;
   }
 
@@ -66,7 +73,10 @@ async function handleLogin(e: Event): Promise<void> {
       return;
     }
     loginError.value = describeLoginError(result);
+    errorField.value = 'pin';
     pin.value = '';
+    await nextTick();
+    pinInput.value?.focus();
   } finally {
     submitting.value = false;
   }
@@ -79,7 +89,7 @@ async function handleLogin(e: Event): Promise<void> {
   <main class="flex flex-col items-center justify-center min-h-dvh px-4 py-10">
     <div class="w-full max-w-sm space-y-6">
       <div class="text-center space-y-2">
-        <span class="text-5xl">🏌️</span>
+        <span class="text-5xl" aria-hidden="true">🏌️</span>
         <h1 class="text-2xl font-bold text-foreground">따만라자 모임</h1>
         <p class="text-sm text-muted-foreground">로그인 후 기록 확인</p>
       </div>
@@ -100,7 +110,11 @@ async function handleLogin(e: Event): Promise<void> {
               <Label for="pin-input">PIN 입력</Label>
               <Input
                 id="pin-input"
+                ref="pinInput"
                 type="password"
+                autocomplete="current-password"
+                :ariaInvalid="errorField === 'pin'"
+                :ariaDescribedby="errorField === 'pin' ? 'login-error' : undefined"
                 inputmode="numeric"
                 :maxlength="4"
                 :model-value="pin"
@@ -115,14 +129,16 @@ async function handleLogin(e: Event): Promise<void> {
               </Label>
             </div>
 
-            <Alert v-if="loginError" variant="destructive">
-              <AlertCircle class="h-4 w-4" />
-              <AlertDescription>{{ loginError }}</AlertDescription>
-            </Alert>
+            <div v-if="loginError" id="login-error">
+              <Alert variant="destructive">
+                <AlertCircle class="h-4 w-4" />
+                <AlertDescription>{{ loginError }}</AlertDescription>
+              </Alert>
+            </div>
             <Button type="submit" class="w-full" :disabled="submitting">
               {{ submitting ? '확인 중...' : '로그인' }}
             </Button>
-            <p class="text-xs text-muted-foreground text-center">
+            <p class="text-sm text-muted-foreground text-center">
               PIN 분실 시 관리자(서종환·조학영)에게 초기화 요청
             </p>
           </form>

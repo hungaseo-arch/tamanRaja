@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, type Component } from 'vue';
+import { computed, ref, watch, type Component } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
-import { User, CalendarDays, Trophy, UserRound, History, Users } from 'lucide-vue-next';
+import { User, CalendarDays, Trophy, UserRound, History, Users, Scale, Ellipsis } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
+import Dialog from '@/components/ui/Dialog.vue';
 import { useAuth } from '@/composables/useAuth';
 import { ROUTE_PATHS } from '@/lib';
 import { cn } from '@/lib/utils';
@@ -18,7 +19,8 @@ const route = useRoute();
 
 // line1/line2 는 sm~xl 구간에서 두 줄로 접기 위한 것. 좁은 폭(<sm)에서는
 // 상단 nav 자체를 쓰지 않고 하단 탭 바로 내려가므로 label 만 쓴다.
-interface NavItem { path: string; label: string; line1: string; line2: string; icon: Component }
+// tabLabel 은 하단 탭 바 전용 짧은 이름 (항목이 5개 이상이면 긴 이름이 잘린다).
+interface NavItem { path: string; label: string; tabLabel?: string; line1: string; line2: string; icon: Component }
 
 const navItems = computed<NavItem[]>(() => {
   const items: NavItem[] = [
@@ -29,6 +31,14 @@ const navItems = computed<NavItem[]>(() => {
   // 계정 버튼(계정 창의 첫 탭)으로 모았다. #/attendance 주소는 그대로 살아 있다.
   if (isLoggedIn.value) {
     items.push({ path: ROUTE_PATHS.PROFILE, label: '나의 기록', line1: '나의', line2: '기록', icon: UserRound });
+    items.push({
+      path: ROUTE_PATHS.HANDICAP_POLICY,
+      label: '27년 핸디캡 (안)',
+      tabLabel: '27년 핸디(안)',
+      line1: '27년',
+      line2: '핸디캡 (안)',
+      icon: Scale,
+    });
   }
   // 접속 기록은 관리자에게만 보인다. 메뉴를 감추는 것은 편의일 뿐 권한
   // 경계가 아니다 — 주소를 직접 쳐도 서버 RPC 가 거절한다.
@@ -38,6 +48,21 @@ const navItems = computed<NavItem[]>(() => {
   }
   return items;
 });
+
+// 하단 탭 바는 5칸까지만 글자가 깨지지 않는다. 항목이 5개를 넘으면(관리자)
+// 앞 4개만 탭에 두고 나머지는 '더보기' 창에 담는다.
+const TAB_LIMIT = 5;
+const tabItems = computed(() => (navItems.value.length > TAB_LIMIT ? navItems.value.slice(0, TAB_LIMIT - 1) : navItems.value));
+const moreItems = computed(() => (navItems.value.length > TAB_LIMIT ? navItems.value.slice(TAB_LIMIT - 1) : []));
+const moreOpen = ref(false);
+const moreActive = computed(() => moreItems.value.some((item) => item.path === route.path));
+watch(() => route.path, () => { moreOpen.value = false; });
+
+// 해시 라우터라 href="#main-content" 를 그대로 두면 라우트가 바뀐다.
+// 기본 동작을 막고 본문으로 포커스만 옮긴다.
+function focusMain(): void {
+  document.getElementById('main-content')?.focus();
+}
 
 function isActive(path: string): boolean {
   return route.path === path;
@@ -51,6 +76,11 @@ function isActive(path: string): boolean {
        scroll=false) 여기 main 에 열 제목을 붙인다. 그래야 표 위의 카드까지
        함께 밀려 올라가면서도 열 제목은 화면 맨 위에 남는다. -->
   <div class="h-dvh flex flex-col bg-background">
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:fixed focus:left-2 focus:top-2 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+      @click.prevent="focusMain"
+    >본문 바로가기</a>
     <header class="shrink-0 relative z-20 bg-card border-b border-border shadow-sm">
       <div class="w-full px-3 sm:px-4 pl-[max(0.75rem,env(safe-area-inset-left))] pr-[max(0.75rem,env(safe-area-inset-right))]">
         <div class="flex items-center h-14 sm:h-16 gap-x-1.5 sm:gap-x-2">
@@ -118,7 +148,7 @@ function isActive(path: string): boolean {
          높이를 정하지 않고 내용만큼 길어지고, 넘치는 만큼 여기서 스크롤된다.
          가로 폭도 여기서 자르지 않는다 — 각 화면이 container … max-w-5xl 로
          스스로 정한다. 여기에 max-w 를 두면 그 선언이 조용히 무시된다. -->
-    <main class="flex-1 min-h-0 overflow-y-auto w-full">
+    <main id="main-content" tabindex="-1" class="focus:outline-none flex-1 min-h-0 overflow-y-auto w-full">
       <slot />
     </main>
     <footer class="shrink-0 text-center text-xs text-muted-foreground py-4 border-t border-border">
@@ -133,19 +163,51 @@ function isActive(path: string): boolean {
     >
       <div class="flex items-stretch h-14">
         <RouterLink
-          v-for="item in navItems"
+          v-for="item in tabItems"
           :key="item.path"
           :to="item.path"
           :class="cn(
-            'flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5 text-[11px] font-medium whitespace-nowrap transition-colors',
+            'flex-1 min-w-0 flex flex-col items-center justify-start pt-1.5 gap-0.5 px-0.5 text-center text-xs leading-tight font-medium transition-colors',
             isActive(item.path) ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
           )"
           :aria-current="isActive(item.path) ? 'page' : undefined"
         >
           <component :is="item.icon" class="w-5 h-5 shrink-0" aria-hidden="true" />
-          {{ item.label }}
+          {{ item.tabLabel ?? item.label }}
         </RouterLink>
+        <button
+          v-if="moreItems.length"
+          type="button"
+          :class="cn(
+            'flex-1 min-w-0 flex flex-col items-center justify-start pt-1.5 gap-0.5 px-0.5 text-center text-xs leading-tight font-medium transition-colors',
+            moreActive ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
+          )"
+          aria-haspopup="dialog"
+          :aria-expanded="moreOpen"
+          @click="moreOpen = true"
+        >
+          <Ellipsis class="w-5 h-5 shrink-0" aria-hidden="true" />
+          더보기
+        </button>
       </div>
     </nav>
+
+    <Dialog v-model:open="moreOpen" label="더보기 메뉴" content-class="max-w-sm">
+      <ul class="flex flex-col gap-1">
+        <li v-for="item in moreItems" :key="item.path">
+          <RouterLink
+            :to="item.path"
+            :class="cn(
+              'flex min-h-11 items-center gap-3 rounded-md px-3 text-base font-medium transition-colors hover:bg-accent',
+              isActive(item.path) ? 'text-primary' : 'text-foreground'
+            )"
+            :aria-current="isActive(item.path) ? 'page' : undefined"
+          >
+            <component :is="item.icon" class="w-5 h-5 shrink-0" aria-hidden="true" />
+            {{ item.label }}
+          </RouterLink>
+        </li>
+      </ul>
+    </Dialog>
   </div>
 </template>

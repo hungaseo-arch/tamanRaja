@@ -1,0 +1,35 @@
+# Supabase Free 플랜은 7일간 요청이 없으면 프로젝트를 일시정지한다.
+# 주 2회 익명 키로 가벼운 조회를 보내 활동을 유지한다.
+# RLS 상 세션 없는 요청은 빈 배열([])만 받으므로 데이터는 노출되지 않는다.
+name: Supabase keepalive
+
+on:
+  schedule:
+    - cron: '0 0 * * 1,4' # 월·목 00:00 UTC (자카르타 07:00)
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping Supabase REST
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::error::SUPABASE_URL / SUPABASE_ANON_KEY 시크릿이 설정되지 않았습니다."
+            exit 1
+          fi
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --retry 3 --retry-delay 10 \
+            "$SUPABASE_URL/rest/v1/golf_courses?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+          echo "HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::Supabase 응답 $code — 프로젝트가 일시정지되었는지 콘솔에서 확인하세요."
+            exit 1
+          fi

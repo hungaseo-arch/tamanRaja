@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { nextTick, onBeforeUnmount, ref } from 'vue';
 import { AlertCircle, CheckCircle2 } from 'lucide-vue-next';
 import { describeChangePinError, useAuth } from '@/composables/useAuth';
 import Button from '@/components/ui/Button.vue';
@@ -18,7 +18,7 @@ interface Props {
   oldLabel?: string;
 }
 
-withDefaults(defineProps<Props>(), { oldLabel: '기존 PIN' });
+const props = withDefaults(defineProps<Props>(), { oldLabel: '기존 PIN' });
 const emit = defineEmits<{ (e: 'changed'): void }>();
 
 const { changePin } = useAuth();
@@ -30,6 +30,25 @@ const error = ref('');
 const success = ref(false);
 const loading = ref(false);
 
+type Field = 'old' | 'new' | 'confirm';
+const errorField = ref<Field | null>(null);
+type InputRef = InstanceType<typeof Input> | null;
+const oldInput = ref<InputRef>(null);
+const newInput = ref<InputRef>(null);
+const confirmInput = ref<InputRef>(null);
+const inputs = { old: oldInput, new: newInput, confirm: confirmInput };
+const ERROR_ID = 'pin-change-error';
+
+let successTimer: ReturnType<typeof setTimeout> | undefined;
+onBeforeUnmount(() => clearTimeout(successTimer));
+
+async function fail(field: Field, message: string): Promise<void> {
+  error.value = message;
+  errorField.value = field;
+  await nextTick();
+  inputs[field].value?.focus();
+}
+
 function onlyDigits(v: string): string {
   return v.replace(/\D/g, '').slice(0, 4);
 }
@@ -37,14 +56,23 @@ function onlyDigits(v: string): string {
 async function handleSubmit(e: Event): Promise<void> {
   e.preventDefault();
   error.value = '';
+  errorField.value = null;
   success.value = false;
 
-  if (oldPin.value.length !== 4 || newPin.value.length !== 4 || confirmPin.value.length !== 4) {
-    error.value = 'PIN은 4자리 숫자만 가능';
+  if (oldPin.value.length !== 4) {
+    await fail('old', `${props.oldLabel} 4자리 입력 필요`);
+    return;
+  }
+  if (newPin.value.length !== 4) {
+    await fail('new', '새 PIN 4자리 입력 필요');
+    return;
+  }
+  if (confirmPin.value.length !== 4) {
+    await fail('confirm', '새 PIN 확인 4자리 입력 필요');
     return;
   }
   if (newPin.value !== confirmPin.value) {
-    error.value = '새 PIN 불일치';
+    await fail('confirm', '새 PIN 과 확인 PIN 이 다름');
     return;
   }
 
@@ -57,13 +85,16 @@ async function handleSubmit(e: Event): Promise<void> {
       oldPin.value = '';
       newPin.value = '';
       confirmPin.value = '';
-      setTimeout(() => { success.value = false; }, 3000);
+      clearTimeout(successTimer);
+      successTimer = setTimeout(() => { success.value = false; }, 5000);
       emit('changed');
     } else {
-      error.value = describeChangePinError(result);
+      const field: Field = result.reason === 'same' || result.reason === 'weak' ? 'new' : 'old';
+      await fail(field, describeChangePinError(result));
     }
   } catch {
     error.value = '저장 중 오류 발생';
+    errorField.value = null;
   } finally {
     loading.value = false;
   }
@@ -72,49 +103,63 @@ async function handleSubmit(e: Event): Promise<void> {
 
 <template>
   <form class="space-y-6" @submit="handleSubmit">
-    <div class="flex items-center gap-3">
-      <Label for="old-pin" class="w-20 shrink-0 text-right">{{ oldLabel }}</Label>
+    <div class="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+      <Label for="old-pin" class="sm:w-20 shrink-0 sm:text-right">{{ oldLabel }}</Label>
       <Input
         id="old-pin"
+        ref="oldInput"
         type="password"
+        autocomplete="current-password"
+        :ariaInvalid="errorField === 'old'"
+        :ariaDescribedby="errorField === 'old' ? ERROR_ID : undefined"
         inputmode="numeric"
         :maxlength="4"
         :model-value="oldPin"
-        class="w-40" placeholder="4자리 숫자"
+        class="w-full sm:w-40" placeholder="4자리 숫자"
         @update:model-value="(v: string) => (oldPin = onlyDigits(v))"
       />
     </div>
 
-    <div class="flex items-center gap-3">
-      <Label for="new-pin" class="w-20 shrink-0 text-right">새 PIN</Label>
+    <div class="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+      <Label for="new-pin" class="sm:w-20 shrink-0 sm:text-right">새 PIN</Label>
       <Input
         id="new-pin"
+        ref="newInput"
         type="password"
+        autocomplete="new-password"
+        :ariaInvalid="errorField === 'new'"
+        :ariaDescribedby="errorField === 'new' ? ERROR_ID : undefined"
         inputmode="numeric"
         :maxlength="4"
         :model-value="newPin"
-        class="w-40" placeholder="4자리 숫자"
+        class="w-full sm:w-40" placeholder="4자리 숫자"
         @update:model-value="(v: string) => (newPin = onlyDigits(v))"
       />
     </div>
 
-    <div class="flex items-center gap-3">
-      <Label for="confirm-pin" class="w-20 shrink-0 text-right">새 PIN 확인</Label>
+    <div class="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
+      <Label for="confirm-pin" class="sm:w-20 shrink-0 sm:text-right">새 PIN 확인</Label>
       <Input
         id="confirm-pin"
+        ref="confirmInput"
         type="password"
+        autocomplete="new-password"
+        :ariaInvalid="errorField === 'confirm'"
+        :ariaDescribedby="errorField === 'confirm' ? ERROR_ID : undefined"
         inputmode="numeric"
         :maxlength="4"
         :model-value="confirmPin"
-        class="w-40" placeholder="4자리 숫자 확인"
+        class="w-full sm:w-40" placeholder="4자리 숫자 확인"
         @update:model-value="(v: string) => (confirmPin = onlyDigits(v))"
       />
     </div>
 
-    <Alert v-if="error" variant="destructive">
-      <AlertCircle class="h-4 w-4" />
-      <AlertDescription>{{ error }}</AlertDescription>
-    </Alert>
+    <div v-if="error" :id="ERROR_ID">
+      <Alert variant="destructive">
+        <AlertCircle class="h-4 w-4" />
+        <AlertDescription>{{ error }}</AlertDescription>
+      </Alert>
+    </div>
 
     <Alert v-if="success" class="border-primary bg-primary/10">
       <CheckCircle2 class="h-4 w-4 text-primary" />

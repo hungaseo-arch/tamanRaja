@@ -32,7 +32,7 @@ function toggle(): void {
     :aria-checked="checked"
     :disabled="disabled"
     :class="cn(
-      'peer h-4 w-4 shrink-0 rounded-sm border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+      'peer relative h-5 w-5 shrink-0 rounded-sm before:absolute before:-inset-3 sm:h-4 sm:w-4 sm:before:-inset-2.5 border border-primary ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
       checked && 'bg-primary text-primary-foreground',
       props.class
     )"

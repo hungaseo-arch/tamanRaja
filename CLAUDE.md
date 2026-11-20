@@ -14,6 +14,9 @@
 
 - 스키마·RLS 변경은 `supabase/migrations/` 에 SQL 마이그레이션 파일로 남긴다.
   Supabase 콘솔에서 수동으로 바꾸지 않는다.
+- 마이그레이션 적용 후에는 `supabase migration list --remote` 로 로컬 파일과 운영 이력이
+  일치하는지 확인한다 (2026-11-20 기준 35개 모두 일치). `supabase link` 는 대화형이라
+  별도 터미널에서 실행하며, 생성되는 `supabase/.temp/` 는 커밋하지 않는다.
 - 운영 DB의 실제 기록(점수·참석)을 임의로 수정하지 않는다.
 - PIN 값을 로그로 출력하지 않는다.
 - 서비스 키(`service_role`)를 프런트엔드 코드나 저장소에 포함하지 않는다.

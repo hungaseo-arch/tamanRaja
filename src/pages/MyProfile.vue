@@ -21,6 +21,7 @@ import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
 import Badge from '@/components/ui/Badge.vue';
 import RankBadge from '@/components/ui/RankBadge.vue';
+import MemberHandicapTrend from '@/components/MemberHandicapTrend.vue';
 import Table from '@/components/ui/Table.vue';
 import TableHeader from '@/components/ui/TableHeader.vue';
 import TableBody from '@/components/ui/TableBody.vue';
@@ -249,7 +250,7 @@ function handleExport(): void {
               <p class="text-xs sm:text-sm text-muted-foreground mb-1">평균 Net</p>
               <p class="text-xl font-bold font-mono">
                 <template v-if="derived.avgNet !== null">
-                  <span :class="derived.avgNet >= 0 ? 'text-blue-600' : 'text-orange-700'">
+                  <span :class="derived.avgNet >= 0 ? 'text-net-plus' : 'text-net-minus'">
                     {{ derived.avgNet >= 0 ? '+' : '' }}{{ derived.avgNet.toFixed(1) }}
                   </span>
                 </template>
@@ -276,6 +277,9 @@ function handleExport(): void {
             </CardContent>
           </Card>
         </div>
+
+        <!-- 연도별 기준핸디 추이 (선택한 연도와 무관하게 전체 연도) -->
+        <MemberHandicapTrend :member-id="currentMember.id" />
 
         <!-- 월별 히스토리 테이블 -->
         <!-- 넓은 화면: 카드가 표의 최소 폭(w-min)을 따라가고, 남으면 min-w-full 로
@@ -347,8 +351,8 @@ function handleExport(): void {
                     <TableCell class="text-center font-mono whitespace-nowrap">
                       <template v-if="row.attended && row.net_score !== null">
                         <span :class="row.net_score >= 0
-                          ? 'text-blue-600 font-semibold'
-                          : 'text-orange-700'"
+                          ? 'text-net-plus font-semibold'
+                          : 'text-net-minus'"
                         >
                           {{ row.net_score >= 0 ? '+' : '' }}{{ row.net_score }}
                         </span>
@@ -379,8 +383,8 @@ function handleExport(): void {
                       <span
                         v-if="derived.netAvg !== '-'"
                         :class="parseFloat(derived.netAvg) >= 0
-                          ? 'text-blue-600'
-                          : 'text-orange-700'"
+                          ? 'text-net-plus'
+                          : 'text-net-minus'"
                       >
                         {{ parseFloat(derived.netAvg) >= 0 ? '+' : '' }}{{ derived.netAvg }}
                       </span>
@@ -422,7 +426,7 @@ function handleExport(): void {
             <DetailItem label="NET 스코어">
               <span
                 v-if="detailRow.attended && detailRow.net_score !== null"
-                :class="cn('font-mono', detailRow.net_score >= 0 ? 'text-blue-600 font-semibold' : 'text-orange-700')"
+                :class="cn('font-mono', detailRow.net_score >= 0 ? 'text-net-plus font-semibold' : 'text-net-minus')"
               >{{ detailRow.net_score >= 0 ? '+' : '' }}{{ detailRow.net_score }}</span>
             </DetailItem>
             <DetailItem label="결과">

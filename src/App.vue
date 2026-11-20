@@ -10,7 +10,8 @@ import Toaster from '@/components/ui/Toaster.vue';
 import AsyncState from '@/components/ui/AsyncState.vue';
 import { loadData, loadMembers, clearData, dataLoading, dataInitialized, dataError, getMonthlyData, getAttendanceMonth, canAnswerAttendance } from '@/data';
 import { useAuth } from '@/composables/useAuth';
-import { useIdleLogout, IDLE_TIMEOUT_MINUTES } from '@/composables/useIdleLogout';
+import { useIdleLogout } from '@/composables/useIdleLogout';
+import { idleTimeoutLabel } from '@/lib/session';
 import { useAttendance } from '@/composables/useAttendance';
 import { useToast } from '@/composables/useToast';
 import { ROUTE_PATHS } from '@/lib';
@@ -116,17 +117,18 @@ function onForcedPinChanged(): void {
   toast({ title: 'PIN 변경 완료', description: '다음 로그인부터 새 PIN 사용' });
 }
 
-// 30분 동안 아무 조작이 없으면 스스로 로그아웃한다. 라운드 중 스코어를 보다
+// 일정 시간(회원 3시간, 관리자 30분) 아무 조작이 없으면 스스로 로그아웃한다. 라운드 중 스코어를 보다
 // 자리를 뜬 기기가 그대로 열려 있지 않게 하려는 것이라, "이 기기에서 로그인
 // 유지"를 켠 경우에도 똑같이 걸린다. 서버도 같은 규칙을 갖고 있고(P6-1),
 // 여기서는 그 사실을 사용자에게 알리는 일까지 한다.
 useIdleLogout(async () => {
+  const label = idleTimeoutLabel(currentMember.value?.role);
   await logout('idle');
   loginModalOpen.value = false;
   router.replace(ROUTE_PATHS.HOME);
   toast({
     title: '자동 로그아웃',
-    description: `${IDLE_TIMEOUT_MINUTES}분 동안 사용 없음 · 다시 로그인 필요`,
+    description: `${label} 동안 사용 없음 · 다시 로그인 필요`,
     duration: 6000,
   });
 });

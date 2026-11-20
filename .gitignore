@@ -13,3 +13,6 @@ dist-ssr
 .env.*.local
 .claude/
 .node_modules_broken/
+
+# Supabase CLI 로컬 연결 정보 (link 결과)
+supabase/.temp/

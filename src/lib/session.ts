@@ -11,10 +11,11 @@
 // 서버 토큰 자체는 어느 쪽이든 30일짜리다 — 여기서 정하는 건 이 브라우저가
 // 얼마나 오래 들고 있느냐뿐이다.
 //
-// 그 30일과 별개로 "마지막 조작 이후 30분" 이라는 유휴 한도가 있다(lastActiveAt).
-// 로그인 유지를 켰든 껐든 똑같이 걸린다 — 켜 두고 자리를 뜬 기기가 그대로
-// 열려 있지 않게 하려는 것이므로 예외를 두면 의미가 없다. 서버도 같은 규칙을
-// 조금 더 넉넉한 값으로 갖고 있다 (app.idle_timeout()).
+// 그 30일과 별개로 "마지막 조작 이후 일정 시간" 이라는 유휴 한도가 있다(lastActiveAt).
+// 회원은 3시간, 관리자는 30분이다 — 관리자는 결과 수정·PIN 초기화 권한이 있어
+// 짧게 둔다. 로그인 유지를 켰든 껐든 똑같이 걸린다 — 켜 두고 자리를 뜬 기기가
+// 그대로 열려 있지 않게 하려는 것이므로 예외를 두면 의미가 없다. 서버도 같은
+// 규칙을 갱신 스로틀(5분)만큼 넉넉한 값으로 갖고 있다 (app.idle_timeout_for()).
 //
 // 이 모듈은 supabase 클라이언트를 import 하지 않는다. supabase.ts 가 요청마다
 // getSessionToken() 을 호출하므로 순환 참조가 되기 때문이다. 서버에 활동을
@@ -26,7 +27,8 @@ export const STORAGE_PREFIX = 'taman:';
 const SESSION_KEY = `${STORAGE_PREFIX}session`;
 
 /** 마지막 조작 이후 이만큼 지나면 세션을 버린다. 사용자에게 약속한 값. */
-export const IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+export const IDLE_TIMEOUT_MEMBER_MS = 3 * 60 * 60 * 1000;
+export const IDLE_TIMEOUT_ADMIN_MS = 30 * 60 * 1000;
 
 // lastActiveAt 을 storage 에 적는 간격. 조작마다 적으면 다른 탭의 storage
 // 이벤트까지 그만큼 깨운다. 캐시는 매번 갱신되므로 이 탭의 판정은 정확하고,
@@ -38,6 +40,17 @@ const ACTIVITY_WRITE_INTERVAL_MS = 60 * 1000;
 const LEGACY_KEYS = ['golf_auth_member', 'golf_future_attendance'];
 
 export type MemberRole = 'admin' | 'member';
+
+/** 역할별 유휴 한도(ms). 서버 app.idle_timeout_for() 와 같이 바꾼다. */
+export function idleTimeoutMs(role?: MemberRole): number {
+  return role === 'admin' ? IDLE_TIMEOUT_ADMIN_MS : IDLE_TIMEOUT_MEMBER_MS;
+}
+
+/** 안내 문구용 표기. "3시간" / "30분". */
+export function idleTimeoutLabel(role?: MemberRole): string {
+  const min = Math.round(idleTimeoutMs(role) / 60000);
+  return min % 60 === 0 ? `${min / 60}시간` : `${min}분`;
+}
 
 export interface SessionMember {
   id: string;
@@ -68,7 +81,7 @@ let lastWriteAt = 0;
 function idleDeadline(session: StoredSession): number {
   if (!session.lastActiveAt) return Infinity;
   const at = new Date(session.lastActiveAt).getTime();
-  return Number.isNaN(at) ? Infinity : at + IDLE_TIMEOUT_MS;
+  return Number.isNaN(at) ? Infinity : at + idleTimeoutMs(session.member?.role);
 }
 
 function parse(raw: string | null): StoredSession | null {
@@ -157,7 +170,7 @@ export function idleRemainingMs(): number {
   const session = loadSession();
   if (!session) return 0;
   const deadline = idleDeadline(session);
-  if (deadline === Infinity) return IDLE_TIMEOUT_MS;
+  if (deadline === Infinity) return idleTimeoutMs(session.member.role);
   return Math.max(0, deadline - Date.now());
 }
 

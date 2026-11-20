@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ref } from 'vue';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -11,6 +12,12 @@ interface Props {
   maxlength?: number;
   min?: number | string;
   max?: number | string;
+  step?: number | string;
+  ariaLabel?: string;
+  ariaInvalid?: boolean;
+  /** 오류 문구 요소의 id. 스크린리더가 입력과 오류를 함께 읽는다. */
+  ariaDescribedby?: string;
+  autocomplete?: string;
   readonly?: boolean;
   disabled?: boolean;
   required?: boolean;
@@ -24,7 +31,14 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
   (e: 'update:modelValue', value: string): void;
+  // Enter 로 저장하는 입력 칸처럼 키 입력을 받아야 하는 곳이 쓴다.
+  (e: 'keydown', event: KeyboardEvent): void;
 }>();
+
+const inputEl = ref<HTMLInputElement | null>(null);
+
+// 검증 실패 시 부모가 해당 칸으로 포커스를 옮길 때 쓴다.
+defineExpose({ focus: () => inputEl.value?.focus() });
 
 function onInput(event: Event): void {
   const target = event.target as HTMLInputElement;
@@ -34,6 +48,7 @@ function onInput(event: Event): void {
 
 <template>
   <input
+    ref="inputEl"
     :id="id"
     :name="name"
     :type="type"
@@ -43,13 +58,20 @@ function onInput(event: Event): void {
     :maxlength="maxlength"
     :min="min"
     :max="max"
+    :step="step"
+    :aria-label="ariaLabel"
+    :aria-invalid="ariaInvalid"
+    :aria-describedby="ariaDescribedby"
+    :autocomplete="autocomplete"
     :readonly="readonly"
     :disabled="disabled"
     :required="required"
     :class="cn(
       'flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
+      ariaInvalid && 'border-destructive',
       props.class
     )"
     @input="onInput"
+    @keydown="emit('keydown', $event)"
   />
 </template>

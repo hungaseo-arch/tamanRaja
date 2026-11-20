@@ -15,7 +15,7 @@ function goHome(): void {
 
 <template>
   <div class="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4 text-center">
-    <p class="text-5xl">🏌️</p>
+    <p class="text-5xl" aria-hidden="true">🏌️</p>
     <h1 class="text-2xl font-bold text-foreground">페이지 없음</h1>
     <p class="text-sm text-muted-foreground">
       없는 주소 또는 옮겨진 주소

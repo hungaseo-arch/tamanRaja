@@ -24,7 +24,7 @@ if (typeof window !== 'undefined') {
   });
 }
 
-/** 서버 인증 이력에 남길 로그아웃 사유. 'idle' 은 30분 무활동 자동 로그아웃. */
+/** 서버 인증 이력에 남길 로그아웃 사유. 'idle' 은 무활동 자동 로그아웃. */
 export type LogoutReason = 'idle';
 
 export type LoginResult =
