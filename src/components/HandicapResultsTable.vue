@@ -394,7 +394,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                     v-model="draft[r.member_id]"
                     type="number"
                     :id="`hum-${r.member_id}`"
-                    :class="cn('mx-auto h-9 sm:h-8 w-11 sm:w-14 px-1 text-center', isInvalid(r) && 'border-destructive bg-destructive/10')"
+                    :class="cn('mx-auto h-9 sm:h-8 w-11 sm:w-14 px-1 text-center font-bold', deltaClass(humanityOf(r) || null), isInvalid(r) && 'border-destructive bg-destructive/10')"
                     :min="HUMANITY_MIN"
                     :max="HUMANITY_MAX"
                     step="1"
@@ -654,6 +654,25 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   color: inherit;
   font: inherit;
   cursor: text;
+}
+/* 인간미 색 구분 : 가산(+) 빨강, 감산(−) 파랑, 없음·0 은 흐린 회색. 부호 글자가 본체이고 색은 보조다. */
+.pp-hum:not(.pp-up):not(.pp-down) .pp-hum-cell {
+  color: var(--muted-foreground);
+}
+.pp-hum.pp-up .pp-hum-cell,
+.pp-hum.pp-down .pp-hum-cell {
+  border-style: solid;
+  border-color: currentColor;
+  background: color-mix(in oklch, currentColor 10%, transparent);
+  font-weight: 700;
+}
+.pp-hum input.pp-up {
+  color: var(--pp-up);
+  border-color: var(--pp-up);
+}
+.pp-hum input.pp-down {
+  color: var(--pp-down);
+  border-color: var(--pp-down);
 }
 .pp-hum-cell:hover,
 .pp-hum-cell:focus-visible {
