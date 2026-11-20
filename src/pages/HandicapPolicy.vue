@@ -715,14 +715,14 @@ async function loadCourseRatings(): Promise<void> {
   font-size: 0.875rem;
   line-height: 1.6;
 }
+/* 글(문단·목록)만 섹션 번호 원의 가로 중심(너비 1.5rem 의 절반 0.75rem)에서 시작한다.
+   표·수식·카드 같은 박스는 원래 위치를 지킨다. */
+.policy-body > p,
+.policy-body > ul {
+  margin-left: 0.75rem;
+}
 .policy-lead {
   margin: 0 0 0.75rem;
-}
-/* 섹션 번호 원(너비 1.5rem, 헤더 좌측 여백 0.875rem)의 가로 중심에서 글이 시작되도록
-   본문 안내 문단만 0.75rem 안쪽으로 들인다. */
-.policy-body > .policy-lead,
-.policy-body > .policy-note {
-  margin-left: 0.75rem;
 }
 .policy-card {
   padding: 0.625rem 0.75rem;
