@@ -3,6 +3,13 @@ import { computed, onMounted, ref, watch } from 'vue';
 import { supabase } from '@/lib/supabase';
 import Card from '@/components/ui/Card.vue';
 import CardContent from '@/components/ui/CardContent.vue';
+import AsyncState from '@/components/ui/AsyncState.vue';
+import Table from '@/components/ui/Table.vue';
+import TableHeader from '@/components/ui/TableHeader.vue';
+import TableBody from '@/components/ui/TableBody.vue';
+import TableRow from '@/components/ui/TableRow.vue';
+import TableHead from '@/components/ui/TableHead.vue';
+import TableCell from '@/components/ui/TableCell.vue';
 
 // 나의 기록 : 연도별 기준핸디 추이. handicap_annual 의 본인 행만 읽는다 (DB 변경 없음).
 // 확정 전(draft) 연도는 '안' 으로 표시한다.
@@ -98,99 +105,54 @@ const ariaLabel = computed(
 </script>
 
 <template>
-  <Card v-if="loading || error || view.length > 0" class="pp-trend">
+  <Card v-if="loading || error || view.length > 0">
     <CardContent class="py-3 px-3 sm:px-4">
       <h2 class="text-sm font-bold m-0 mb-2">연도별 기준핸디 추이</h2>
-      <p v-if="loading" class="text-xs text-muted-foreground m-0">불러오는 중</p>
-      <p v-else-if="error" class="text-xs text-muted-foreground m-0" role="alert">
-        불러오기 실패 : {{ error }}
-        <button type="button" class="underline" @click="load">다시 시도</button>
-      </p>
-      <template v-else-if="chart">
-        <svg
-          :viewBox="`0 0 ${W} ${H}`"
-          class="pp-trend-svg"
-          role="img"
-          :aria-label="ariaLabel"
-          preserveAspectRatio="xMidYMid meet"
-        >
-          <polyline v-if="chart.pts.length > 1" :points="chart.line" fill="none" stroke="currentColor" stroke-width="2" class="pp-trend-line" />
-          <g v-for="p in chart.pts" :key="p.year">
-            <circle :cx="p.x" :cy="p.y" r="4" :class="p.draft ? 'pp-trend-dot-draft' : 'pp-trend-dot'" />
-            <text :x="p.x" :y="p.y - 8" text-anchor="middle" class="pp-trend-hc">{{ p.hc }}</text>
-            <text :x="p.x" :y="H - 1" text-anchor="middle" class="pp-trend-year">{{ p.year }}</text>
-          </g>
-        </svg>
-        <table class="pp-trend-table">
-          <thead>
-            <tr>
-              <th scope="col">연도</th>
-              <th scope="col">기준핸디</th>
-              <th scope="col">전년 대비</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="r in view" :key="r.year">
-              <th scope="row">{{ r.year }}<span v-if="r.draft" class="pp-trend-draft">안</span></th>
-              <td class="font-mono font-bold">{{ r.std_hc }}</td>
-              <td class="font-mono">
-                {{ fmtDelta(r.delta) }}<span v-if="deltaLabel(r.delta)" class="pp-trend-label">{{ deltaLabel(r.delta) }}</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <p v-if="view.some((r) => r.draft)" class="text-xs text-muted-foreground m-0 mt-1">'안' 표시는 확정 전 값입니다.</p>
-      </template>
+      <!-- 불러오는 중·실패는 다른 화면과 같은 AsyncState 로 그린다. 실패 사유는 그대로 보인다. -->
+      <AsyncState :loading="loading" :error="error" label="연도별 기준핸디 추이" container-class="py-3" @retry="load">
+        <template v-if="chart">
+          <svg
+            :viewBox="`0 0 ${W} ${H}`"
+            class="block w-full max-w-md h-auto mx-auto mb-2 text-primary"
+            role="img"
+            :aria-label="ariaLabel"
+            preserveAspectRatio="xMidYMid meet"
+          >
+            <polyline v-if="chart.pts.length > 1" :points="chart.line" fill="none" stroke-width="2" class="stroke-current" />
+            <g v-for="p in chart.pts" :key="p.year">
+              <circle
+                :cx="p.x"
+                :cy="p.y"
+                r="4"
+                :class="p.draft ? 'fill-background stroke-current stroke-2' : 'fill-current'"
+              />
+              <text :x="p.x" :y="p.y - 8" text-anchor="middle" class="fill-current text-[10px] font-bold">{{ p.hc }}</text>
+              <text :x="p.x" :y="H - 1" text-anchor="middle" class="fill-muted-foreground text-[9px]">{{ p.year }}</text>
+            </g>
+          </svg>
+          <Table :scroll="false" class="text-xs sm:text-sm" caption="연도별 기준핸디와 전년 대비 증감">
+            <TableHeader>
+              <TableRow>
+                <TableHead class="static text-center font-semibold text-foreground px-1.5 py-1.5">연도</TableHead>
+                <TableHead class="static text-center font-semibold text-foreground px-1.5 py-1.5">기준핸디</TableHead>
+                <TableHead class="static text-center font-semibold text-foreground px-1.5 py-1.5">전년 대비</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody class="[&_tr:last-child>th]:border-0">
+              <TableRow v-for="r in view" :key="r.year">
+                <TableHead scope="row" class="static text-center px-1.5 py-1.5 font-bold text-foreground">
+                  {{ r.year }}<span v-if="r.draft" class="ml-1 text-[11px] text-muted-foreground">안</span>
+                </TableHead>
+                <TableCell class="text-center font-mono font-bold px-1.5 py-1.5">{{ r.std_hc }}</TableCell>
+                <TableCell class="text-center font-mono px-1.5 py-1.5">
+                  {{ fmtDelta(r.delta) }}<span v-if="deltaLabel(r.delta)" class="ml-1 font-sans text-[11px] text-muted-foreground">{{ deltaLabel(r.delta) }}</span>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          </Table>
+          <p v-if="view.some((r) => r.draft)" class="text-xs text-muted-foreground m-0 mt-1">'안' 표시는 확정 전 값입니다.</p>
+        </template>
+      </AsyncState>
     </CardContent>
   </Card>
 </template>
-
-<style>
-.pp-trend-svg {
-  display: block;
-  width: 100%;
-  max-width: 28rem;
-  height: auto;
-  margin: 0 auto 0.5rem;
-  color: var(--color-primary, #15803d);
-}
-.pp-trend-dot {
-  fill: currentColor;
-}
-.pp-trend-dot-draft {
-  fill: var(--color-background, #fff);
-  stroke: currentColor;
-  stroke-width: 2;
-}
-.pp-trend-hc {
-  font-size: 10px;
-  font-weight: 700;
-  fill: currentColor;
-}
-.pp-trend-year {
-  font-size: 9px;
-  fill: var(--color-muted-foreground, #6b7280);
-}
-.pp-trend-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.8125rem;
-}
-.pp-trend-table th,
-.pp-trend-table td {
-  padding: 0.25rem 0.375rem;
-  text-align: center;
-  border-top: 1px solid var(--color-border, #e5e7eb);
-}
-.pp-trend-table thead th {
-  font-weight: 600;
-  color: var(--color-muted-foreground, #6b7280);
-  border-top: 0;
-}
-.pp-trend-draft,
-.pp-trend-label {
-  margin-left: 0.25rem;
-  font-size: 0.6875rem;
-  color: var(--color-muted-foreground, #6b7280);
-}
-</style>
