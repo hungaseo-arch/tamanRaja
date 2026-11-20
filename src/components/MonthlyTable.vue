@@ -63,6 +63,8 @@ interface Props {
    * 저장에 실패했는데 화면이 읽기 모드로 돌아가면 방금 친 값이 사라진 것처럼 보인다.
    */
   saveState?: 'idle' | 'saving' | 'error';
+  /** 저장 실패 문구. 하단 고정 저장 줄에 saveState 가 'error' 일 때 보인다. */
+  saveError?: string | null;
   /**
    * 참석 창을 열 수 있는 줄(로그인한 본인)의 회원 id. 참석 창은 아직 답할 수
    * 있는 달의 본인 참석만 바꾸므로, 부모가 그런 달을 보고 있을 때만 넘긴다. 그 외에는 null.
@@ -165,7 +167,9 @@ watch(
 );
 
 // 당월 수정 진입: 기존 저장 데이터로 로컬 입력값을 시드한 뒤 편집 모드 전환.
-// (점수만 시드하면 computeAutoFields가 조/시상/차월핸디를 자동 재계산)
+// 점수를 시드하면 computeAutoFields가 조/시상/차월핸디를 자동 재계산한다. 그런데 저장돼 있던
+// 조·시상이 그 계산과 다르면 관리자가 손으로 지정한 값이므로 그대로 두고 수동 지정으로 표시한다.
+// (그러지 않으면 저장 한 번에 수동 지정이 조용히 자동값으로 바뀐다.)
 function enterEdit(): void {
   if (!props.isFutureMonth) {
     clearLocal();
@@ -175,9 +179,19 @@ function enterEdit(): void {
         localScores[row.member_id] = String(row.score);
       }
     }
+    computeAutoFields();
+    preserveStoredManual();
+    // 되살린 시상은 한 명씩이라, 같은 시상을 받은 다른 회원의 자동값을 다시 비운다.
+    computeAutoFields();
   }
   isEditing.value = true;
   void nextTick(captureBaseline);
+}
+
+// 좁은 폭 보조 줄의 차월 핸디. 편집 중이면 입력으로 계산한 값, 아니면 저장된 값이다.
+function miniNextHc(row: MonthlyRow): number | null {
+  if (isEditing.value) return localNextHc[row.member_id] ?? null;
+  return row.attended && row.score !== null ? row.next_hc : null;
 }
 
 function getLocalNet(row: MonthlyRow): string {
@@ -231,6 +245,23 @@ function computeAutoFields(): void {
     if (!manualRanks[memberId]) {
       if (heldRanks.has(r.result_rank)) delete localRanks[memberId];
       else localRanks[memberId] = r.result_rank;
+    }
+  }
+}
+
+// 저장된 조·시상이 자동 계산과 다르면 저장값을 되살리고 수동 지정으로 표시한다.
+// 저장값이 비어 있으면 자동 계산에 맡긴다(없는 값을 만들어 내지 않는다).
+function preserveStoredManual(): void {
+  for (const row of props.monthlyData) {
+    if (!row.attended || row.score === null) continue;
+    const id = row.member_id;
+    if (row.result_group && row.result_group !== localGroups[id]) {
+      localGroups[id] = row.result_group;
+      manualGroups[id] = true;
+    }
+    if (isRankName(row.result_rank) && row.result_rank !== localRanks[id]) {
+      localRanks[id] = row.result_rank;
+      manualRanks[id] = true;
     }
   }
 }
@@ -804,7 +835,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 <TableHead v-if="isFutureMonth" class="font-bold text-center whitespace-nowrap">참석</TableHead>
                 <TableHead class="font-bold text-center hidden sm:table-cell">기준 핸디</TableHead>
                 <!-- 모바일 14px 에서 열이 가로로 넘치므로 당월 핸디는 좁은 폭에서 숨긴다.
-                     읽기 모드는 상세 창에, 편집 모드는 이름 아래 보조 줄(당월 → 차월)에 둔다. -->
+                     좁은 폭에서는 이름 아래 보조 줄(당월 · 차월)에 둔다. -->
                 <TableHead class="font-bold text-center whitespace-nowrap hidden sm:table-cell">당월 핸디</TableHead>
                 <TableHead class="font-bold text-center hidden sm:table-cell">차월 핸디</TableHead>
                 <TableHead class="font-bold text-center whitespace-nowrap">
@@ -848,17 +879,18 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                   >{{ row.member_name }}<CalendarCheck class="h-4 w-4 shrink-0 text-primary" aria-hidden="true" /></button>
                   <RowDetailButton v-else-if="!isEditing" :label="row.member_name" :enabled="compact" :class="compact ? '-my-2 sm:my-0' : undefined" @click="openDetail(row)">{{ row.member_name }}</RowDetailButton>
                   <template v-else>{{ row.member_name }}</template>
-                  <!-- 편집 모드의 좁은 폭: 숨은 핸디·조 열을 대신해 저장될 값을 이름 아래에 보인다.
-                       점수를 넣으면 자동 계산값이 바로 바뀌므로 저장 전에 확인할 수 있다. -->
+                  <!-- 좁은 폭(sm 미만)의 보조 줄: 숨은 당월·차월 핸디 열을 대신해 이름 아래에 보인다.
+                       읽기 모드는 저장된 값, 편집 모드는 저장될 값이라 점수를 넣으면 바로 바뀐다.
+                       편집 모드의 조는 md 미만에서만 여기에 덧붙는다. -->
                   <span
-                    v-if="isEditing"
-                    class="md:hidden block text-sm font-normal font-mono leading-tight text-muted-foreground mt-0.5"
+                    :class="cn('block text-sm font-normal font-mono leading-tight text-muted-foreground mt-0.5',
+                      isEditing ? 'md:hidden' : 'sm:hidden')"
                   >
                     <span
                       class="sm:hidden"
-                      :aria-label="`당월 핸디 ${row.app_hc ?? '없음'}, 차월 핸디 ${localNextHc[row.member_id] ?? '미정'}`"
-                    >당월 {{ row.app_hc ?? '-' }} → 차월 {{ localNextHc[row.member_id] ?? '-' }}</span>
-                    <span v-if="localGroups[row.member_id]" class="ml-1.5 sm:ml-0 font-sans">{{ localGroups[row.member_id] }}</span>
+                      :aria-label="`당월 핸디 ${row.app_hc ?? '미정'}, 차월 핸디 ${miniNextHc(row) ?? '없음'}`"
+                    >당월 {{ row.app_hc ?? '미정' }} · 차월 {{ miniNextHc(row) ?? '-' }}</span>
+                    <span v-if="isEditing && localGroups[row.member_id]" class="ml-1.5 sm:ml-0 font-sans">{{ localGroups[row.member_id] }}</span>
                   </span>
                 </TableCell>
 
@@ -1012,9 +1044,12 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
     >
       <p
         class="m-0 min-w-0 flex-1 text-sm"
-        :class="invalidScoreNames.length || missingHcNames.length ? 'text-destructive' : 'text-muted-foreground'"
+        :class="props.saveState === 'error' || invalidScoreNames.length || missingHcNames.length ? 'text-destructive' : 'text-muted-foreground'"
+        :role="props.saveState === 'error' ? 'alert' : undefined"
       >
-        <template v-if="missingHcNames.length">당월 핸디 없는 회원이 있어 저장할 수 없습니다.</template>
+        <template v-if="props.saveState === 'saving'">저장 중...</template>
+        <template v-else-if="props.saveState === 'error'">{{ props.saveError || '저장 중 오류가 발생했습니다.' }} 입력한 내용은 그대로 있습니다.</template>
+        <template v-else-if="missingHcNames.length">당월 핸디 없는 회원이 있어 저장할 수 없습니다.</template>
         <template v-else-if="invalidScoreNames.length">스코어 범위를 확인해 주세요.</template>
         <template v-else-if="isDirty">저장하지 않은 입력이 있습니다.</template>
         <template v-else>입력한 내용이 없습니다.</template>
