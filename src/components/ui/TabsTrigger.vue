@@ -50,8 +50,8 @@ function onKeydown(e: KeyboardEvent): void {
     :aria-selected="isActive"
     :disabled="disabled"
     :class="cn(
-      'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 min-h-11 sm:min-h-0 text-sm font-extrabold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
-      isActive ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+      'inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 min-h-11 sm:min-h-0 text-sm font-semibold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+      isActive ? 'bg-background text-foreground ring-1 ring-border' : 'text-muted-foreground hover:text-foreground',
       props.class
     )"
     @click="activate"

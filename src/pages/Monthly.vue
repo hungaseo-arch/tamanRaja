@@ -11,6 +11,8 @@ import { setPageTitle } from '@/lib/title';
 import type { SavePayload } from '@/components/MonthlyTable.vue';
 import MonthlyTable from '@/components/MonthlyTable.vue';
 import Dialog from '@/components/ui/Dialog.vue';
+import DialogTitle from '@/components/ui/DialogTitle.vue';
+import DialogFooter from '@/components/ui/DialogFooter.vue';
 import Button from '@/components/ui/Button.vue';
 
 const availableMonths = computed(() => getAvailableMonths());
@@ -141,6 +143,17 @@ const monthOptions = computed(() =>
     return { value: ym, label: `${12 - i}월`, disabled: !isSelectable(ym) };
   })
 );
+
+// 이전·다음 달 이동. 고를 수 있는 달 전체(해를 넘어서도) 중 바로 이웃한 달이고,
+// 이동은 표의 update:selectedMonth → monthModel → requestMonth 를 지나 변경분 확인을 거친다.
+const sortedSelectable = computed(() =>
+  [...new Set([...existingMonths.value, ...SELECTABLE])].sort(),
+);
+const prevMonth = computed(() => {
+  const older = sortedSelectable.value.filter((ym) => ym < selectedMonth.value);
+  return older.length ? older[older.length - 1]! : null;
+});
+const nextMonth = computed(() => sortedSelectable.value.find((ym) => ym > selectedMonth.value) ?? null);
 
 // 직접 입력 (Supabase 미팅 없는 달, 또는 저장된 미래월 편집용)
 const manualDate = ref('');
@@ -329,6 +342,8 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
           v-model:selected-year="selectedYear"
           :year-options="yearOptions"
           :month-options="monthOptions"
+          :prev-month="prevMonth"
+          :next-month="nextMonth"
           v-model:manual-date="manualDate"
           v-model:manual-course="manualCourse"
           :save-state="saveState"
@@ -341,14 +356,14 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
       
       <!-- 저장하지 않은 입력이 있는 채로 달을 바꾸려 할 때 -->
       <Dialog :open="leaveOpen" label="달 이동 확인" content-class="sm:max-w-sm" @update:open="(v: boolean) => { if (!v && pendingMonth) stayOnMonth(); }">
-        <div class="px-1 pt-1 space-y-3">
-          <h2 class="text-base font-bold">달 이동 확인</h2>
+        <div class="space-y-3">
+          <DialogTitle class="mb-0">달 이동 확인</DialogTitle>
           <p class="text-sm">저장하지 않은 입력이 사라짐</p>
           <p v-if="pendingMonth" class="text-sm text-muted-foreground">{{ selectedMonth }} → {{ pendingMonth }}</p>
-          <div class="flex justify-end gap-2 pt-1">
-            <Button type="button" variant="outline" size="sm" @click="stayOnMonth">이 달에 머물기</Button>
-            <Button type="button" size="sm" @click="confirmLeave">입력 폐기하고 이동</Button>
-          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" @click="stayOnMonth">이 달에 머물기</Button>
+            <Button type="button" variant="destructive" @click="confirmLeave">입력 폐기하고 이동</Button>
+          </DialogFooter>
         </div>
       </Dialog>
     </div>

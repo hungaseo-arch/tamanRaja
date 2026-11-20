@@ -42,3 +42,26 @@ describe('월간 기록 표 모바일 규칙', () => {
     expect(table).toContain('낮을수록 좋음');
   });
 });
+
+describe('월간 툴바 이전·다음 달 이동', () => {
+  it('이전·다음 달 버튼은 모바일 44px 이고 이름이 있으며 이웃 달이 없으면 비활성화된다', () => {
+    expect(table).toMatch(/:disabled="!props\.prevMonth"[\s\S]*?aria-label="이전 달"/);
+    expect(table).toMatch(/:disabled="!props\.nextMonth"[\s\S]*?aria-label="다음 달"/);
+    expect(table.match(/class="w-11 px-0 shrink-0 sm:w-8"/g)?.length).toBe(2);
+  });
+
+  it('이동은 기존 update:selectedMonth → requestMonth 경로만 쓴다', () => {
+    expect(table).toMatch(/emit\('update:selectedMonth', props\.prevMonth\)/);
+    expect(table).toMatch(/emit\('update:selectedMonth', props\.nextMonth\)/);
+    expect(page).toMatch(/set: \(v: string\) => requestMonth\(v\)/);
+    expect(page).toMatch(/:prev-month="prevMonth"/);
+  });
+
+  it('Winner·Medalist 는 읽기 모드에서 모바일에도 보이고 편집 모드에서만 숨는다', () => {
+    expect(table).toMatch(/isEditing \? 'hidden sm:flex' : 'flex'/);
+  });
+
+  it('제목은 truncate 로 자르지 않고 줄바꿈한다', () => {
+    expect(table).not.toMatch(/CardTitle as="h1"[^>]*truncate/);
+  });
+});

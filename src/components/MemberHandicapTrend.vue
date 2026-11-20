@@ -12,7 +12,7 @@ import TableHead from '@/components/ui/TableHead.vue';
 import TableCell from '@/components/ui/TableCell.vue';
 
 // 나의 기록 : 연도별 기준핸디 추이. handicap_annual 의 본인 행만 읽는다 (DB 변경 없음).
-// 확정 전(draft) 연도는 '안' 으로 표시한다.
+// 확정 전(draft) 연도는 '확정 전' 으로 표시한다. 본인 행이 하나도 없으면 카드는 두고 안내 한 줄을 보인다.
 const props = defineProps<{ memberId: string | number }>();
 
 interface YearRow {
@@ -100,16 +100,25 @@ const chart = computed(() => {
   return { pts, line: pts.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') };
 });
 const ariaLabel = computed(
-  () => '연도별 기준핸디 추이: ' + view.value.map((r) => `${r.year}년 ${r.std_hc}${r.draft ? '(안)' : ''}`).join(', '),
+  () => '연도별 기준핸디 추이: ' + view.value.map((r) => `${r.year}년 ${r.std_hc}${r.draft ? '(확정 전)' : ''}`).join(', '),
 );
 </script>
 
 <template>
-  <Card v-if="loading || error || view.length > 0">
+  <Card>
     <CardContent class="py-3 px-3 sm:px-4">
       <h2 class="text-sm font-bold m-0 mb-2">연도별 기준핸디 추이</h2>
       <!-- 불러오는 중·실패는 다른 화면과 같은 AsyncState 로 그린다. 실패 사유는 그대로 보인다. -->
-      <AsyncState :loading="loading" :error="error" label="연도별 기준핸디 추이" container-class="py-3" @retry="load">
+      <AsyncState
+        :loading="loading"
+        :error="error"
+        :empty="view.length === 0"
+        label="연도별 기준핸디 추이"
+        container-class="py-3"
+        empty-title="표시할 기준핸디 추이 없음"
+        empty-hint="연도별 기준핸디 산정 결과가 등록되면 표시"
+        @retry="load"
+      >
         <template v-if="chart">
           <svg
             :viewBox="`0 0 ${W} ${H}`"
@@ -141,7 +150,7 @@ const ariaLabel = computed(
             <TableBody class="[&_tr:last-child>th]:border-0">
               <TableRow v-for="r in view" :key="r.year">
                 <TableHead scope="row" class="static text-center px-1.5 py-1.5 font-bold text-foreground">
-                  {{ r.year }}<span v-if="r.draft" class="ml-1 text-xs text-muted-foreground">안</span>
+                  {{ r.year }}<span v-if="r.draft" class="ml-1 text-xs text-muted-foreground">확정 전</span>
                 </TableHead>
                 <TableCell class="text-center font-mono font-bold px-1.5 py-1.5">{{ r.std_hc }}</TableCell>
                 <TableCell class="text-center font-mono px-1.5 py-1.5">
@@ -150,7 +159,7 @@ const ariaLabel = computed(
               </TableRow>
             </TableBody>
           </Table>
-          <p v-if="view.some((r) => r.draft)" class="text-xs text-muted-foreground m-0 mt-1">'안' 표시는 확정 전 값입니다.</p>
+          <p v-if="view.some((r) => r.draft)" class="text-xs text-muted-foreground m-0 mt-1">'확정 전' 표시 연도는 변경 가능한 값</p>
         </template>
       </AsyncState>
     </CardContent>

@@ -134,7 +134,7 @@ function onTab(e: KeyboardEvent): void {
             :aria-label="label"
             tabindex="-1"
             :class="cn(
-              'relative w-full max-w-lg rounded-lg border bg-background p-4 sm:p-6 shadow-lg sm:max-w-md overflow-y-auto max-h-[90vh]',
+              'relative w-full max-w-lg rounded-lg border bg-background p-4 sm:p-6 shadow-lg sm:max-w-md overflow-y-auto overscroll-contain max-h-[calc(100dvh-2rem)]',
               contentClass
             )"
             @click.stop
@@ -144,7 +144,7 @@ function onTab(e: KeyboardEvent): void {
               v-if="dismissible"
               type="button"
               aria-label="닫기"
-              class="absolute right-2 top-2 inline-flex h-11 w-11 items-center justify-center rounded-md opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 sm:h-9 sm:w-9"
+              class="absolute right-2 top-2 inline-flex h-11 w-11 items-center justify-center rounded-md opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               @click="close"
             >
               <X class="h-4 w-4" />

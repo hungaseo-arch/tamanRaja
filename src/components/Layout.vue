@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed, ref, watch, type Component } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
-import { User, CalendarDays, Trophy, UserRound, History, Users, Scale, Ellipsis } from 'lucide-vue-next';
+import { User, CalendarDays, Trophy, UserRound, History, Users, Scale, Ellipsis, Menu } from 'lucide-vue-next';
 import Button from '@/components/ui/Button.vue';
 import Dialog from '@/components/ui/Dialog.vue';
+import DialogTitle from '@/components/ui/DialogTitle.vue';
 import { useAuth } from '@/composables/useAuth';
 import { ROUTE_PATHS } from '@/lib';
 import { cn } from '@/lib/utils';
@@ -59,7 +60,10 @@ const tabItems = computed(() => (navItems.value.length > TAB_LIMIT ? navItems.va
 const moreItems = computed(() => (navItems.value.length > TAB_LIMIT ? navItems.value.slice(TAB_LIMIT - 1) : []));
 const moreOpen = ref(false);
 const moreActive = computed(() => moreItems.value.some((item) => item.path === route.path));
-watch(() => route.path, () => { moreOpen.value = false; });
+// sm~lg 구간(태블릿·좁은 데스크톱)은 상단 메뉴가 한 줄에 들어가지 않아
+// 햄버거 버튼으로 전체 메뉴 창을 연다. lg(1024px) 이상에서만 상단 nav 를 쓴다.
+const menuOpen = ref(false);
+watch(() => route.path, () => { moreOpen.value = false; menuOpen.value = false; });
 
 // 해시 라우터라 href="#main-content" 를 그대로 두면 라우트가 바뀐다.
 // 기본 동작을 막고 본문으로 포커스만 옮긴다.
@@ -97,14 +101,14 @@ function isActive(path: string): boolean {
             <span class="text-base sm:text-xl font-bold text-foreground whitespace-nowrap truncate">따만라자 모임</span>
           </div>
 
-          <!-- 네비게이션 (sm 이상). 좁은 폭에서는 하단 탭 바가 대신한다. -->
-          <nav class="hidden sm:flex flex-1 items-center justify-center gap-1 px-6" aria-label="주요 메뉴">
+          <!-- 네비게이션 (lg 이상). sm 미만은 하단 탭 바, sm~lg 는 햄버거 메뉴가 대신한다. -->
+          <nav class="hidden lg:flex flex-1 min-w-0 items-center justify-center gap-1 px-2 xl:px-6" aria-label="주요 메뉴">
             <RouterLink
               v-for="item in navItems"
               :key="item.path"
               :to="item.path"
               :class="cn(
-                'flex items-center justify-center px-4 py-1.5 rounded-lg text-sm font-medium transition-colors text-center leading-tight',
+                'flex shrink-0 items-center justify-center whitespace-nowrap px-3 xl:px-4 py-1.5 rounded-lg text-sm font-medium transition-colors text-center leading-tight',
                 isActive(item.path)
                   ? 'bg-primary text-primary-foreground'
                   : 'text-muted-foreground hover:text-foreground hover:bg-accent'
@@ -116,8 +120,8 @@ function isActive(path: string): boolean {
             </RouterLink>
           </nav>
 
-          <!-- sm 미만에서 로고와 우측 버튼 사이를 벌린다 -->
-          <div class="flex-1 sm:hidden" />
+          <!-- lg 미만에서 로고와 우측 버튼 사이를 벌린다 -->
+          <div class="flex-1 lg:hidden" />
 
           <!-- 로그인/회원정보 -->
           <div class="flex items-center gap-1 sm:gap-2 shrink-0">
@@ -142,6 +146,16 @@ function isActive(path: string): boolean {
               <User class="w-4 h-4" aria-hidden="true" />
               로그인
             </Button>
+            <button
+              type="button"
+              class="hidden sm:inline-flex lg:hidden h-10 w-10 shrink-0 items-center justify-center rounded-md border border-border text-foreground transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              aria-label="메뉴 열기"
+              aria-haspopup="dialog"
+              :aria-expanded="menuOpen"
+              @click="menuOpen = true"
+            >
+              <Menu class="w-5 h-5" aria-hidden="true" />
+            </button>
           </div>
 
         </div>
@@ -197,7 +211,27 @@ function isActive(path: string): boolean {
       </div>
     </nav>
 
+    <Dialog v-model:open="menuOpen" label="메뉴" content-class="max-w-sm">
+      <DialogTitle class="mb-2">메뉴</DialogTitle>
+      <ul class="flex flex-col gap-1">
+        <li v-for="item in navItems" :key="item.path">
+          <RouterLink
+            :to="item.path"
+            :class="cn(
+              'flex min-h-11 items-center gap-3 rounded-md px-3 text-base font-medium transition-colors hover:bg-accent',
+              isActive(item.path) ? 'bg-accent text-primary' : 'text-foreground'
+            )"
+            :aria-current="isActive(item.path) ? 'page' : undefined"
+          >
+            <component :is="item.icon" class="w-5 h-5 shrink-0" aria-hidden="true" />
+            {{ item.label }}
+          </RouterLink>
+        </li>
+      </ul>
+    </Dialog>
+
     <Dialog v-model:open="moreOpen" label="더보기 메뉴" content-class="max-w-sm">
+      <DialogTitle class="mb-2">더보기</DialogTitle>
       <ul class="flex flex-col gap-1">
         <li v-for="item in moreItems" :key="item.path">
           <RouterLink
