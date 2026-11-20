@@ -718,6 +718,12 @@ async function loadCourseRatings(): Promise<void> {
 .policy-lead {
   margin: 0 0 0.75rem;
 }
+/* 섹션 번호 원(너비 1.5rem, 헤더 좌측 여백 0.875rem)의 가로 중심에서 글이 시작되도록
+   본문 안내 문단만 0.75rem 안쪽으로 들인다. */
+.policy-body > .policy-lead,
+.policy-body > .policy-note {
+  margin-left: 0.75rem;
+}
 .policy-card {
   padding: 0.625rem 0.75rem;
   border: 1px solid var(--pp-border);
