@@ -370,7 +370,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                     v-model="draft[r.member_id]"
                     type="number"
                     :id="`hum-${r.member_id}`"
-                    :class="cn('mx-auto h-8 w-12 sm:w-14 px-1 text-center', isInvalid(r) && 'border-destructive bg-destructive/10')"
+                    :class="cn('mx-auto h-11 sm:h-8 w-12 sm:w-14 px-1 text-center', isInvalid(r) && 'border-destructive bg-destructive/10')"
                     :min="HUMANITY_MIN"
                     :max="HUMANITY_MAX"
                     step="1"
@@ -518,7 +518,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   display: inline;
   margin-left: 0.25rem;
   font-family: var(--font-sans);
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
 }
 .pp-results th,
@@ -554,7 +554,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   }
   /* 머리글은 고정폭 숫자 글꼴이라 넓다. 좁은 화면에서만 줄여 셀 안에 넣는다. */
   .pp-results thead th {
-    font-size: 0.6875rem;
+    font-size: 0.75rem;
     letter-spacing: -0.02em;
   }
 }
@@ -574,7 +574,11 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   font-weight: 600;
 }
 .pp-hum-cell {
-  min-width: 2.5rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   padding: 0.15rem 0.35rem;
   border: 1px dashed var(--pp-border, var(--border));
   border-radius: 0.25rem;
@@ -608,6 +612,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 }
 .pp-sort,
 .pp-expand {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
@@ -620,6 +625,13 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   text-decoration: underline;
   text-decoration-style: dotted;
   text-underline-offset: 3px;
+}
+/* 좁은 화면은 정렬·상세 버튼 높이를 44px 로 잡는다. 히트영역을 바깥으로 넓히면 행끼리 겹치고 래퍼에 잘린다. */
+@media (max-width: 639px) {
+  .pp-sort,
+  .pp-expand {
+    min-height: 2.75rem;
+  }
 }
 .pp-sort:focus-visible,
 .pp-expand:focus-visible {
@@ -646,7 +658,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 .pp-caption {
   display: block;
   margin-top: 0.125rem;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 400;
   color: var(--muted-foreground);
 }
