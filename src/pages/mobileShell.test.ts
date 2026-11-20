@@ -17,7 +17,7 @@ describe('모바일 14px 기준', () => {
   });
 
   it('하단 탭 라벨은 text-sm 이다', () => {
-    const tabBar = layout.slice(layout.indexOf('<!-- 하단 탭 바 (sm 미만)'));
+    const tabBar = layout.slice(layout.indexOf('<!-- 하단 탭 바 (lg 미만)'));
     expect(tabBar).toContain('text-center text-sm');
     expect(tabBar).not.toContain('text-center text-xs');
   });
