@@ -656,7 +656,21 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
     width: auto;
   }
   .pp-results thead th {
+    white-space: nowrap;
     word-break: keep-all;
+  }
+  /* 가로로 스크롤해도 이름 열만 왼쪽에 남긴다. 겹쳐 지나가는 값이 비치지 않게 배경을 채운다. */
+  .pp-results thead th:first-child,
+  .pp-results tbody th {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--pp-bg);
+    box-shadow: 1px 0 0 var(--pp-grey);
+  }
+  .pp-results thead th:first-child {
+    z-index: 2;
+    background: var(--pp-blue);
   }
   .pp-results td {
     white-space: nowrap;
