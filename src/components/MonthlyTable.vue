@@ -639,11 +639,11 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         <!-- 그달 요약. 제목과 컨트롤 사이 가운데에 놓는다(mx-auto 가 남는 폭을
              양쪽으로 나눠 가진다). 좁은 화면에서는 줄이 접혀 제목 아래로
              내려간다. Winner·Medalist 는 편집 중에만 sm 미만에서 숨는다. -->
-        <div v-if="isFutureMonth" class="mx-auto flex items-center gap-1.5 text-sm">
+        <div v-if="isFutureMonth" class="flex items-center gap-1.5 text-sm sm:ml-auto">
           <span class="font-medium text-muted-foreground whitespace-nowrap">참석 예정 인원</span>
           <span class="font-bold">{{ futureAttendedCount }}명</span>
         </div>
-        <div v-else class="mx-auto flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm">
+        <div v-else class="flex flex-wrap items-center justify-start gap-x-3 gap-y-1 text-sm sm:ml-auto sm:justify-end">
           <div class="flex items-center gap-1.5 shrink-0">
             <span class="font-medium text-muted-foreground whitespace-nowrap">참석 인원</span>
             <span class="font-bold">{{ stats.attendedCount }}명</span>
@@ -669,7 +669,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
               type="date"
               v-model="localManualDate"
               aria-label="모임 날짜"
-              class="h-11 sm:h-8 rounded-md border border-input bg-background px-2 text-sm font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 w-full sm:w-auto sm:flex-initial"
+              class="h-11 sm:h-8 rounded-md border border-input bg-background px-2 text-base sm:text-sm font-mono focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 w-full sm:w-auto sm:flex-initial"
             />
             <!-- 골프장은 목록에서 고르는 것이 기본이다. datalist 는 제안일 뿐이라
                  오타가 그대로 저장돼 같은 골프장이 두 개로 갈라졌다. 새 골프장은
@@ -689,7 +689,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
               v-model="newCourseName"
               aria-label="새 골프장명"
               placeholder="새 골프장명"
-              class="h-11 sm:h-8 rounded-md border border-input bg-background px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 flex-1 min-w-0 sm:flex-initial sm:w-28"
+              class="h-11 sm:h-8 rounded-md border border-input bg-background px-2 text-base sm:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 flex-1 min-w-0 sm:flex-initial sm:w-28"
             />
           </template>
           <!-- 저장 중 재클릭은 meeting_results 를 지웠다 다시 넣는 과정을
@@ -713,7 +713,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           >취소</Button>
           <Button v-else size="xs" variant="outline" class="flex-1 sm:flex-none" @click="enterEdit">수정</Button>
         </template>
-        <!-- 제목·요약·컨트롤이 한 줄에 들어가도록 xl(1280px) 미만은 '수정' 만, CSV·핸디 규칙은 아이콘만 보인다.
+        <!-- 컨테이너가 최대 992px 라 문구를 모두 펼치면(약 1060px) 1280px 에서 줄이 늘어난다.
+             그래서 '수정' 만 글자이고 CSV·핸디 규칙은 아이콘만 둔다(title·aria-label 유지).
              눌러서 열리는 잠금 해제 창이 이유를 설명하고, 이름은 전체 문구를 유지한다. -->
         <Button
           v-else-if="showUnlock"
@@ -723,8 +724,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           aria-label="잠금 해제 후 수정"
           @click="openUnlock"
         >
-          <span class="xl:hidden" aria-hidden="true">수정</span>
-          <span class="hidden xl:inline">잠금 해제 후 수정</span>
+          수정
         </Button>
 
         <!-- 연도·월 선택. 연간 랭킹의 연도 선택과 같은 자리·같은 배색이다.
@@ -764,8 +764,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           @click="exportYearlyRecords(props.selectedMonth)"
         >
           <Download class="w-4 h-4" aria-hidden="true" />
-          <span class="hidden xl:inline">CSV</span>
-        </Button>
+          </Button>
 
         <!-- 핸디 규칙 도움말 -->
         <Button
@@ -777,8 +776,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           @click="showHcHelp = true"
         >
           <CircleHelp class="w-4 h-4" aria-hidden="true" />
-          <span class="hidden xl:inline">핸디 규칙</span>
-        </Button>
+          </Button>
         </div>
       </div>
 
@@ -820,7 +818,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
          min-w-full 이 이겨서 예전과 똑같이 폭을 가득 채운다.
          표가 스스로 스크롤할 때(tableScrolls)는 카드가 화면 폭에 머문다. -->
     <Card :class="tableScrolls ? 'w-full' : 'w-min min-w-full'">
-      <CardContent class="px-2 sm:px-6">
+      <CardContent class="px-2 max-[359px]:px-1 sm:px-6">
         <div class="pt-4">
           <!-- 위의 월 선택·엑셀은 밖에 둔다. 기록이 없는 달이라도 다른 달로
                넘어갈 수단은 남아 있어야 한다. -->
@@ -836,7 +834,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                화면 밖으로 나간다. 회원 열은 sticky 라 그대로 남는다. (3-3) -->
           <Table
             :scroll="tableScrolls"
-            class="text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
+            class="text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground max-[359px]:[&_td]:px-1 max-[359px]:[&_th]:px-1"
             :caption="`${heading} 회원별 핸디·스코어 기록`"
           >
             <TableHeader>
@@ -900,7 +898,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                     <span
                       class="sm:hidden"
                       :aria-label="`당월 핸디 ${row.app_hc ?? '산정 전'}, 차월 핸디 ${miniNextHc(row) ?? '없음'}`"
-                    >당월 {{ row.app_hc ?? '산정 전' }} · 차월 {{ miniNextHc(row) ?? '-' }}</span>
+                    >당월 {{ row.app_hc ?? '산정 전' }}<span class="max-[389px]:hidden"> · </span><br class="hidden max-[389px]:inline" />차월 {{ miniNextHc(row) ?? '-' }}</span>
                     <span v-if="isEditing && localGroups[row.member_id]" class="ml-1.5 sm:ml-0 font-sans">{{ localGroups[row.member_id] }}</span>
                   </span>
                 </TableCell>
@@ -935,10 +933,11 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                 <TableCell :class="cn('text-center font-mono', isEditing && 'py-1')">
                   <template v-if="isEditing">
                     <!-- type="number" 는 모바일에서 스피너가 붙어 스크롤 한 번에
-                         값이 바뀐다. 숫자 자판은 inputmode 로 부르고 스피너는 뗀다. -->
+                         값이 바뀐다. 스피너는 떼고, 언더파 점수의 '-' 를 칠 수 있도록 inputmode 는 text 로 둔다
+                         (iOS numeric 자판에는 '-' 가 없다). pattern 이 형식을 지킨다. -->
                     <input
                       type="text"
-                      inputmode="numeric"
+                      inputmode="text"
                       pattern="-?[0-9]*"
                       maxlength="4"
                       :value="localScores[row.member_id] ?? ''"
@@ -946,7 +945,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                       :aria-label="`${row.member_name} 스코어`"
                       :aria-invalid="isScoreInvalid(row.member_id) || undefined"
                       :aria-describedby="isScoreInvalid(row.member_id) ? 'monthly-score-hint' : undefined"
-                      :class="cn('h-11 sm:h-7 w-16 text-center border rounded px-1 py-0 text-sm bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
+                      :class="cn('h-11 sm:h-7 w-16 text-center border rounded px-1 py-0 text-base sm:text-sm bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-1',
                         isScoreInvalid(row.member_id)
                           ? 'border-destructive text-destructive focus-visible:ring-destructive'
                           : 'border-input focus-visible:ring-ring')"
@@ -989,7 +988,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                       <select
                         :value="localGroups[row.member_id] ?? ''"
                         :aria-label="`${row.member_name} 결과 조${manualGroups[row.member_id] ? ' (직접 지정)' : ''}`"
-                        class="h-11 sm:h-7 w-20 text-center border border-input rounded pl-1 pr-5 py-0 text-sm bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 appearance-none cursor-pointer"
+                        class="h-11 sm:h-7 w-20 text-center border border-input rounded pl-1 pr-5 py-0 text-base sm:text-sm bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 appearance-none cursor-pointer"
                         @change="(e) => setManualGroup(row.member_id, (e.target as HTMLSelectElement).value)"
                       >
                         <option value="">-</option>
@@ -1013,7 +1012,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                       <select
                         :value="localRanks[row.member_id] ?? ''"
                         :aria-label="`${row.member_name} 시상${manualRanks[row.member_id] ? ' (직접 지정)' : ''}`"
-                        class="h-11 sm:h-7 w-24 text-center border border-input rounded pl-1 pr-5 py-0 text-sm bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 appearance-none cursor-pointer"
+                        class="h-11 sm:h-7 w-24 text-center border border-input rounded pl-1 pr-5 py-0 text-base sm:text-sm bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 appearance-none cursor-pointer"
                         @change="(e) => setManualRank(row.member_id, (e.target as HTMLSelectElement).value)"
                       >
                         <option value="">-</option>
@@ -1226,7 +1225,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             v-model="unlockInput"
             rows="3"
             maxlength="200"
-            class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
+            class="w-full rounded-md border border-input bg-background px-3 py-2 text-base sm:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
             placeholder="예: 홍길동 스코어 오기 정정"
             :aria-invalid="!!unlockError"
             :aria-describedby="unlockError ? 'unlock-error' : undefined"

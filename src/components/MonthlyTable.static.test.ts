@@ -40,7 +40,8 @@ describe('월간 기록 표 모바일 규칙', () => {
 
   it('좁은 폭 읽기 모드에서도 이름 아래 보조 줄에 당월·차월 핸디를 보인다', () => {
     expect(table).toMatch(/isEditing \? 'md:hidden' : 'sm:hidden'/);
-    expect(table).toContain("당월 {{ row.app_hc ?? '산정 전' }} · 차월");
+    expect(table).toContain("당월 {{ row.app_hc ?? '산정 전' }}");
+    expect(table).toContain("차월 {{ miniNextHc(row) ?? '-' }}");
   });
 
   it('저장 실패 문구를 하단 고정 저장 줄에 alert 로 보인다', () => {
