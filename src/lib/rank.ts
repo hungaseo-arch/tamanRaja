@@ -24,10 +24,10 @@ export const RANK_STYLE: Record<RankName, RankStyle> = {
 
 /** 연간 랭킹 상위 4명 카드의 테두리·바탕 (0 = 1위). 4위 이하는 무채색. */
 const PODIUM_CARD = [
-  'border-yellow-400 bg-yellow-50',
-  'border-gray-400 bg-gray-50',
-  'border-amber-700 bg-orange-50',
-  'border-slate-500 bg-slate-200/70',
+  'border-podium-1 bg-podium-1-bg',
+  'border-podium-2 bg-podium-2-bg',
+  'border-podium-3 bg-podium-3-bg',
+  'border-podium-4 bg-podium-4-bg',
 ] as const;
 
 export function podiumCardClass(index: number): string {

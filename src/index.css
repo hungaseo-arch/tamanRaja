@@ -132,6 +132,15 @@
   --color-warning: var(--warning);
   --color-warning-surface: var(--warning-surface);
   --color-warning-border: var(--warning-border);
+  /* 연간 랭킹 상위 4명 카드 (rank.ts PODIUM_CARD). 값은 기존 Tailwind 팔레트 그대로, 이름만 의미로 붙였다. */
+  --color-podium-1: var(--color-yellow-400);
+  --color-podium-1-bg: var(--color-yellow-50);
+  --color-podium-2: var(--color-gray-400);
+  --color-podium-2-bg: var(--color-gray-50);
+  --color-podium-3: var(--color-amber-700);
+  --color-podium-3-bg: var(--color-orange-50);
+  --color-podium-4: var(--color-slate-500);
+  --color-podium-4-bg: color-mix(in oklab, var(--color-slate-200) 70%, transparent);
   --color-group-first: var(--group-first);
   --color-avg-score: var(--avg-score);
 
