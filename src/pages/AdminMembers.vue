@@ -569,7 +569,9 @@ watch(compact, (isCompact) => {
             container-class="py-6"
             @retry="load()"
           >
-            <div class="pt-4">
+            <!-- compact 에서는 표가 자기 안에서 스크롤하는데 높이 제한이 없으면 세로로는 밀릴 일이
+                 없어 열 제목 sticky 가 듣지 않는다. 스크롤 상자에 뷰포트 기준 상한을 둔다. -->
+            <div :class="compact ? 'pt-4 [&_div]:max-h-[70dvh]' : 'pt-4'">
               <Table
                 :scroll="compact"
                 class="text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
@@ -706,7 +708,7 @@ watch(compact, (isCompact) => {
           <div class="grid grid-cols-2 gap-2">
             <div class="space-y-1">
               <Label for="add-month">시작월</Label>
-              <Input id="add-month" v-model="addMonth" placeholder="YYYY-MM" />
+              <Input id="add-month" v-model="addMonth" type="month" placeholder="YYYY-MM" />
             </div>
             <div class="space-y-1">
               <Label for="add-role">등급</Label>
@@ -763,7 +765,7 @@ watch(compact, (isCompact) => {
           </p>
           <div class="space-y-1">
             <Label for="dormant-month">휴면 시작월</Label>
-            <Input id="dormant-month" v-model="dormantMonth" placeholder="YYYY-MM" />
+            <Input id="dormant-month" v-model="dormantMonth" type="month" placeholder="YYYY-MM" />
           </div>
           <Alert v-if="dormantError" variant="destructive">
             <AlertCircle class="h-4 w-4" aria-hidden="true" />

@@ -123,6 +123,8 @@ async function handleLogin(e: Event): Promise<void> {
                 v-else
                 id="member-select"
                 v-model="selectedMember"
+                :aria-invalid="errorField === 'member'"
+                :aria-describedby="errorField === 'member' ? 'login-error' : undefined"
                 :options="memberOptions"
                 placeholder="회원 선택"
               />
