@@ -263,8 +263,9 @@ function preserveStoredManual(): void {
       localGroups[id] = row.result_group.trim();
       manualGroups[id] = true;
     }
-    if (isRankName(row.result_rank) && row.result_rank !== localRanks[id]) {
-      localRanks[id] = row.result_rank;
+    const storedRank = row.result_rank?.trim();
+    if (isRankName(storedRank) && storedRank !== localRanks[id]) {
+      localRanks[id] = storedRank;
       manualRanks[id] = true;
     }
   }
@@ -641,9 +642,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           <span v-if="headingCourse" class="text-sm font-medium text-muted-foreground">— {{ headingCourse }}</span>
         </CardTitle>
 
-        <!-- 그달 요약. 제목과 컨트롤 사이 가운데에 놓는다(mx-auto 가 남는 폭을
-             양쪽으로 나눠 가진다). 좁은 화면에서는 줄이 접혀 제목 아래로
-             내려간다. Winner·Medalist 는 편집 중에만 sm 미만에서 숨는다. -->
+        <!-- 그달 요약. sm 이상에서는 sm:ml-auto 로 컨트롤 쪽(오른쪽)에 붙는다.
+             좁은 화면에서는 줄이 접혀 제목 아래로 내려간다. Winner·Medalist 는 편집 중에만 sm 미만에서 숨는다. -->
         <div v-if="isFutureMonth" class="flex items-center gap-1.5 text-sm sm:ml-auto">
           <span class="font-medium text-muted-foreground whitespace-nowrap">참석 예정 인원</span>
           <span class="font-bold">{{ futureAttendedCount }}명</span>
@@ -664,8 +664,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         </div>
 
         <!-- 컨트롤은 한 덩어리다. 낱개로 두면 좁은 폭에서 줄이 접힐 때
-             왼쪽으로 흩어져 제목 아래에 아무렇게나 붙는다. 오른쪽 끝은
-             가운데 요약의 mx-auto 가 밀어 준다. -->
+             왼쪽으로 흩어져 제목 아래에 아무렇게나 붙는다. -->
         <div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
         <!-- 연월 입력창 / 골프장명 (미래달) / 저장·수정 (관리자) -->
         <template v-if="canManage">

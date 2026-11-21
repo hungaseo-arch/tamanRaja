@@ -372,7 +372,8 @@ function handleExport(): void {
                     <TableCell class="text-center font-mono whitespace-nowrap">
                       <template v-if="row.attended && row.score !== null">{{ row.score }}</template>
                       <span v-else class="text-muted-foreground text-sm">
-                        <span :aria-hidden="scoreEmptyLabel(row) === '-' ? 'true' : undefined">{{ scoreEmptyLabel(row) }}</span><span v-if="scoreEmptyLabel(row) === '-'" class="sr-only">{{ row.has_meeting ? '기록 없음' : '일정 없음' }}</span>
+                        <template v-if="scoreEmptyLabel(row) === '-'"><span aria-hidden="true">-</span><span class="sr-only">{{ row.has_meeting ? '기록 없음' : '일정 없음' }}</span></template>
+                        <template v-else>{{ scoreEmptyLabel(row) }}</template>
                       </span>
                     </TableCell>
 

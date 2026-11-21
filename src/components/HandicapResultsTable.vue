@@ -411,7 +411,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                   >휴면</span>
                   <!-- 휴면 회원은 휴면만 표시한다. 한도·부족은 휴면에 포함되므로 따로 보이지 않는다. -->
                   <span v-if="r.capped && !r.dormant_from" class="policy-flag pp-flag-cap">한도 적용</span>
-                  <span v-if="r.low_sample && !r.dormant_from" class="policy-flag pp-flag-low" >표본 부족</span>
+                  <span v-if="r.low_sample && !r.dormant_from" class="policy-flag pp-flag-low">표본 부족</span>
                 </th>
                 <td class="num pp-hide-sm">{{ r.std_hc_2025 ?? '—' }}</td>
                 <td class="num pp-hide-sm">{{ r.prev_std_hc ?? '—' }}</td>

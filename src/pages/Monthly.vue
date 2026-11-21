@@ -272,8 +272,8 @@ function clearSaveError(): void {
     saveError.value = null;
   }
 }
-watch(selectedMonth, clearSaveError);
 const saveState = ref<'idle' | 'saving' | 'error'>('idle');
+watch(selectedMonth, clearSaveError);
 
 async function handleSaveMonth(payload: SavePayload): Promise<void> {
   if (saveState.value === 'saving') return;

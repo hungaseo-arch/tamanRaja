@@ -75,7 +75,13 @@ export function useToast() {
       action: input.action,
     };
 
-    toasts.value = [item, ...toasts.value].slice(0, TOAST_LIMIT);
+    const next = [item, ...toasts.value];
+    // 한도에서 밀려난 토스트는 타이머도 함께 치운다.
+    for (const evicted of next.slice(TOAST_LIMIT)) {
+      stopTimer(evicted.id);
+      timers.delete(evicted.id);
+    }
+    toasts.value = next.slice(0, TOAST_LIMIT);
 
     const duration = input.duration ?? (item.variant === 'destructive' ? DESTRUCTIVE_DURATION : DEFAULT_DURATION);
     startTimer(id, duration);
