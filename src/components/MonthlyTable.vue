@@ -636,7 +636,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
     <div class="space-y-2 pt-1">
       <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
         <!-- 연월 (제목) — 이 화면의 h1 이다. 사이트 이름은 헤더의 일반 텍스트다. -->
-        <CardTitle as="h1" class="px-0 min-w-0 break-words text-lg font-bold text-foreground">
+        <CardTitle as="h1" class="px-0 min-w-0 wrap-break-word text-lg font-bold text-foreground">
           {{ headingDate }}
           <span v-if="headingCourse" class="text-sm font-medium text-muted-foreground">— {{ headingCourse }}</span>
         </CardTitle>
@@ -725,7 +725,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           v-else-if="showUnlock"
           size="xs"
           variant="outline"
-          class="flex-[2] sm:flex-none"
+          class="flex-2 sm:flex-none"
           aria-label="잠금 해제 후 수정"
           @click="openUnlock"
         >

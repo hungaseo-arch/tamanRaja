@@ -570,8 +570,8 @@ watch(compact, (isCompact) => {
             @retry="load()"
           >
             <!-- compact 에서는 표가 자기 안에서 스크롤하는데 높이 제한이 없으면 세로로는 밀릴 일이
-                 없어 열 제목 sticky 가 듣지 않는다. 스크롤 상자에 뷰포트 기준 상한을 둔다. -->
-            <div :class="compact ? 'pt-4 [&_div]:max-h-[70dvh]' : 'pt-4'">
+                 없어 열 제목 sticky 가 듣지 않는다. 스크롤 상자(Table 의 바깥 div 와 그 안의 스크롤 div)에만 뷰포트 기준 상한을 둔다. -->
+            <div :class="compact ? 'pt-4 [&>div]:max-h-[70dvh] [&>div>div]:max-h-[70dvh]' : 'pt-4'">
               <Table
                 :scroll="compact"
                 class="text-sm [&_thead_th]:bg-muted [&_thead_th]:text-foreground"
