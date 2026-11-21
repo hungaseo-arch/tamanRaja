@@ -131,7 +131,8 @@ useIdleLogout(async () => {
   toast({
     title: '자동 로그아웃',
     description: `${label} 동안 사용 없음 · 다시 로그인 필요`,
-    duration: 6000,
+    // 0 = 직접 닫을 때까지. 자리를 비운 사이 뜬 안내라 6초 뒤 사라지면 놓친다.
+    duration: 0,
   });
 });
 
