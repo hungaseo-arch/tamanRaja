@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getMonthlyData, getAvailableMonths, getAttendanceMonth, canAnswerAttendance, firstSaturday, GOLF_COURSES, MEETINGS, MEETING_RESULTS, loadData, dataError } from '@/data';
+import { getMonthlyData, getAvailableMonths, getAttendanceMonth, getDefaultMonth, canAnswerAttendance, firstSaturday, GOLF_COURSES, MEETINGS, MEETING_RESULTS, loadData, dataError } from '@/data';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/composables/useToast';
 import { supabase } from '@/lib/supabase';
@@ -32,8 +32,9 @@ const queryMonth = route.query.month as string | undefined;
 const attendanceYM = computed(() => getAttendanceMonth());
 // #/attendance 는 이 화면을 배경으로 쓰는 참석 확인 창이다. 뒤에 깔리는 표도
 // 확인 대상 달이어야 한다.
+// 평소 첫 화면은 이번 달이고, 이번 달 모임일 + 14일이 지나면 다음 달이다.
 const defaultMonth = queryMonth
-  ?? (route.path === ROUTE_PATHS.ATTENDANCE ? attendanceYM.value : currentYM);
+  ?? (route.path === ROUTE_PATHS.ATTENDANCE ? attendanceYM.value : getDefaultMonth());
 const selectedMonth = ref<string>(defaultMonth);
 
 const router = useRouter();

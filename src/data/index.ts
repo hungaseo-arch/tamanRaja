@@ -660,6 +660,26 @@ export function getAttendanceMonth(today: Date = new Date()): string {
   return ym(new Date(today.getFullYear(), today.getMonth() + 1, 1));
 }
 
+/** 모임일 뒤 며칠이 지나면 월간 기록 첫 화면을 다음 달로 여는지. */
+export const NEXT_MONTH_AFTER_DAYS = 14;
+
+/**
+ * 월간 기록 첫 화면의 달. 이번 달 모임일(행이 없으면 첫째 주 토요일)에서
+ * NEXT_MONTH_AFTER_DAYS 일이 지나면 다음 달, 그 전이면 이번 달이다.
+ */
+export function getDefaultMonth(today: Date = new Date()): string {
+  const ym = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  const currentYM = ym(today);
+  const meeting = MEETINGS.find((m) => m.year_month === currentYM);
+  const meetingDate = meeting?.meeting_date || firstSaturday(currentYM);
+  const [y, m, d] = meetingDate.split('-').map(Number);
+  const switchDay = new Date(y, m - 1, d + NEXT_MONTH_AFTER_DAYS);
+  const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  if (todayDay < switchDay) return currentYM;
+  // 12월의 다음 달은 이듬해 1월이다. 월만 더하면 '2026-13' 이 된다.
+  return ym(new Date(today.getFullYear(), today.getMonth() + 1, 1));
+}
+
 /** 그 달 참석을 아직 답할 수 있는지. 참석 확인 대상 달과 그 뒤의 달이 해당한다. */
 export function canAnswerAttendance(yearMonth: string, today: Date = new Date()): boolean {
   return /^\d{4}-\d{2}$/.test(yearMonth) && yearMonth >= getAttendanceMonth(today);
