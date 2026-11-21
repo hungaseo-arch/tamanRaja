@@ -22,9 +22,14 @@ interface Props {
    * 끝내야 하는 일(임시 PIN 변경)에만 쓴다 — 닫는 길은 부모가 open 을 내릴 때뿐.
    */
   dismissible?: boolean;
+  /**
+   * false 면 바깥(어두운 배경) 터치로는 닫히지 않는다. 닫기 버튼·Esc 는 그대로 동작한다.
+   * 입력 칸이 든 창에 쓴다 — 스크롤하다 배경을 잘못 눌러 입력이 사라지는 것을 막는다.
+   */
+  closeOnOutside?: boolean;
 }
 
-const props = withDefaults(defineProps<Props>(), { dismissible: true });
+const props = withDefaults(defineProps<Props>(), { dismissible: true, closeOnOutside: true });
 
 const emit = defineEmits<{
   (e: 'update:open', value: boolean): void;
@@ -116,7 +121,7 @@ function onTab(e: KeyboardEvent): void {
       <div
         v-if="isOpen"
         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-        @click.self="close"
+        @click.self="props.closeOnOutside && close()"
       >
         <Transition
           enter-active-class="transition duration-150 ease-out"

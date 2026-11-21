@@ -149,7 +149,7 @@ async function handleLogout(): Promise<void> {
 </script>
 
 <template>
-  <Dialog v-model:open="isOpen" content-class="sm:max-w-sm" :label="isLoggedIn ? '계정' : '로그인'">
+  <Dialog v-model:open="isOpen" content-class="sm:max-w-sm" :close-on-outside="false" :label="isLoggedIn ? '계정' : '로그인'">
     <!-- 로그인 상태 → 이름 줄(로그아웃) + [참석 확인] / [계정(PIN 변경)]
          로그아웃은 탭 밖 이름 줄에 둔다. 창은 늘 참석 확인 탭으로 열리므로,
          계정 탭 안에 두면 로그아웃하려고 탭을 한 번 더 눌러야 했다. -->

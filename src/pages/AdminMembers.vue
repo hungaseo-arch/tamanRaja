@@ -688,7 +688,7 @@ watch(compact, (isCompact) => {
       </Card>
 
       <!-- 회원 추가 -->
-      <Dialog v-model:open="addOpen" label="회원 추가" content-class="sm:max-w-sm">
+      <Dialog v-model:open="addOpen" label="회원 추가" content-class="sm:max-w-sm" :close-on-outside="false">
         <div class="space-y-3">
           <DialogTitle class="mb-0">회원 추가</DialogTitle>
           <div class="space-y-1">
@@ -736,7 +736,7 @@ watch(compact, (isCompact) => {
       </Dialog>
 
       <!-- 등급 변경 확인 -->
-      <Dialog v-model:open="roleOpen" label="등급 변경" content-class="sm:max-w-sm">
+      <Dialog v-model:open="roleOpen" label="등급 변경" content-class="sm:max-w-sm" :close-on-outside="false">
         <div class="space-y-3">
           <DialogTitle class="mb-0">등급 변경</DialogTitle>
           <p class="text-sm">
@@ -756,7 +756,7 @@ watch(compact, (isCompact) => {
       </Dialog>
 
       <!-- 휴면 처리 -->
-      <Dialog v-model:open="dormantOpen" label="휴면 처리" content-class="sm:max-w-sm">
+      <Dialog v-model:open="dormantOpen" label="휴면 처리" content-class="sm:max-w-sm" :close-on-outside="false">
         <div class="space-y-3">
           <DialogTitle class="mb-0">휴면 처리</DialogTitle>
           <p class="text-sm">
@@ -782,7 +782,7 @@ watch(compact, (isCompact) => {
       </Dialog>
 
       <!-- PIN 초기화 -->
-      <Dialog v-model:open="resetOpen" label="PIN 초기화" content-class="sm:max-w-sm">
+      <Dialog v-model:open="resetOpen" label="PIN 초기화" content-class="sm:max-w-sm" :close-on-outside="false">
         <div class="space-y-3">
           <DialogTitle class="mb-0">PIN 초기화</DialogTitle>
           <p class="text-sm">
