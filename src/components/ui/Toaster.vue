@@ -29,8 +29,8 @@ const { toasts, dismiss, pause, resume } = useToast();
           v-for="t in toasts"
           :key="t.id"
           :role="t.variant === 'destructive' ? 'alert' : undefined"
-          @mouseenter="pause(t.id)"
-          @mouseleave="resume(t.id)"
+          @pointerenter="(e: PointerEvent) => e.pointerType === 'mouse' && pause(t.id)"
+          @pointerleave="(e: PointerEvent) => e.pointerType === 'mouse' && resume(t.id)"
           @focusin="pause(t.id)"
           @focusout="resume(t.id)"
           :class="cn(

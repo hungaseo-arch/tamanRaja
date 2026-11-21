@@ -52,6 +52,7 @@ interface HistoryRow {
   next_hc: number | null;
   next_hc_mismatch: boolean;
   has_meeting: boolean;
+  has_result: boolean;
   attended: boolean;
   score: number | null;
   net_score: number | null;
@@ -137,6 +138,7 @@ const history = computed<HistoryRow[]>(() => {
         next_hc:      handicap?.next_hc ?? null,
         next_hc_mismatch: handicap?.next_hc_mismatch ?? false,
         has_meeting:  !!meeting,
+        has_result:   !!result,
         attended,
         score,
         net_score,
@@ -191,12 +193,12 @@ function formatCourse(row: HistoryRow): string {
   return row.year_month >= nowYM ? formatPending(row.course_name) : formatValue(row.course_name);
 }
 
-// 스코어 칸이 빈 이유를 구분한다. 일정 없음 `-`, 아직 안 친 달 `예정`, 지난 달 불참 `불참`.
-// 모두 `-` 이면 "빠졌다"와 "아직 안 왔다"가 같아 보인다.
+// 스코어 칸이 빈 이유를 구분한다. 일정 없음 `-`, 아직 안 온 달 `예정`, 결과에 불참으로 적힌 지난 달 `불참`.
+// 이번 달은 모임이 끝났는지 알 수 없고, 결과 행이 없으면 입력 누락·가입 전일 수 있어 불참으로 단정하지 않고 `-` 로 둔다.
 function scoreEmptyLabel(row: HistoryRow): string {
-  if (!row.has_meeting) return '-';
-  if (row.year_month >= nowYM && !row.attended) return '예정';
-  if (!row.attended) return '불참';
+  if (!row.has_meeting || row.attended) return '-';
+  if (row.year_month > nowYM) return '예정';
+  if (row.year_month < nowYM && row.has_result) return '불참';
   return '-';
 }
 

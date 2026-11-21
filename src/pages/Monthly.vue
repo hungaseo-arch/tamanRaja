@@ -259,10 +259,14 @@ async function retryReload(): Promise<void> {
   await loadData();
   reloadFailed.value = !!dataError.value;
   reloading.value = false;
+  if (reloadFailed.value) {
+    toast({ title: '불러오기 실패', description: '잠시 후 다시 시도', variant: 'destructive' });
+  }
 }
 
 // 편집 진입·종료·월 이동 때 지난 저장 실패 표시를 지운다. 저장 중에는 건드리지 않는다.
 function clearSaveError(): void {
+  reloadFailed.value = false;
   if (saveState.value === 'error') {
     saveState.value = 'idle';
     saveError.value = null;
