@@ -385,7 +385,7 @@ async function loadCourseRatings(): Promise<void> {
               </thead>
               <tbody>
                 <tr v-for="c in AWARD_CONSTANTS" :key="c.k">
-                  <th scope="row">{{ c.k }}<span v-if="c.chosen" class="policy-flag">채택</span></th>
+                  <th scope="row">{{ c.k }}<span v-if="c.chosen" class="policy-flag policy-flag-ok">채택</span></th>
                   <td class="num">{{ c.over }}</td>
                   <td>{{ c.verdict }}</td>
                 </tr>
@@ -490,8 +490,8 @@ async function loadCourseRatings(): Promise<void> {
                 </tr>
               </thead>
               <tbody>
-                <tr><th scope="row">남정곤</th><td class="num">15</td><td class="num">23.8</td><td class="num">8.8</td><td class="num pp-up">2.6타 불리</td></tr>
-                <tr><th scope="row">정재욱</th><td class="num">18</td><td class="num">27.4</td><td class="num">9.4</td><td class="num pp-up">3.2타 불리</td></tr>
+                <tr><th scope="row">남정곤</th><td class="num">15</td><td class="num">23.8</td><td class="num">8.8</td><td class="num pp-disadv">2.6타 불리</td></tr>
+                <tr><th scope="row">정재욱</th><td class="num">18</td><td class="num">27.4</td><td class="num">9.4</td><td class="num pp-disadv">3.2타 불리</td></tr>
               </tbody>
             </table>
           </div>
@@ -983,6 +983,15 @@ async function loadCourseRatings(): Promise<void> {
   border-radius: 0.25rem;
   color: var(--pp-up);
   font-size: 0.875rem;
+  font-weight: 700;
+}
+/* 채택 배지는 긍정 의미라 한도(빨강)와 구분해 기본 초록으로 둔다. */
+.policy-flag.policy-flag-ok {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+/* "N타 불리" 칸은 인상(유리, 빨강)과 뜻이 달라 색 없이 굵은 글자로만 둔다. */
+.pp-disadv {
   font-weight: 700;
 }
 .policy-details {

@@ -119,6 +119,9 @@ function setSort(key: SortKey): void {
 }
 
 // 2027 제안 = 2027 기준 + 인간미 (미입력은 0). 수정 중에는 입력 중인 값으로 바로 더한다.
+function savedHumanity(r: Row): number | null {
+  return r.humanity ?? null;
+}
 function humanityOf(r: Row): number | null {
   if (editing.value) {
     const d = draft.value[r.member_id];
@@ -134,8 +137,10 @@ const sorted = computed(() => {
   const k = sortKey.value;
   const dir = sortAsc.value ? 1 : -1;
   return [...rows.value].sort((a, b) => {
-    const av = k === 'proposal' ? proposalOf(a) : k === 'humanity' ? humanityOf(a) : a[k];
-    const bv = k === 'proposal' ? proposalOf(b) : k === 'humanity' ? humanityOf(b) : b[k];
+    // 수정 중에는 저장된 값으로만 정렬해 입력 칸이 키 입력마다 움직이지 않게 한다. 저장·취소 후 반영된다.
+    const sp = (r: Row) => r.std_hc + (savedHumanity(r) ?? 0);
+    const av = k === 'proposal' ? sp(a) : k === 'humanity' ? savedHumanity(a) : a[k];
+    const bv = k === 'proposal' ? sp(b) : k === 'humanity' ? savedHumanity(b) : b[k];
     let c: number;
     if (typeof av === 'string' || typeof bv === 'string') c = String(av).localeCompare(String(bv), 'ko');
     else c = (av ?? 0) - (bv ?? 0);
@@ -406,7 +411,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                   >휴면</span>
                   <!-- 휴면 회원은 휴면만 표시한다. 한도·부족은 휴면에 포함되므로 따로 보이지 않는다. -->
                   <span v-if="r.capped && !r.dormant_from" class="policy-flag pp-flag-cap">한도 적용</span>
-                  <span v-if="r.low_sample && !r.dormant_from" class="policy-flag pp-flag-low" title="표본 부족">표본 부족</span>
+                  <span v-if="r.low_sample && !r.dormant_from" class="policy-flag pp-flag-low" >표본 부족</span>
                 </th>
                 <td class="num pp-hide-sm">{{ r.std_hc_2025 ?? '—' }}</td>
                 <td class="num pp-hide-sm">{{ r.prev_std_hc ?? '—' }}</td>
@@ -569,7 +574,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
           <span class="pp-up">적용 전 {{ fmtSigned2(selected.raw_delta) }} → 적용 후 {{ fmtSigned2(selected.final_delta) }}</span>
         </DetailItem>
         <DetailItem v-if="selected.note" label="비고">
-          <span class="pp-note-text"><span v-if="selected.low_sample" class="pp-up">표본 부족 · </span>{{ selected.note }}</span>
+          <span class="pp-note-text"><span v-if="selected.low_sample" class="pp-flag-low-text">표본 부족 · </span>{{ selected.note }}</span>
         </DetailItem>
       </template>
     </RowDetailDialog>
@@ -751,6 +756,10 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 .pp-results .pp-flag-cap {
   border-color: var(--pp-up);
   color: var(--pp-up);
+}
+.pp-flag-low-text {
+  color: var(--warning);
+  font-weight: 700;
 }
 .pp-results .pp-flag-low {
   border-color: var(--warning);
