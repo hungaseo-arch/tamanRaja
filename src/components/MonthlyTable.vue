@@ -728,7 +728,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             :options="yearOptions"
             placeholder=""
             size="xs"
-            class="min-w-22 flex-1 sm:w-20 sm:min-w-0 sm:flex-none"
+            class="min-w-28 flex-1 sm:w-20 sm:min-w-0 sm:flex-none"
           />
         </template>
         <label for="monthly-month" class="sr-only">조회할 월</label>
@@ -739,7 +739,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           :options="monthOptions"
           placeholder="월 선택"
           size="xs"
-          class="min-w-18 flex-1 sm:w-16 sm:min-w-0 sm:flex-none"
+          class="min-w-22 flex-1 sm:w-16 sm:min-w-0 sm:flex-none"
         />
 
         <!-- 엑셀(CSV) 다운로드 — 해당 연도 전체 기록.

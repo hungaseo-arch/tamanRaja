@@ -233,7 +233,7 @@ function handleExport(): void {
               :options="yearOptions"
               placeholder=""
               size="xs"
-              class="w-24 shrink-0 [&>select]:h-11 sm:[&>select]:h-7"
+              class="w-28 sm:w-24 shrink-0 [&>select]:h-11 sm:[&>select]:h-7"
             />
           </template>
           <!-- 좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->

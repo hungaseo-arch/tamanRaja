@@ -374,7 +374,7 @@ function stickyTint(rank: number | null): string {
             :options="yearOptions"
             placeholder=""
             size="xs"
-            class="w-24 shrink-0"
+            class="w-28 sm:w-24 shrink-0"
           />
         </template>
         <span v-else-if="selectedYear" class="text-sm font-semibold text-foreground shrink-0">
