@@ -36,7 +36,7 @@
    - 화면 제목은 h1 · text-lg font-bold.
    - 화면 컨테이너의 세로 간격은 space-y-3.
    - 툴바에 놓이는 버튼·선택 상자는 size="xs".
-     모바일(<sm)은 터치 44px(h-11)·14px(text-sm), sm 이상은 조밀한 32px(h-8)·12px(text-xs).
+     모바일(<sm)은 터치 44px(h-11), 버튼 14px(text-sm)·선택 상자 16px(text-base, iOS 확대 방지), sm 이상은 조밀한 32px(h-8)·12px(text-xs).
      화면마다 h-7/h-8 을 덮어쓰지 말 것.
    - 표 안의 글자도 모바일(<sm)은 14px(text-sm)다. 열이 넘치면 글자를 줄이지
      않고 열을 숨기고(hidden sm:table-cell) 그 값은 줄 상세 창으로 본다.

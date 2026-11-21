@@ -16,13 +16,13 @@ const attendance = read('components/AttendancePanel.vue');
 const monthlyTable = read('components/MonthlyTable.vue');
 
 describe('컨트롤 글자 크기', () => {
-  it('Button xs·Select 는 모든 폭에서 13px, Input 은 text-base 가 아니다', () => {
+  it('Button xs 는 모든 폭에서 13px, Input·Select 는 모바일 16px(iOS 확대 방지)·sm 이상 14px/13px', () => {
     expect(button).toMatch(/xs: '[^']*text-\[13px\][^']*'/);
-    expect(select).toMatch(/xs: '[^']*text-\[13px\]/);
     expect(button).not.toMatch(/xs: '[^']*sm:text-xs/);
-    expect(select).not.toContain('text-base');
+    expect(select).toMatch(/default: '[^']*text-base sm:text-sm/);
+    expect(select).toMatch(/xs: '[^']*text-base sm:text-\[13px\]/);
     expect(select).not.toContain('sm:text-xs');
-    expect(input).not.toContain('text-base');
+    expect(input).toContain('text-base sm:text-sm');
   });
 
   it('MonthlyTable 툴바는 Select 글자 크기를 따로 덮어쓰지 않는다', () => {

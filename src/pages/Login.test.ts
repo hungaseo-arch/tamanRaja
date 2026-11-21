@@ -34,10 +34,10 @@ describe('로그인 화면 정적 점검', () => {
     expect(page).toContain('따만라자 골프모임</h1>');
   });
 
-  it('Input 은 모바일 44px·데스크톱 40px, 글자는 본문(16px)보다 2px 작은 14px', () => {
+  it('Input 은 모바일 44px·16px(iOS 확대 방지), sm 이상은 40px·14px', () => {
     expect(input).toContain('h-11');
     expect(input).toContain('sm:h-10');
-    expect(input).toMatch(/\btext-sm\b/);
-    expect(input).not.toContain('text-base');
+    expect(input).toMatch(/\btext-base\b/);
+    expect(input).toContain('sm:text-sm');
   });
 });
