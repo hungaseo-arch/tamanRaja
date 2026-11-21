@@ -264,14 +264,15 @@ function handleExport(): void {
         </div>
 
         <!-- 통계 카드 -->
-        <div class="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-4">
-          <Card>
+        <!-- 모바일은 3+2 줄. 둘째 줄 두 카드가 폭을 나눠 가져 빈 칸이 남지 않는다. -->
+        <div class="grid grid-cols-6 sm:grid-cols-5 gap-2 sm:gap-4">
+          <Card class="col-span-2 sm:col-span-1">
             <CardContent class="flex flex-col items-center justify-center h-full py-3 px-2 sm:px-4">
               <p class="text-sm text-muted-foreground mb-1">참석 횟수</p>
               <p class="text-xl font-bold">{{ derived.attendedCount }}회</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card class="col-span-2 sm:col-span-1">
             <CardContent class="flex flex-col items-center justify-center h-full py-3 px-2 sm:px-4">
               <p class="text-sm text-muted-foreground mb-1">평균 Net</p>
               <p class="text-xl font-bold font-mono">
@@ -284,19 +285,19 @@ function handleExport(): void {
               </p>
             </CardContent>
           </Card>
-          <Card>
+          <Card class="col-span-2 sm:col-span-1">
             <CardContent class="flex flex-col items-center justify-center h-full py-3 px-2 sm:px-4">
               <p class="text-sm text-muted-foreground mb-1">Winner</p>
               <p :class="cn('text-xl font-bold', RANK_STYLE.Winner.text)">{{ derived.winnerCount }}회</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card class="col-span-3 sm:col-span-1">
             <CardContent class="flex flex-col items-center justify-center h-full py-3 px-2 sm:px-4">
               <p class="text-sm text-muted-foreground mb-1">Medalist</p>
               <p :class="cn('text-xl font-bold', RANK_STYLE.Medalist.text)">{{ derived.medalistCount }}회</p>
             </CardContent>
           </Card>
-          <Card>
+          <Card class="col-span-3 sm:col-span-1">
             <CardContent class="flex flex-col items-center justify-center h-full py-3 px-2 sm:px-4">
               <p class="text-sm text-muted-foreground mb-1">Host</p>
               <p :class="cn('text-xl font-bold', RANK_STYLE.Host.text)">{{ derived.hostCount }}회</p>
