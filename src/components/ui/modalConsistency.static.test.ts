@@ -20,7 +20,7 @@ describe('컨트롤 글자 크기', () => {
     expect(button).toMatch(/xs: '[^']*text-\[13px\][^']*'/);
     expect(button).not.toMatch(/xs: '[^']*sm:text-xs/);
     expect(select).toMatch(/default: '[^']*text-base sm:text-sm/);
-    expect(select).toMatch(/xs: '[^']*text-base sm:text-\[13px\]/);
+    expect(select).toMatch(/xs: '[^']*text-base [^']*sm:text-\[13px\]/);
     expect(select).not.toContain('sm:text-xs');
     expect(input).toContain('text-base sm:text-sm');
   });

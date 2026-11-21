@@ -713,8 +713,18 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           >취소</Button>
           <Button v-else size="xs" variant="outline" class="flex-1 sm:flex-none" @click="enterEdit">수정</Button>
         </template>
-        <Button v-else-if="showUnlock" size="xs" variant="outline" class="flex-[2] sm:flex-none" @click="openUnlock">
-          잠금 해제 후 수정
+        <!-- 375px 에서 연도·월·CSV·도움말과 한 줄에 들어가도록 모바일은 '수정' 만 보인다.
+             눌러서 열리는 잠금 해제 창이 이유를 설명하고, 이름은 전체 문구를 유지한다. -->
+        <Button
+          v-else-if="showUnlock"
+          size="xs"
+          variant="outline"
+          class="flex-[2] sm:flex-none"
+          aria-label="잠금 해제 후 수정"
+          @click="openUnlock"
+        >
+          <span class="sm:hidden" aria-hidden="true">수정</span>
+          <span class="hidden sm:inline">잠금 해제 후 수정</span>
         </Button>
 
         <!-- 연도·월 선택. 연간 랭킹의 연도 선택과 같은 자리·같은 배색이다.
@@ -728,7 +738,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
             :options="yearOptions"
             placeholder=""
             size="xs"
-            class="min-w-28 flex-1 sm:w-20 sm:min-w-0 sm:flex-none"
+            class="min-w-24 flex-1 sm:w-20 sm:min-w-0 sm:flex-none"
           />
         </template>
         <label for="monthly-month" class="sr-only">조회할 월</label>
@@ -739,7 +749,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           :options="monthOptions"
           placeholder="월 선택"
           size="xs"
-          class="min-w-22 flex-1 sm:w-16 sm:min-w-0 sm:flex-none"
+          class="min-w-20 flex-1 sm:w-16 sm:min-w-0 sm:flex-none"
         />
 
         <!-- 엑셀(CSV) 다운로드 — 해당 연도 전체 기록.
