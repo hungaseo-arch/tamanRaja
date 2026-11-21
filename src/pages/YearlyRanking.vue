@@ -460,7 +460,7 @@ function stickyTint(rank: number | null): string {
             :error="yearlyRankingError"
             :empty="summary.length === 0"
             :empty-title="selectedYear ? `${selectedYear}년 기록 없음` : '기록 없음'"
-            empty-hint="경기 결과 저장 후 이 표에 순위 표시"
+            empty-hint="모임 결과 저장 후 이 표에 순위 표시"
             container-class="mt-4"
             @retry="retryRanking"
           >

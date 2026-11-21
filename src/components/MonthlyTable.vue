@@ -1048,7 +1048,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         :role="props.saveState === 'error' ? 'alert' : undefined"
       >
         <template v-if="props.saveState === 'saving'">저장 중…</template>
-        <template v-else-if="props.saveState === 'error'">{{ props.saveError || '저장 실패' }} 입력한 내용은 그대로 있습니다.</template>
+        <template v-else-if="props.saveState === 'error'">{{ props.saveError || '저장 실패' }} 입력 내용 유지.</template>
         <template v-else-if="missingHcNames.length">당월 핸디 없는 회원이 있어 저장 불가</template>
         <template v-else-if="invalidScoreNames.length">스코어 범위 확인 필요</template>
         <template v-else-if="isDirty">저장하지 않은 입력 있음</template>

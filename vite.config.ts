@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
 import tailwindcss from '@tailwindcss/vite';
@@ -79,6 +80,10 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),
     },
+  },
+  // 다른 에이전트 작업 트리(.claude/worktrees)의 테스트를 같이 수집하지 않음
+  test: {
+    exclude: ['**/node_modules/**', '**/dist/**', '.claude/**'],
   },
   server: {
     port: 5173,

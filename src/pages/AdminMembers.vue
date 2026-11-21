@@ -453,7 +453,7 @@ async function submitDelete(): Promise<void> {
   if (!res.ok) {
     deleteError.value =
       res.reason === 'has_records'
-        ? `경기 기록 ${res.result_count ?? 0}건 있음 · 삭제 불가 (휴면 처리 사용)`
+        ? `모임 기록 ${res.result_count ?? 0}건 있음 · 삭제 불가 (휴면 처리 사용)`
         : describeReason(res.reason, '회원 삭제 실패');
     return;
   }
@@ -813,7 +813,7 @@ watch(compact, (isCompact) => {
             완전히 삭제 · 로그인 정보와 접속 기록도 함께 삭제되며 되돌리기 불가
           </p>
           <p class="text-sm text-muted-foreground">
-            경기 기록이 있는 회원은 서버가 삭제 거절 · 이 경우 휴면 처리 사용
+            모임 기록이 있는 회원은 서버가 삭제 거절 · 이 경우 휴면 처리 사용
           </p>
           <Alert v-if="deleteError" variant="destructive">
             <AlertCircle class="h-4 w-4" aria-hidden="true" />

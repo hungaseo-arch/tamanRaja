@@ -33,7 +33,7 @@ describe('상태 표시 통일', () => {
 describe('임시 PIN 창', () => {
   it('바깥 클릭·Esc·X 로 닫히지 않고 버튼으로만 닫힌다', () => {
     expect(admin).toMatch(/v-model:open="tempPinOpen"[^>]*:dismissible="false"/);
-    expect(admin).toContain('확인');
+    expect(admin).toMatch(/<Button[^>]*@click="tempPinOpen = false">확인<\/Button>/);
   });
 });
 
