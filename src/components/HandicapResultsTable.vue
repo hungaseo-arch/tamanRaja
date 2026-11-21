@@ -447,7 +447,6 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                 <td class="num pp-std pp-proposal">{{ Number.isNaN(humanityOf(r)) ? '—' : proposalOf(r) }}</td>
                 <td class="num pp-hide-sm" :class="deltaClass(r.final_delta)">
                   {{ fmtSigned2(r.final_delta) }}
-                  <span class="pp-delta-label">{{ deltaLabel(r.final_delta) }}</span>
                 </td>
                 <td class="num pp-hide-sm">{{ fmt(r.w_avg) }}</td>
                 <td class="num pp-hide-sm">{{ fmt(r.attend_rate) }}%</td>
@@ -624,13 +623,6 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   color: var(--std-accent);
   font-weight: 700;
 }
-.pp-delta-label {
-  display: inline;
-  margin-left: 0.25rem;
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
-  font-weight: 600;
-}
 .pp-results th,
 .pp-results td {
   padding: 0.4rem 0.5rem;
@@ -805,9 +797,6 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
   }
   .policy-table-wrap.pp-results-wrap {
     overflow-x: auto;
-  }
-  .pp-delta-label {
-    margin-left: 0.5rem;
   }
 }
 .pp-results tbody th {
