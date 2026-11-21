@@ -598,7 +598,7 @@ function stickyTint(rank: number | null): string {
                         <template v-if="entry.rank === null"><span aria-hidden="true">-</span><span class="sr-only">순위 없음</span></template>
                       </div>
                     </TableCell>
-                    <TableCell :class="cn('font-medium whitespace-nowrap left-14', STICKY_BASE, stickyTint(entry.rank))">
+                    <TableCell row-header :class="cn('font-medium whitespace-nowrap left-14', STICKY_BASE, stickyTint(entry.rank))">
                       <RowDetailButton :label="entry.row.member_name" :enabled="compact" @click="openDetail(entry)">{{ entry.row.member_name }}</RowDetailButton>
                     </TableCell>
                     <TableCell class="text-center whitespace-nowrap hidden sm:table-cell">{{ entry.row.attended_count }}회</TableCell>

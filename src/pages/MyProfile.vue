@@ -351,6 +351,7 @@ function handleExport(): void {
                     <!-- 고정 열은 불투명 bg-card 라 tr 의 hover 틴트가 가려진다.
                          MonthlyTable 과 같이 isolate + ::before 로 다시 얹는다. -->
                     <TableCell
+                      row-header
                       class="font-medium whitespace-nowrap pl-7 sticky left-0 z-10 bg-card isolate before:absolute before:inset-0 before:-z-10 before:transition-colors group-hover:before:bg-muted/50"
                     >
                       <RowDetailButton

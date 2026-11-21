@@ -872,6 +872,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
                      isolate + 음수 z-index ::before 로 다시 얹는다.
                      relative 는 넣지 말 것 — cn 이 sticky 와 같은 그룹으로 보고 덮어쓴다. -->
                 <TableCell
+                  row-header
                   :class="cn('font-medium whitespace-nowrap sticky left-0 z-10 bg-card isolate',
                     'before:absolute before:inset-0 before:-z-10 before:transition-colors',
                     row.member_id === winnerRow?.member_id
@@ -1215,7 +1216,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
     </Dialog>
 
     <!-- 잠금 해제 사유 (4-2) -->
-    <Dialog v-model:open="unlockOpen" label="잠금 해제 후 수정" content-class="sm:max-w-sm">
+    <Dialog v-model:open="unlockOpen" label="잠금 해제 후 수정" content-class="sm:max-w-sm" :close-on-outside="false">
       <form class="space-y-3" @submit.prevent="confirmUnlock">
         <DialogTitle class="mb-0">잠금 해제 후 수정</DialogTitle>
         <p class="text-sm">확정된 기록. 수정 사유 입력 필요</p>
