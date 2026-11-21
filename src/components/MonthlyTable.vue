@@ -713,7 +713,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           >취소</Button>
           <Button v-else size="xs" variant="outline" class="flex-1 sm:flex-none" @click="enterEdit">수정</Button>
         </template>
-        <!-- 375px 에서 연도·월·CSV·도움말과 한 줄에 들어가도록 모바일은 '수정' 만 보인다.
+        <!-- 제목·요약·컨트롤이 한 줄에 들어가도록 xl(1280px) 미만은 '수정' 만, CSV·핸디 규칙은 아이콘만 보인다.
              눌러서 열리는 잠금 해제 창이 이유를 설명하고, 이름은 전체 문구를 유지한다. -->
         <Button
           v-else-if="showUnlock"
@@ -723,8 +723,8 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           aria-label="잠금 해제 후 수정"
           @click="openUnlock"
         >
-          <span class="sm:hidden" aria-hidden="true">수정</span>
-          <span class="hidden sm:inline">잠금 해제 후 수정</span>
+          <span class="xl:hidden" aria-hidden="true">수정</span>
+          <span class="hidden xl:inline">잠금 해제 후 수정</span>
         </Button>
 
         <!-- 연도·월 선택. 연간 랭킹의 연도 선택과 같은 자리·같은 배색이다.
@@ -764,7 +764,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           @click="exportYearlyRecords(props.selectedMonth)"
         >
           <Download class="w-4 h-4" aria-hidden="true" />
-          <span class="hidden sm:inline">CSV</span>
+          <span class="hidden xl:inline">CSV</span>
         </Button>
 
         <!-- 핸디 규칙 도움말 -->
@@ -777,7 +777,7 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
           @click="showHcHelp = true"
         >
           <CircleHelp class="w-4 h-4" aria-hidden="true" />
-          <span class="hidden sm:inline">핸디 규칙</span>
+          <span class="hidden xl:inline">핸디 규칙</span>
         </Button>
         </div>
       </div>
