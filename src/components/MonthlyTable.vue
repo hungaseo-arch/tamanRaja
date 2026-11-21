@@ -753,11 +753,12 @@ const exportYear = computed(() => props.selectedMonth.substring(0, 4));
         />
 
         <!-- 엑셀(CSV) 다운로드 — 해당 연도 전체 기록.
-             좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다. -->
+             좁은 화면에서는 글자가 숨겨져 아이콘만 남으므로 이름을 따로 준다.
+             편집 중 모바일에서는 숨겨 저장·취소·연월·도움말이 한 줄에 들어가게 한다. -->
         <Button
           variant="outline"
           size="xs"
-          class="shrink-0 gap-1"
+          :class="cn('shrink-0 gap-1', isEditing && 'max-sm:hidden')"
           :title="`${exportYear}년 전체 기록 CSV 다운로드(엑셀용)`"
           :aria-label="`${exportYear}년 전체 기록 CSV 다운로드(엑셀용)`"
           @click="exportYearlyRecords(props.selectedMonth)"
