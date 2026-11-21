@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { getMonthlyData, getAvailableMonths, getAttendanceMonth, canAnswerAttendance, firstSaturday, GOLF_COURSES, MEETINGS, MEETING_RESULTS, loadData } from '@/data';
+import { getMonthlyData, getAvailableMonths, getAttendanceMonth, canAnswerAttendance, firstSaturday, GOLF_COURSES, MEETINGS, MEETING_RESULTS, loadData, dataError } from '@/data';
 import { useAuth } from '@/composables/useAuth';
 import { useToast } from '@/composables/useToast';
 import { supabase } from '@/lib/supabase';
@@ -250,6 +250,25 @@ async function appendEditNote(yearMonth: string, reason: string): Promise<void> 
 }
 
 const saveError = ref<string | null>(null);
+const reloadFailed = ref(false);
+const reloading = ref(false);
+
+async function retryReload(): Promise<void> {
+  if (reloading.value) return;
+  reloading.value = true;
+  await loadData();
+  reloadFailed.value = !!dataError.value;
+  reloading.value = false;
+}
+
+// 편집 진입·종료·월 이동 때 지난 저장 실패 표시를 지운다. 저장 중에는 건드리지 않는다.
+function clearSaveError(): void {
+  if (saveState.value === 'error') {
+    saveState.value = 'idle';
+    saveError.value = null;
+  }
+}
+watch(selectedMonth, clearSaveError);
 const saveState = ref<'idle' | 'saving' | 'error'>('idle');
 
 async function handleSaveMonth(payload: SavePayload): Promise<void> {
@@ -295,6 +314,8 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
     }
 
     await loadData();
+    // loadData 는 실패해도 던지지 않는다. 저장은 됐으니 실패로 돌리지 않되, 표가 옛 값일 수 있음을 알린다.
+    reloadFailed.value = !!dataError.value;
     saveState.value = 'idle';
     if (noteFailed) {
       toast({ title: '수정 사유 기록 실패', description: '결과는 저장 완료 · 사유는 관리자가 따로 기록 필요', variant: 'destructive' });
@@ -318,6 +339,16 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
 <template>
   <div class="w-full bg-background">
     <div class="container mx-auto px-4 py-2 max-w-5xl">
+        <div
+          v-if="reloadFailed"
+          role="alert"
+          class="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+        >
+          <span class="min-w-0 flex-1">저장은 완료됨. 최신 기록을 불러오지 못해 표가 이전 값일 수 있음.</span>
+          <Button type="button" size="xs" variant="outline" :disabled="reloading" @click="retryReload">
+            {{ reloading ? '불러오는 중…' : '다시 불러오기' }}
+          </Button>
+        </div>
         <MonthlyTable
           :year-month="selectedMonth"
           :monthly-data="monthlyData"
@@ -339,6 +370,7 @@ async function handleSaveMonth(payload: SavePayload): Promise<void> {
           :select-revision="selectRevision"
           @dirty-change="hasUnsaved = $event"
           @save="handleSaveMonth"
+          @clear-save-error="clearSaveError"
           @open-attendance="openAttendance"
         />
       
