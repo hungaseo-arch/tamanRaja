@@ -90,6 +90,8 @@ const emit = defineEmits<{
   (e: 'open-attendance'): void;
   /** 저장하지 않은 입력이 있는지. 부모가 월 전환·새로고침 경고에 쓴다. */
   (e: 'dirty-change', dirty: boolean): void;
+  /** 편집 진입·종료 때 지난 저장 실패 표시를 지우라고 부모에 알린다. */
+  (e: 'clear-save-error'): void;
 }>();
 
 // 편집 모드. 미래 달은 기본 편집 상태로 열리지만, 편집 권한이 있을 때만이다.
@@ -171,6 +173,7 @@ watch(
 // 조·시상이 그 계산과 다르면 관리자가 손으로 지정한 값이므로 그대로 두고 수동 지정으로 표시한다.
 // (그러지 않으면 저장 한 번에 수동 지정이 조용히 자동값으로 바뀐다.)
 function enterEdit(): void {
+  emit('clear-save-error');
   if (!props.isFutureMonth) {
     clearLocal();
     for (const row of props.monthlyData) {
@@ -255,8 +258,9 @@ function preserveStoredManual(): void {
   for (const row of props.monthlyData) {
     if (!row.attended || row.score === null) continue;
     const id = row.member_id;
-    if (row.result_group && row.result_group !== localGroups[id]) {
-      localGroups[id] = row.result_group;
+    // 공백 차이만 있는 저장값은 계산과 같은 값으로 본다(수동 지정 오탐 방지).
+    if (row.result_group?.trim() && row.result_group.trim() !== localGroups[id]) {
+      localGroups[id] = row.result_group.trim();
       manualGroups[id] = true;
     }
     if (isRankName(row.result_rank) && row.result_rank !== localRanks[id]) {
@@ -429,6 +433,7 @@ function cancelEdit(): void {
   if (props.manualCourse !== baselineCourse) emit('update:manualCourse', baselineCourse);
   isEditing.value = false;
   unlockReason.value = null;
+  emit('clear-save-error');
 }
 
 // 변경분이 있으면 한 번 더 묻는다. 없으면 바로 닫는다.
