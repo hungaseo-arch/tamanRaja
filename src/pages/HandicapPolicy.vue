@@ -246,6 +246,23 @@ async function loadCourseRatings(): Promise<void> {
     course_rating: c.course_rating === null ? null : Number(c.course_rating),
   })) as CourseRating[];
 }
+
+// 참조 버튼으로 다른 섹션에 간 뒤 읽던 자리로 돌아올 수단. 누른 버튼을 기억해 두었다가 되돌린다.
+const returnEl = ref<HTMLElement | null>(null);
+
+function goRef(targetId: string, e: Event): void {
+  returnEl.value = e.currentTarget as HTMLElement;
+  openPolicySection(targetId);
+}
+
+function goBack(): void {
+  const el = returnEl.value;
+  returnEl.value = null;
+  if (!el?.isConnected) return;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+  el.focus({ preventScroll: true });
+}
 </script>
 
 <template>
@@ -267,7 +284,7 @@ async function loadCourseRatings(): Promise<void> {
             <pre class="policy-formula">{{ step.formula }}</pre>
             <p class="policy-note">
               <template v-if="step.ref">
-                {{ step.note.split('{ref}')[0] }}<button type="button" class="policy-ref" @click="openPolicySection(step.ref.id)">{{ step.ref.label }}</button>{{ step.note.split('{ref}')[1] }}
+                {{ step.note.split('{ref}')[0] }}<button type="button" class="policy-ref" @click="goRef(step.ref.id, $event)">{{ step.ref.label }}</button>{{ step.note.split('{ref}')[1] }}
               </template>
               <template v-else>{{ step.note }}</template>
             </p>
@@ -653,7 +670,7 @@ async function loadCourseRatings(): Promise<void> {
             조별 당월 핸디 ±1 규칙 현행 유지 (1등조 −1 / 2등조 +1). 본 기준은 연 1회 기준핸디 산정에만 적용
           </li>
           <li>손동현 · 신승민 : 2027년 상반기 성적 기준 7월 중간 재산정 검토</li>
-          <li>이성남 : 휴면 중. 복귀 후 3회 참석 시 재산정 (<button type="button" class="policy-ref" @click="openPolicySection('sec-dormant-note')">아래 안내문</button> 참조)</li>
+          <li>이성남 : 휴면 중. 복귀 후 3회 참석 시 재산정 (<button type="button" class="policy-ref" @click="goRef('sec-dormant-note', $event)">아래 안내문</button> 참조)</li>
           <li>
             2028년부터 정식 WHS Handicap Index 전환 목표. 2027년 1월 모임부터 홀별 스코어 기록 필요
           </li>
@@ -677,6 +694,14 @@ async function loadCourseRatings(): Promise<void> {
           </p>
         </div>
       </PolicySection>
+      <!-- 참조로 이동한 뒤에만 보인다. 스크롤 영역 아래에 붙어 따라온다. -->
+      <div v-if="returnEl" class="policy-return sticky bottom-3 z-30 flex justify-end">
+        <button
+          type="button"
+          class="min-h-11 rounded-full border border-border bg-card px-4 text-sm font-medium shadow-md hover:bg-muted"
+          @click="goBack"
+        >읽던 곳으로</button>
+      </div>
     </div>
   </div>
 </template>
@@ -1040,6 +1065,9 @@ async function loadCourseRatings(): Promise<void> {
   }
   .policy-section {
     break-inside: avoid-page;
+  }
+  .policy-return {
+    display: none;
   }
 }
 </style>

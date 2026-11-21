@@ -255,7 +255,7 @@ describe('화면 문구', () => {
     rawHtml = html;
     text = html.replace(/<style[\s\S]*?<\/style>/g, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
     sections = {};
-    for (const m of html.matchAll(/policy-no[^>]*>\s*(\d)\s*<\/span>[\s\S]*?<span[^>]*>\s*([^<]+?)\s*<\/span>/g)) sections[m[1]] = m[2];
+    for (const m of html.matchAll(/sr-only">\s*(\d)번\s*<\/span>\s*([^<]+?)\s*<\/span>/g)) sections[m[1]] = m[2];
     expect(text.length).toBeGreaterThan(1000);
   });
 
@@ -303,7 +303,7 @@ describe('화면 문구', () => {
 
   it('섹션 토글 버튼 이름에 번호가 들어 있고 참조는 버튼이다', () => {
     for (const [no, title] of Object.entries(sections)) {
-      expect(rawHtml, `${no}번`).toContain(`aria-label="${no}번 ${title}"`);
+      expect(rawHtml, `${no}번`).toContain(`<span class="sr-only">${no}번 </span>${title}`);
     }
     // "N번 섹션" 참조 4건은 모두 버튼이고, 참조 대상 섹션 id 가 실재한다.
     const refs = [...rawHtml.matchAll(/class="policy-ref"[^>]*>(\d)번 섹션</g)];

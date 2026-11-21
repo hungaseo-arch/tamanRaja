@@ -24,11 +24,10 @@ interface Props {
 
 const props = withDefaults(defineProps<Props>(), { no: '', defaultOpen: false });
 const open = ref(props.defaultOpen);
+// 토글 버튼의 이름은 aria-label 이 아니라 안의 글자로 만든다. 번호는 sr-only 로 덧붙인다 —
+// aria-label 로 덮으면 보이는 글자와 이름이 어긋난다(WCAG 2.5.3).
 const rootEl = ref<HTMLElement | null>(null);
 const toggleEl = ref<HTMLButtonElement | null>(null);
-
-// 스크린리더가 섹션 번호를 알도록 버튼 이름에 번호를 넣는다 (시각용 번호 원은 aria-hidden).
-const toggleLabel = props.no ? `${props.no}번 ${props.title}` : props.title;
 
 function onOpenRequest(e: Event): void {
   const targetId = (e as CustomEvent<string>).detail;
@@ -58,13 +57,12 @@ onBeforeUnmount(() => window.removeEventListener(OPEN_EVENT, onOpenRequest));
         ref="toggleEl"
         type="button"
         class="policy-toggle"
-        :aria-label="toggleLabel"
         :aria-expanded="open"
         :aria-controls="`${props.id}-body`"
         @click="open = !open"
       >
         <span v-if="props.no" class="policy-no" aria-hidden="true">{{ props.no }}</span>
-        <span class="flex-1 text-left">{{ props.title }}</span>
+        <span class="flex-1 text-left"><span v-if="props.no" class="sr-only">{{ props.no }}번 </span>{{ props.title }}</span>
         <ChevronDown class="policy-chevron" :class="{ 'rotate-180': open }" aria-hidden="true" />
       </button>
     </h2>
