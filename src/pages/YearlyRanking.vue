@@ -595,7 +595,7 @@ function stickyTint(rank: number | null): string {
                           :class="rankIconClass(entry.rank)"
                         >{{ rankLabel(entry.rank) }}</span>
                         <span v-if="entry.rank !== null && isTied(entry.row.member_id)" class="block text-xs font-semibold leading-none text-muted-foreground" aria-hidden="true">공동</span>
-                        <template v-else><span aria-hidden="true">-</span><span class="sr-only">순위 없음</span></template>
+                        <template v-if="entry.rank === null"><span aria-hidden="true">-</span><span class="sr-only">순위 없음</span></template>
                       </div>
                     </TableCell>
                     <TableCell :class="cn('font-medium whitespace-nowrap left-14', STICKY_BASE, stickyTint(entry.rank))">
