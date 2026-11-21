@@ -417,10 +417,9 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
                 <td class="num pp-hide-sm">{{ r.prev_std_hc ?? '—' }}</td>
                 <td class="num pp-std">
                   {{ r.std_hc }}
-                  <!-- 좁은 화면은 숨은 열(2026 기준·증감)을 이 칸 아래 소형 캡션으로 합친다. -->
-                  <small class="pp-sm-cap">
-                    2026 {{ r.prev_std_hc ?? '—' }}
-                    <span v-if="r.final_delta !== null" :class="deltaClass(r.final_delta)">
+                  <!-- 좁은 화면은 숨은 증감 열을 이 칸 아래 소형 캡션으로 합친다. 2026 기준값은 보이지 않게 둔다. -->
+                  <small v-if="r.final_delta !== null" class="pp-sm-cap">
+                    <span :class="deltaClass(r.final_delta)">
                       {{ fmtSigned2(r.final_delta) }} {{ deltaLabel(r.final_delta) }}
                     </span>
                   </small>
@@ -600,7 +599,7 @@ const COLS: { key: SortKey; label: string; cls: string }[] = [
 .pp-results td.pp-proposal {
   background: color-mix(in oklch, var(--std-accent) 8%, transparent);
 }
-/* 모바일 전용 캡션: 숨은 열 값(2026 기준·증감)을 2027 기준 칸에 합쳐 보여 준다. 640px 이상은 열이 보이므로 숨긴다. */
+/* 모바일 전용 캡션: 숨은 증감 열 값을 2027 기준 칸에 합쳐 보여 준다. 640px 이상은 열이 보이므로 숨긴다. */
 .pp-sm-cap {
   display: block;
   margin-top: 0.125rem;
