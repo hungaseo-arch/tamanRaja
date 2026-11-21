@@ -40,6 +40,26 @@ const DESTRUCTIVE_DURATION = 8000;
 // 모듈 단위 전역 reactive
 const toasts: Ref<ToastItem[]> = ref<ToastItem[]>([]);
 
+// 토스트별 닫기 타이머. 마우스를 올리거나 포커스가 있는 동안은 멈추고(WCAG 2.2.1), 벗어나면 처음부터 다시 센다.
+const timers = new Map<string, { handle: number; duration: number }>();
+
+function startTimer(id: string, duration: number): void {
+  stopTimer(id);
+  if (duration <= 0) return;
+  timers.set(id, { handle: window.setTimeout(() => dismissToast(id), duration), duration });
+}
+
+function stopTimer(id: string): void {
+  const t = timers.get(id);
+  if (t) window.clearTimeout(t.handle);
+}
+
+function dismissToast(id: string): void {
+  stopTimer(id);
+  timers.delete(id);
+  toasts.value = toasts.value.filter((t) => t.id !== id);
+}
+
 function makeId(): string {
   return Math.random().toString(36).slice(2, 11);
 }
@@ -58,20 +78,31 @@ export function useToast() {
     toasts.value = [item, ...toasts.value].slice(0, TOAST_LIMIT);
 
     const duration = input.duration ?? (item.variant === 'destructive' ? DESTRUCTIVE_DURATION : DEFAULT_DURATION);
-    if (duration > 0) {
-      window.setTimeout(() => dismiss(id), duration);
-    }
+    startTimer(id, duration);
 
     return id;
   }
 
   function dismiss(id?: string): void {
     if (!id) {
+      for (const key of [...timers.keys()]) stopTimer(key);
+      timers.clear();
       toasts.value = [];
       return;
     }
-    toasts.value = toasts.value.filter((t) => t.id !== id);
+    dismissToast(id);
   }
 
-  return { toast, dismiss, toasts };
+  /** 사용자가 읽는 중이면 멈춘다. */
+  function pause(id: string): void {
+    stopTimer(id);
+  }
+
+  /** 읽기를 마치면 처음 길이만큼 다시 센다. 직접 닫아야 하는 토스트(0)는 그대로 둔다. */
+  function resume(id: string): void {
+    const t = timers.get(id);
+    if (t) startTimer(id, t.duration);
+  }
+
+  return { toast, dismiss, pause, resume, toasts };
 }

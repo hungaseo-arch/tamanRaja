@@ -136,7 +136,7 @@ useEventListener(window, 'resize', () => close(false));
         @click="select(item)"
       >
         <span>{{ item.label }}</span>
-        <span v-if="item.disabled && item.hint" class="text-xs text-muted-foreground">{{ item.hint }}</span>
+        <span v-if="item.disabled && item.hint" class="text-sm text-muted-foreground">{{ item.hint }}</span>
       </button>
     </div>
   </Teleport>

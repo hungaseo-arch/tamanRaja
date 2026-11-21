@@ -2,7 +2,7 @@
 import { useToast } from '@/composables/useToast';
 import { cn } from '@/lib/utils';
 
-const { toasts, dismiss } = useToast();
+const { toasts, dismiss, pause, resume } = useToast();
 </script>
 
 <template>
@@ -29,6 +29,10 @@ const { toasts, dismiss } = useToast();
           v-for="t in toasts"
           :key="t.id"
           :role="t.variant === 'destructive' ? 'alert' : undefined"
+          @mouseenter="pause(t.id)"
+          @mouseleave="resume(t.id)"
+          @focusin="pause(t.id)"
+          @focusout="resume(t.id)"
           :class="cn(
             'pointer-events-auto rounded-md border p-4 shadow-md bg-background',
             t.variant === 'destructive' && 'border-destructive/50 bg-destructive text-destructive-foreground'
