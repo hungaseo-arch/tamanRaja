@@ -51,6 +51,7 @@ interface HistoryRow {
   app_hc: number | null;
   next_hc: number | null;
   next_hc_mismatch: boolean;
+  has_meeting: boolean;
   attended: boolean;
   score: number | null;
   net_score: number | null;
@@ -135,6 +136,7 @@ const history = computed<HistoryRow[]>(() => {
         app_hc:       handicap?.app_hc ?? null,
         next_hc:      handicap?.next_hc ?? null,
         next_hc_mismatch: handicap?.next_hc_mismatch ?? false,
+        has_meeting:  !!meeting,
         attended,
         score,
         net_score,
@@ -187,6 +189,15 @@ function formatMonth(ym: string): string {
 // 아직 오지 않은 달은 `미정`(앞으로 정해짐), 지난 달은 `-`(기록 없음).
 function formatCourse(row: HistoryRow): string {
   return row.year_month >= nowYM ? formatPending(row.course_name) : formatValue(row.course_name);
+}
+
+// 스코어 칸이 빈 이유를 구분한다. 일정 없음 `-`, 아직 안 친 달 `예정`, 지난 달 불참 `불참`.
+// 모두 `-` 이면 "빠졌다"와 "아직 안 왔다"가 같아 보인다.
+function scoreEmptyLabel(row: HistoryRow): string {
+  if (!row.has_meeting) return '-';
+  if (row.year_month >= nowYM && !row.attended) return '예정';
+  if (!row.attended) return '불참';
+  return '-';
 }
 
 // ── 엑셀(CSV) 다운로드 ────────────────────────────────────────────────────────
@@ -358,7 +369,9 @@ function handleExport(): void {
 
                     <TableCell class="text-center font-mono whitespace-nowrap">
                       <template v-if="row.attended && row.score !== null">{{ row.score }}</template>
-                      <span v-else class="text-muted-foreground text-sm">-</span>
+                      <span v-else class="text-muted-foreground text-sm">
+                        <span :aria-hidden="scoreEmptyLabel(row) === '-' ? 'true' : undefined">{{ scoreEmptyLabel(row) }}</span><span v-if="scoreEmptyLabel(row) === '-'" class="sr-only">{{ row.has_meeting ? '기록 없음' : '일정 없음' }}</span>
+                      </span>
                     </TableCell>
 
                     <TableCell class="text-center font-mono whitespace-nowrap">

@@ -401,11 +401,11 @@ function stickyTint(rank: number | null): string {
         <Card
           v-for="(row, idx) in rankedQualified.slice(0, 4)"
           :key="row.member_id"
-          :class="podiumCardClass(idx)"
+          :class="podiumCardClass((rankByMember.get(row.member_id) ?? idx + 1) - 1)"
         >
           <CardContent class="px-1 pt-2 pb-2 sm:px-3 sm:pb-3 text-center space-y-0.5">
             <p class="text-xl">
-              <span role="img" :aria-label="rankAria(row.member_id, rankByMember.get(row.member_id) ?? idx + 1)" :class="rankIconClass(rankByMember.get(row.member_id) ?? idx + 1)">{{ rankLabel(rankByMember.get(row.member_id) ?? idx + 1) }}</span>
+              <span role="img" :aria-label="rankAria(row.member_id, rankByMember.get(row.member_id) ?? idx + 1)" :class="rankIconClass(rankByMember.get(row.member_id) ?? idx + 1)">{{ rankLabel(rankByMember.get(row.member_id) ?? idx + 1) }}</span><span v-if="isTied(row.member_id)" class="ml-0.5 text-xs font-semibold text-muted-foreground" aria-hidden="true">공동</span>
             </p>
             <p class="font-bold text-sm sm:text-base truncate">{{ row.member_name }}</p>
             <!-- 두 지표를 모두 보이되 순위 기준인 쪽을 위에 두고 진하게 쓴다.
@@ -594,6 +594,7 @@ function stickyTint(rank: number | null): string {
                           :aria-label="rankAria(entry.row.member_id, entry.rank)"
                           :class="rankIconClass(entry.rank)"
                         >{{ rankLabel(entry.rank) }}</span>
+                        <span v-if="entry.rank !== null && isTied(entry.row.member_id)" class="block text-xs font-semibold leading-none text-muted-foreground" aria-hidden="true">공동</span>
                         <template v-else><span aria-hidden="true">-</span><span class="sr-only">순위 없음</span></template>
                       </div>
                     </TableCell>
@@ -603,14 +604,14 @@ function stickyTint(rank: number | null): string {
                     <TableCell class="text-center whitespace-nowrap hidden sm:table-cell">{{ entry.row.attended_count }}회</TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap hidden sm:table-cell">{{ stdHcMap.get(entry.row.member_id) ?? '-' }}</TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap">
-                      <span :class="entry.rank === null ? '' : netColorClass(entry.row.avg_net_score)">
+                      <span :class="netColorClass(entry.row.avg_net_score)">
                         {{ formatNet(entry.row.avg_net_score) }}
                       </span>
                     </TableCell>
                     <TableCell class="text-center font-mono whitespace-nowrap">
                       <span
                         v-if="entry.row.avg_score !== null"
-                        :class="entry.rank === null ? 'font-semibold' : 'text-avg-score font-semibold'"
+                        class="text-avg-score font-semibold"
                       >{{ entry.row.avg_score.toFixed(1) }}</span>
                       <span v-else class="text-muted-foreground">-</span>
                     </TableCell>
